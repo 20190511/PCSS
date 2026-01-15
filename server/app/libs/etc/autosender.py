@@ -242,9 +242,9 @@ class AutoSender:
         r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
                               is_external=True)
 
-        # ✅ w 네임스페이스를 명확하게 추가
+        # w 네임스페이스를 명확하게 추가
         hyperlink = parse_xml(
-            f'<w:hyperlink r:id="{r_id}" {nsdecls("w", "r")}>'  # ✅ 네임스페이스 추가
+            f'<w:hyperlink r:id="{r_id}" {nsdecls("w", "r")}>'  # 네임스페이스 추가
             f'<w:r><w:rPr><w:color w:val="0000FF"/><w:u w:val="single"/></w:rPr>'
             f'<w:t>{text}</w:t></w:r></w:hyperlink>'
         )

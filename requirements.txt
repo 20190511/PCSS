@@ -8,7 +8,6 @@ lxml
 aiohttp
 pandas
 dotenv
-bson
 pymongo
 requests
 user_agent
