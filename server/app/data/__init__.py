@@ -3,25 +3,22 @@ import os
 import pandas as pd
 import json
 
-name_dict = None
-def load_name_dict():
-    global name_dict
-    if os.getenv("LLM_NAME_SOURCE") == "local":
-        with open(os.path.join(os.path.dirname(__file__), 'llm_names.json'), 'r', encoding='utf-8') as f:
-            name_dict = json.load(f)
-        name_dict = {
-            doc["name"]: doc["score"]
-            for doc in name_dict
-        }
-    else:
-        print("Loading LLM names from DB")
-        name_dict = {
-            doc["name"]: doc["score"]
-            for doc in name_col.find({}, {"_id": 0, "name": 1, "score": 1})
-        }
-        print(f"Loaded {len(name_dict)} LLM names from DB")
 
-#name_dict = {}
+if os.getenv("LLM_NAME_SOURCE") == "local":
+    with open(os.path.join(os.path.dirname(__file__), 'llm_names.json'), 'r', encoding='utf-8') as f:
+        name_dict = json.load(f)
+    name_dict = {
+        doc["name"]: doc["score"]
+        for doc in name_dict
+    }
+else:
+    print("Loading LLM names from DB")
+    name_dict = {
+        doc["name"]: doc["score"]
+        for doc in name_col.find({}, {"_id": 0, "name": 1, "score": 1})
+    }
+    print(f"Loaded {len(name_dict)} LLM names from DB")
+
 conf_df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'conf.csv'))
 conf_param_list = conf_df['param'].tolist()
 conf_param_dict = conf_df.set_index('conference')['param'].to_dict()
