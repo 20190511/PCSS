@@ -87,11 +87,6 @@ class PCSSEARCH:
     
     def printStatus(self, msg='', url=None):
         try:
-            print(
-                f'\r{msg} | {url} | paper: {len(self.CrawlData)} | Korean Authors: {len(self.checkedNameList)}',
-                end=''
-            )
-
             payload = {
                 "type": "status",
                 "ts": datetime.utcnow().isoformat() + "Z",

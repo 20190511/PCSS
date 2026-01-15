@@ -20,7 +20,6 @@ def Requester(url, headers={}, params={}, cookies={}):
 async def asyncRequester(url, headers={}, params={}, cookies={}, session=None):
     timeout = aiohttp.ClientTimeout(total=TIMEOUT)
     trynum = 0
-    print("hello")
     while True:
         try:
             headers = random_heador()
