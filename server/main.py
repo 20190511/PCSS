@@ -34,5 +34,5 @@ app.include_router(api_router, prefix="/api")
 app.include_router(page_router)
 
 @app.on_event("startup")
-def startup():
-    load_name_dict()
+async def startup():
+    await load_name_dict()
