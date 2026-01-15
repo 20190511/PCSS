@@ -186,7 +186,7 @@ async def search_page(request: Request, job_id: str):
     )
 
 
-@router.post("/search/cancel/{job_id}")
+@router.post("/cancel/{job_id}")
 async def search_cancel(job_id: str):
     job = get_job(job_id)
     if not job:
