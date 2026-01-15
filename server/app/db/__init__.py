@@ -20,3 +20,4 @@ mongo_client = MongoClient(
 mongo_db = mongo_client[DB_NAME]
 name_col = mongo_db[COLLECTION_NAME]
 errors_col = mongo_db["errors"]
+conf_col = mongo_db["conferences"]
