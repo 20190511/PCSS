@@ -76,8 +76,6 @@ class PCSSEARCH:
             pass
 
     def _emit_status_throttled(self, payload: dict) -> None:
-        # status는 너무 자주 보내면 네트워크/DOM 업데이트가 병목이므로
-        # 50ms 단위로만 보내되, queue backlog는 위에서 제거되므로 체감은 빨라짐
         now = time.monotonic()
         if now - self._last_emit_ts < self.emit_min_interval_sec:
             return
@@ -616,7 +614,7 @@ def compute_author_stats(
             if not author_list:
                 continue
             
-            conf = param_conf_dict(conf)
+            conf = param_conf_dict[conf]
             papers.append(
                 {
                     "title": title,
