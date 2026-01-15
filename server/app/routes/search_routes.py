@@ -23,7 +23,7 @@ async def conferences():
     return JSONResponse(get_conferences_for_ui())
 
 # 1) 작업 시작: job_id 즉시 반환
-@router.post("/search/start")
+@router.post("/start")
 async def start_search(req: SearchRequest):
     job_id = str(uuid4())
     options = req.model_dump() if hasattr(req, "model_dump") else req.dict()
@@ -73,7 +73,7 @@ async def start_search(req: SearchRequest):
     }
 
 # 2) SSE 이벤트 스트림
-@router.get("/search/events/{job_id}")
+@router.get("/events/{job_id}")
 async def search_events(job_id: str):
     job = get_job(job_id)
     if not job:
@@ -119,7 +119,7 @@ def _sse(event_name: str, data: dict) -> str:
     return f"event: {event_name}\n" + f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 # 3) 최종 JSON 결과 조회
-@router.get("/search/result/{job_id}")
+@router.get("/result/{job_id}")
 async def search_result(job_id: str):
     job = get_job(job_id)
     if not job:
@@ -138,7 +138,7 @@ async def search_result(job_id: str):
     return {"status": "done", "result": job.result}
 
 
-@router.get("/search/page/{job_id}", response_class=HTMLResponse)
+@router.get("/page/{job_id}", response_class=HTMLResponse)
 async def search_page(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:

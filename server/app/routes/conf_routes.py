@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.db import conf_col
 from app.schemas.conf import AddUrlRequest, CreateConferenceRequest
 
-router = APIRouter(prefix="/conferences", tags=["conferences"])
+router = APIRouter()
 
 @router.get("/kinds")
 async def get_kinds():

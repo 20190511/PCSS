@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
-from app.routes.search_routes import router as search_router
+from app.routes import api_router
 from app.routes.page_routes import router as page_router
 
 app = FastAPI(title="PCSS API", version="1.0.0")
@@ -29,5 +29,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(search_router, prefix="/api")
+app.include_router(api_router, prefix="/api")
 app.include_router(page_router)

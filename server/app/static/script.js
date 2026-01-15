@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------------------------
   // 1) 학회 목록 가져오기 (FastAPI)
   // ---------------------------
-  fetch(`${API_BASE}${API_PREFIX}/conferences`)
+  fetch(`${API_BASE}${API_PREFIX}/search/conferences`)
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();

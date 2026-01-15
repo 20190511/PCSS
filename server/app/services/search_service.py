@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from app.libs.req import asyncRequester
 from app.data import conf_param_dict, conf_param_list, param_conf_dict
 from app.libs.llm import get_name_score, single_name_llm
-from app.libs.logging import write_log
+from app.libs.logger import write_log
 from app.config import FORCE_CRAWL
 from typing import List, Dict, Any
 import httpx

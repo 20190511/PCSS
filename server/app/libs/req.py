@@ -3,7 +3,7 @@ import traceback
 import aiohttp
 import asyncio
 from user_agent import generate_navigator
-from app.libs.logging import write_log
+from app.libs.logger import write_log
 
 TIMEOUT = 10
 TRYNUM = 10
