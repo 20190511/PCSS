@@ -299,14 +299,20 @@
           height: 40vh;
         }
       }
+      .spinner.paused {
+        animation: none !important;
+        border-top-color: transparent; /* 선택: 회전 멈춘 느낌 */
+        opacity: 0.5;                 /* 선택: 비활성 느낌 */
+      }
+      
   </style>
 </head>
 <body>
   <h1>PCSS Searching</h1>
   <div id="loading">
-    <p>DBLP CRAWLER is working...</p>
-    <div class="spinner"></div>
-  </div>
+    <p id="loadingText">DBLP CRAWLER is working...</p>
+    <div class="spinner" id="spinner"></div>
+  </div>  
   <div class="main-content-wrapper">
     <div class="wrapper">
       <!-- 왼쪽: 옵션 -->
@@ -395,6 +401,7 @@
 
     cancelBtn.addEventListener("click", async () => {
       cancelBtn.disabled = true;
+      setCancelingUI();
       append("[cancel] 요청 중...");
 
       try {
@@ -407,6 +414,20 @@
         cancelBtn.disabled = false;
       }
     });
+
+    const loadingTextEl = document.getElementById("loadingText");
+    const spinnerEl = document.getElementById("spinner");
+
+    function setCancelingUI() {
+      if (loadingTextEl) loadingTextEl.textContent = "중단 요청 중...";
+      if (spinnerEl) spinnerEl.classList.add("paused");
+    }
+
+    function setCancelledUI() {
+      if (loadingTextEl) loadingTextEl.textContent = "중단되었습니다.";
+      if (spinnerEl) spinnerEl.classList.add("paused");
+    }
+
 
     function updateCounters(data) {
       if (data.paper_count !== undefined) {
@@ -477,6 +498,7 @@
       }
       if (data.event === "cancelled") {
         append("[cancelled] stopped.");
+        setCancelledUI();
         es.close();
         // 원하면 홈으로 보내기:
         // window.location.href = "/";
