@@ -43,6 +43,7 @@ def single_name_llm(name):
     # 숫자만 추출 (지수 표기법 방지)
     match = re.findall(r"\d+\.\d+|\d+", result)
     if not match:
+        console.print(f"[red]No numeric result found in LLM response for '{name}':[/] {result}")
         return False
 
     value = float(match[0])  # 숫자 문자열을 float으로 변환
@@ -282,7 +283,7 @@ if __name__ == "__main__":
                 try:
                     score = single_name_llm(author)
                     if score == False:
-                        console.print(f"[red]LLM error for '{author}':[/] {e}")
+                        console.print(f"[red]LLM error for '{author}':[/] No numeric result found.")
                         continue
                 except Exception as e:
                     score = 0.0
