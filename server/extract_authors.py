@@ -292,7 +292,12 @@ def main():
                         )
                         progress.update(task, advance=1, name=author, score="ERR")
                         continue
-
+                    
+                    try:
+                        score_display = float(score)
+                    except Exception:
+                        score_display = score
+            
                     ops.append(
                         UpdateOne(
                             {"name": author},
