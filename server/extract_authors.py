@@ -71,7 +71,7 @@ def llm_api_answer(query, model):
             {"role": "user", "content": query},
         ],
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_tokens": 300,
     }
     response = requests.post(
         f"{LLM_URL}/chat/completions",
