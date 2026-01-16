@@ -206,14 +206,16 @@ if __name__ == "__main__":
             name="-",
             score="-",
         )
-
+        
         for author in authors:
             try:
                 score = single_name_llm(author)
             except Exception as e:
                 score = 0.0
                 console.print(f"[red]LLM error for '{author}':[/] {e}")
-
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Interrupted by user. Cleaning up...[/]")
+            
             progress.update(
                 task,
                 advance=1,
