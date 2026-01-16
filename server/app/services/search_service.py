@@ -479,7 +479,7 @@ class PCSSEARCHMongo:
             if idx == 1 or idx % 25 == 0 or idx == self._total_docs:
                 self.printStatus(
                     msg=f"Filtering... ({idx}/{self._total_docs})",
-                    url="mongodb",
+                    url="",
                 )
 
     async def _attach_author_stats(self) -> List[Dict[str, Any]]:
@@ -541,18 +541,26 @@ class PCSSEARCHMongo:
         self._processed_docs = 0
         self._matched_docs = 0
 
-        self.printStatus("MongoDB Filtering...", url="mongodb")
+        self.printStatus("Filtering...", url="")
         await self._build_crawl_data(docs)
 
         if self.countOption:
-            self.printStatus("Author Stats Attaching...", url="mongodb")
+            self.printStatus("Author Stats Attaching...", url="")
             resultData = await self._attach_author_stats()
         else:
             resultData = self.CrawlData
 
         # 기존 정렬: (conference, -year)
-        final_sorted = sorted(resultData, key=lambda x: (x.get("conference", ""), -int(x.get("year", 0))))
+        final_sorted = sorted(
+            resultData,
+            key=lambda x: (
+                -int(x.get("year", 0)),        # year desc
+                str(x.get("conference", "")),  # conference asc
+                str(x.get("title", "")),       # title asc (optional)
+            ),
+        )
+
         final_dict = {i: el for i, el in enumerate(final_sorted)}
 
-        self.printStatus("Done.", url="mongodb")
+        self.printStatus("Done.", url="")
         return final_dict
