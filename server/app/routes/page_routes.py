@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi import Form
 from app.core.templates import templates
-from app.services.search_service import compute_author_stats, fetch_html
+from app.services.crawl_service import compute_author_stats, fetch_html
 
 router = APIRouter()
 

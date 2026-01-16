@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes import api_router
 from app.routes.page_routes import router as page_router
+from app.db.mongo import get_client
 
 app = FastAPI(title="PCSS API", version="1.0.0")
 
@@ -29,5 +30,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def _startup():
+    await get_client()
+    
 app.include_router(api_router, prefix="/api")
 app.include_router(page_router)

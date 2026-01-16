@@ -39,7 +39,7 @@ def parse_sse_event(block: str) -> Optional[Tuple[str, str]]:
 
 
 async def start_job(client: httpx.AsyncClient, base_url: str, payload: Dict) -> Dict:
-    url = _join_url(base_url, "/api/search/start")
+    url = _join_url(base_url, "/api/crawl/start")
     r = await client.post(url, json=payload)
     r.raise_for_status()
     return r.json()
@@ -108,7 +108,7 @@ async def fetch_result(client: httpx.AsyncClient, result_url: str) -> Dict:
 async def main():
     parser = argparse.ArgumentParser(description="Test FastAPI SSE crawl progress + final JSON result")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000", help="FastAPI server base url")
-    parser.add_argument("--payload", default=None, help="Path to JSON payload file for /api/search/start")
+    parser.add_argument("--payload", default=None, help="Path to JSON payload file for /api/crawl/start")
     args = parser.parse_args()
 
     # 기본 payload (너 스키마에 맞춰 조절)

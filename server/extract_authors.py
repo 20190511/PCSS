@@ -223,6 +223,7 @@ def cleanup_files(*paths: Path | str):
             console.print(f"[red]Failed to delete {p}:[/] {e}")
 
 def main():
+    print("=== DBLP 저자 추출 시작 ===")
     if not os.path.exists(os.path.join(os.path.dirname(__file__), "dblp.xml")):
         print("=== DBLP 데이터 다운로드 ===")
         download_dblp_xml_gz()
@@ -344,7 +345,6 @@ def main():
     print("결과는 DB에 저장되었습니다.")
     
     cleanup_files(
-        os.path.join(os.path.dirname(__file__), "dblp.xml"),
         os.path.join(os.path.dirname(__file__), "all_authors.json"),
     )
 

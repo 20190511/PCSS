@@ -2,7 +2,6 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv 
 import socket
-import sshtunnel
 load_dotenv()
 
 DB_NAME = "pcss"
@@ -49,5 +48,6 @@ else:
     
 mongo_db = client[DB_NAME]
 name_col = mongo_db[COLLECTION_NAME]
-errors_col = mongo_db["errors"]
+errors_col = mongo_db['errors']
 conf_col = mongo_db["conferences"]
+papers_col = mongo_db["papers"]

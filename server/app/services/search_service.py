@@ -1,71 +1,92 @@
-import platform
-import aiofiles
-from bs4 import BeautifulSoup
-import traceback
-import urllib3
-import warnings
-import re
-import os
-import aiohttp
-import copy
-from datetime import datetime
+# app/services/pcssearch_mongo.py
 import asyncio
-from dotenv import load_dotenv
-from app.libs.req import asyncRequester
-from app.data import conf_param_dict, conf_param_list, param_conf_dict
+import copy
+import os
+import re
+import time
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 from app.libs.llm import get_name_score, single_name_llm
 from app.libs.logger import write_log
-from app.config import FORCE_CRAWL
-from typing import List, Dict, Any
-import httpx
-import time
+from app.data import name_dict
+from app.db.mongo import get_papers_col
 
-load_dotenv()
+class PCSSEARCHMongo:
+    """
+    기존 PCSSEARCH의 '크롤링' 파트를 제거하고,
+    MongoDB 데이터셋에서 논문을 조회하여 동일한 형태로 결과를 만들어 반환.
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
+    - option:
+        1: 1저자
+        2: 1저자 또는 2저자
+        3: 마지막 저자
+        4: 1저자 또는 마지막 저자
+        else: 저자 중 한 명 이상
+    - threshold: 한국인 판정 임계값 (single_name_llm 결과)
+    - countOption: True면 저자 통계(본 MongoDB 데이터셋 기준)도 붙임
+    """
 
-class PCSSEARCH:
-    def __init__(self, option, threshold, startyear, endyear, countOption=True, job_id=None, event_queue=None, cancel_check=None):
-        
-        self.force_crawl    = FORCE_CRAWL
-        self.option         = option
-        self.threshold      = threshold
-        self.startyear      = int(startyear)
-        self.endyear        = int(endyear)       
-        self.countOption    = countOption             
+    def __init__(
+        self,
+        option: int,
+        threshold: float,
+        startyear: int,
+        endyear: int,
+        countOption: bool = True,
+        job_id: Optional[str] = None,
+        event_queue: Optional[Any] = None,
+        cancel_check: Optional[Any] = None,
+    ):
+        self.option = int(option)
+        self.threshold = float(threshold)
+        self.startyear = int(startyear)
+        self.endyear = int(endyear)
+        self.countOption = bool(countOption)
 
-        self.speed          = 3
-        self.current_year   = 2026
-        self.run_id = None
-
-        self.checkedNameList = set()
-        self.titleList = []
-        self.CrawlData = []
-        self.FinalData = {}
-
-        self.db_path = os.path.join(os.path.dirname(__file__), '..', 'db')    
-        
         self.job_id = job_id
         self.event_queue = event_queue
         self.cancel_check = cancel_check  # callable -> bool
 
-        # emit 튜닝(즉시성 vs 과부하)
+        self.run_id = job_id  # 기존 write_log(run_id, ...) 패턴 유지
+
+        # 진행상황 emit 튜닝
         self._last_emit_ts = 0.0
-        self.emit_min_interval_sec = 0.05  # 50ms: "바로바로" 체감 좋음
-    
+        self.emit_min_interval_sec = 0.05  # 50ms
+
+        # 결과/캐시
+        self.checkedNameList: set[str] = set()
+        self.titleList: List[str] = []
+        self.CrawlData: List[Dict[str, Any]] = []
+
+        # 중복 title 방지
+        self._titleSet: set[str] = set()
+
+        self._score_cache: Dict[str, float] = {}
+        self._korean_cache: Dict[str, bool] = {}
+
+        # author 통계 캐시(중복 집계 방지)
+        self._author_stats_cache: Dict[str, Dict[str, Any]] = {}
+
+        # LLM 동시성 제한(너무 많이 때리면 느려지거나 제한 걸릴 수 있음)
+        self._llm_sem = asyncio.Semaphore(int(os.getenv("LLM_CONCURRENCY", "12")))
+
+        # Mongo collection
+        self._collection = None
+
+
+    # ---------------- cancel / emit ----------------
+
     def _should_cancel(self) -> bool:
         try:
             return bool(self.cancel_check and self.cancel_check())
         except Exception:
             return False
-        
+
     def _emit(self, payload: dict) -> None:
         q = self.event_queue
         if not q:
             return
         try:
-            # queue가 가득 찼으면 오래된 것 하나 버리고 최신을 넣어서 "즉시성" 확보
             if q.full():
                 try:
                     q.get_nowait()
@@ -81,9 +102,8 @@ class PCSSEARCH:
             return
         self._last_emit_ts = now
         self._emit(payload)
-    
-    
-    def printStatus(self, msg='', url=None):
+
+    def printStatus(self, msg: str = "", url: Optional[str] = None) -> None:
         try:
             payload = {
                 "type": "status",
@@ -94,569 +114,414 @@ class PCSSEARCH:
                 "korean_authors": len(self.checkedNameList),
             }
             self._emit_status_throttled(payload)
-
         except Exception:
             pass
-        
-    # 한 Conference에 대한 연도별 url 크롤링 함수
-    async def conf_crawl(self, conf, session, conf_name):
-        if self._should_cancel():
-            raise asyncio.CancelledError()
-        try:
-            self.printStatus(f"{conf_name} Loading...", url=f"https://dblp.org/db/conf/{conf}/index.html")
-            filtered_urls = []
-            urls = []
-            
-            folder_path = os.path.join(os.path.dirname(__file__), '..', 'db', 'urls')
-            file_path = os.path.join(folder_path, f"{conf_name}.txt")
-            
-            if os.path.exists(file_path) and self.endyear != self.current_year and not self.force_crawl:
-                # 이미 파일이 있다면, 해당 내용 사용
-                async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
-                    async for line in f:
-                        line = line.strip()
-                        if not line:
-                            continue
-                        urls.append(line)
-            else:
-                response = await asyncRequester(f"https://dblp.org/db/conf/{conf}/index.html", session=session)
-                if isinstance(response, tuple) == True:
-                    return response
-                self.printStatus(f"{conf_name} URL Crawling...", url=f"https://dblp.org/db/conf/{conf}/index.html")
 
-                soup = BeautifulSoup(response, "lxml")
-
-                links = soup.find_all('a', class_='toc-link')
-                urls = [link['href'] for link in links if link['href']]
-                
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    for url in urls:
-                        f.write(url + '\n')
-
-            for url in urls:
-                match = re.search(r'\d{4}', url)  # 4자리 숫자 찾기
-                if match:
-                    year_str = match.group()
-                    if year_str.isdigit():  
-                        year = int(year_str)
-                        if self.startyear <= year <= self.endyear:
-                            filtered_urls.append((url, year))
-            
-            return filtered_urls
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            write_log(self.run_id, traceback.format_exc())
-            return []
-
-    # 한 개의 Paper에 대한 크롤링 함수
-    async def paper_crawl(self, conf, url, year, session):
-        if self._should_cancel():
-            raise asyncio.CancelledError()
-        try:
-            self.printStatus(f"{year} {conf} Loading...", url=url)
-            param = conf_param_dict[conf]
-            
-            edited_url = re.sub(r'[^\w\-_]', '_', url) + ".html"
-            edited_url = edited_url.replace('https___', '').replace('_html', '')
-            
-            record_path = os.path.join(self.db_path, 'conf_html', param, edited_url)
-            
-            # 비동기 파일 읽기: 파일이 존재하면 aiofiles로 읽음
-            if os.path.exists(record_path) and not self.force_crawl:
-                async with aiofiles.open(record_path, "r", encoding="utf-8") as file:
-                    response = await file.read()
-            else:
-                response = await asyncRequester(url, session=session)
-                if year != self.current_year:
-                    async with aiofiles.open(record_path, "w", encoding="utf-8") as file:
-                        await file.write(response)
-                
-            
-            if isinstance(response, tuple):
-                return response         
-
-            # CPU 바운드 파싱 작업은 별도 스레드에서 실행
-            soup = await asyncio.to_thread(BeautifulSoup, response, "lxml")
-            
-            # li.entry.inproceedings 태그를 한 번에 select로 가져옵니다.
-            papers = soup.select('li.entry.inproceedings')
-
-            self.printStatus(f"{year} {conf} Crawling...", url=url)
-            
-            # titleList를 집합으로도 관리(초기화)
-            if not hasattr(self, "_titleSet"):
-                self._titleSet = set(self.titleList)
-            
-            for paper in papers:
-                try:
-                    # 제목 추출
-                    title_tag = paper.select_one('span.title')
-                    title = title_tag.get_text(strip=True) if title_tag else 'No title found'
-
-                    # 중복 체크
-                    if title in self._titleSet:
-                        continue
-                    self._titleSet.add(title)
-                    self.titleList.append(title)
-
-                    # 저자 추출
-                    authors_origin = []
-                    authors_url = []
-
-                    # 저자 정보를 한 번에 select
-                    author_tags = paper.select('span[itemprop="author"] > a[href]')
-                    if not author_tags:
-                        # 저자가 하나도 없거나 a[href]가 아예 없는 경우
-                        continue
-
-                    for a in author_tags:
-                        author_name_tag = a.select_one('span[itemprop="name"]')
-                        if author_name_tag:
-                            authors_origin.append(author_name_tag.get_text(strip=True))
-                        authors_url.append(a['href'])
-
-                    # authors_origin 있고, authors_url이 하나도 없는 경우는 skip
-                    if authors_origin and not authors_url:
-                        continue
-
-                    if not authors_origin:
-                        continue
-
-                    # 조건별 필터링/저장
-                    # ----------------------------------------------------
-                    authors = authors_origin
-                    authors = [re.sub(r'\d+', '', name).strip() for name in authors]
-                    async def store_if_korean(idx_list):
-                        """idx_list에 해당하는 저자가 한국인이면 저장"""
-                        target_authors = []
-                        for idx in idx_list:
-                            if idx < len(authors) and await self.checkKorean(authors[idx]):
-                                # 이미 name_dict에 값이 있을 것이므로 가져오기
-                                target_authors.append(
-                                    authors[idx] + f' ({get_name_score(authors[idx])})'
-                                )
-                        return target_authors
-
-                    if self.option == 1:
-                        # 1저자
-                        if await self.checkKorean(authors[0]):
-                            self.CrawlData.append({
-                                'title': title,
-                                'author_name': authors,
-                                'author_url': authors_url,
-                                'target_author': [authors[0] + f' ({get_name_score(authors[0])})'],
-                                'conference': conf,
-                                'year': year,
-                                'source': url
-                            })
-                    elif self.option == 2:
-                        # 1저자 또는 2저자
-                        target = await store_if_korean([0, 1])  # 0,1인덱스
-                        if target:
-                            self.CrawlData.append({
-                                'title': title,
-                                'author_name': authors,
-                                'author_url': authors_url,
-                                'target_author': target,
-                                'conference': conf,
-                                'year': year,
-                                'source': url
-                            })
-                    elif self.option == 3:
-                        # 마지막 저자
-                        if await self.checkKorean(authors[-1]):
-                            self.CrawlData.append({
-                                'title': title, 
-                                'author_name': authors,
-                                'author_url': authors_url,
-                                'target_author': [authors[-1] + f' ({get_name_score(authors[-1])})'],
-                                'conference': conf,
-                                'year': year,
-                                'source': url
-                            })
-                    elif self.option == 4:
-                        # 1저자 또는 마지막 저자
-                        target = []
-                        if await self.checkKorean(authors[0]):
-                            target.append(authors[0] + f'({get_name_score(authors[0])})')
-                        if len(authors) > 1 and await self.checkKorean(authors[-1]):
-                            target.append(authors[-1] + f' ({get_name_score(authors[-1])})')
-                        if target:
-                            self.CrawlData.append({
-                                'title': title,
-                                'author_name': authors,
-                                'author_url': authors_url,
-                                'target_author': target,
-                                'conference': conf,
-                                'year': year,
-                                'source': url
-                            })
-                    else:
-                        # 저자 중 한 명 이상이 한국인
-                        target = []
-                        for auth in authors:
-                            if await self.checkKorean(auth):
-                                target.append(auth + f' ({get_name_score(auth)})')
-                                
-                        if target:
-                            self.CrawlData.append({
-                                'title': title,
-                                'author_name': authors,
-                                'author_url': authors_url,
-                                'target_author': target,
-                                'conference': conf,
-                                'year': year,
-                                'source': url
-                            })
-                    # ----------------------------------------------------
-                except asyncio.CancelledError:
-                    raise
-                except Exception:
-                    write_log(self.run_id, traceback.format_exc())
-
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            write_log(self.run_id, traceback.format_exc())
-
-    # 한 Conference에 대한 병렬 Paper 크롤링 함수
-    async def MultiPaperCollector(self, conf_urls, conf_name, session):
-        if self._should_cancel():
-            raise asyncio.CancelledError()
-        try:
-            tasks = []
-            for conf_url in conf_urls:
-                try:
-                    url = conf_url[0]
-                    year = int(conf_url[1])
-                    tasks.append(self.paper_crawl(conf_name, url, year, session))
-                except asyncio.CancelledError:
-                    raise
-                except:
-                    write_log(self.run_id, f"{conf_url[1]}")
-            results = await asyncio.gather(*tasks)
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            write_log(self.run_id, traceback.format_exc())
-
-    # 여러 Conference에 대한 병렬 크롤링 함수
-    async def MultiConfCollector(self, conf_list):
-        if self._should_cancel():
-            raise asyncio.CancelledError()
-        try:
-            # 하나의 세션을 재사용하며 관리 (async with 사용)
-            async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=self.speed)) as session:
-                # 각 컨퍼런스에 대해 동시 크롤링 수행
-                async def process_conference(conf):
-                    conf_name = conf
-                    conf_param = conf_param_dict[conf_name]
-                    conf_urls = await self.conf_crawl(conf_param, session, conf_name)
-                    await self.MultiPaperCollector(conf_urls, conf_name, session)
-
-                # 컨퍼런스 크롤링 작업들을 병렬 실행
-                tasks = [process_conference(conf) for conf in conf_list]
-                await asyncio.gather(*tasks)
-
-                # 첫 번째 단계 완료 후, 결과를 저장할 리스트 초기화
-                self.resultData = []
-
-                # 저자 통계 처리 비동기 함수
-                async def authorCounter(data):
-                    data_copy = copy.deepcopy(data)
-                    new_authors = []
-                    totals_by_author = {}
-                    
-                    for index, author in enumerate(data_copy["author_name"]):
-                        if not await self.checkKorean(author):
-                            new_authors.append(author)
-                            continue
-                        result = await self.authorNumChecker(author, data['author_url'][index], session)
-                        new_authors.append(author + result['stats'])
-                        totals_by_author[author] = result["total"]
-
-                    data_copy["author_name"] = new_authors
-                    # --- target_author 순서대로 논문 수 리스트 생성 ---
-                    def strip_score(s: str) -> str:
-                        """'Hanbin Hong (1.0)' -> 'Hanbin Hong'"""
-                        return re.sub(r'\s*\(\d+(?:\.\d+)?\)\s*$', '', s).strip()
-
-                    target_names = [strip_score(t) for t in data_copy.get("target_author", [])]
-
-                    total_list = [totals_by_author.get(name, 0) for name in target_names]
-                    data_copy["total_papers"] = total_list
-                    # ---------------------------------------------------
-
-                    self.resultData.append(data_copy)
-
-                if self.countOption:
-                    # 각 데이터에 대해 저자 처리 작업들을 병렬 실행
-                    tasks = [authorCounter(data) for data in self.CrawlData]
-                    await asyncio.gather(*tasks)
-                else:
-                    self.resultData = self.CrawlData
-
-            # 세션이 종료된 후에 최종 데이터를 정렬 및 JSON 파일로 저장
-            FinalData = sorted(self.resultData, key=lambda x: (x["conference"], -x["year"]))
-            FinalData = {index: element for index, element in enumerate(FinalData)}
-
-            return FinalData
-
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            write_log(self.run_id, traceback.format_exc())
-
-    # 메인 함수
-    async def run(self, conf_list):
-        if self._should_cancel():
-            raise asyncio.CancelledError()
-        result = await self.MultiConfCollector(conf_list)
-        return result
-    
+    # ---------------- LLM: korean check ----------------
 
     async def _llm_score(self, name: str, timeout_sec: float = 5.0) -> float:
-        # 취소가 이미 들어왔으면 즉시 중단
         if self._should_cancel():
             raise asyncio.CancelledError()
 
+        # 전역 캐시(name_dict)가 점수(float/int)일 때만 사용
+        v = name_dict.get(name)
+        if isinstance(v, (int, float)):
+            return float(v)
+
+        # 인스턴스 캐시
+        if name in self._score_cache:
+            return self._score_cache[name]
+
         try:
-            # 동기 함수 single_name_llm을 스레드로 보내고, 타임아웃 걸기
-            score = await asyncio.wait_for(
-                asyncio.to_thread(single_name_llm, name),
-                timeout=timeout_sec
-            )
-            return float(score)
+            async with self._llm_sem:
+                score = await asyncio.wait_for(
+                    asyncio.to_thread(single_name_llm, name),
+                    timeout=timeout_sec,
+                )
+            score_f = float(score)
+            self._score_cache[name] = score_f
+            name_dict[name] = score_f   # 전역에는 점수만 저장
+            return score_f
         except asyncio.TimeoutError:
-            # 너무 오래 걸리면 낮은 점수로 처리(또는 예외)
+            self._score_cache[name] = 0.0
+            name_dict[name] = 0.0
             return 0.0
         except asyncio.CancelledError:
-            # 중요: 취소는 반드시 다시 raise
             raise
         except Exception:
+            self._score_cache[name] = 0.0
+            name_dict[name] = 0.0
             return 0.0
 
+    
     async def checkKorean(self, name: str) -> bool:
         if self._should_cancel():
             raise asyncio.CancelledError()
 
-        self.printStatus(msg="LLM Checking Korean... ", url=name)
+        name = (name or "").strip()
+        if not name:
+            return False
+
+        # 이미 판정된 값이면 그대로 반환
+        if name in self._korean_cache:
+            return self._korean_cache[name]
+
+        self.printStatus(msg="LLM Checking Korean...", url=name)
 
         score = await self._llm_score(name, timeout_sec=5.0)
 
         if self._should_cancel():
             raise asyncio.CancelledError()
 
-        if score > self.threshold:
-            if name not in self.checkedNameList:
-                self.checkedNameList.add(name)
-            return True
-        return False
+        is_k = bool(score > self.threshold)
+        self._korean_cache[name] = is_k  # bool은 여기만
 
-    async def authorNumChecker(self, target_author, url, session):
+        if is_k:
+            self.checkedNameList.add(name)
+
+        return is_k
+
+    # ---------------- Mongo fetch ----------------
+
+    def _year_filter(self) -> Dict[str, Any]:
+        """
+        MongoDB 문서의 year가 "1988"(문자열)로 들어오는 케이스를 기본으로 처리.
+        혹시 int로 들어온 문서도 섞여있을 수 있으니 둘 다 허용.
+        """
+        years_str = [str(y) for y in range(self.startyear, self.endyear + 1)]
+        years_int = list(range(self.startyear, self.endyear + 1))
+        return {"$or": [{"year": {"$in": years_str}}, {"year": {"$in": years_int}}]}
+
+    async def _fetch_papers(
+        self,
+        conf_list: List[str],
+    ) -> List[Dict[str, Any]]:
+        if self._should_cancel():
+            raise asyncio.CancelledError()
+
+        self.printStatus("MongoDB Loading...", url="mongodb")
+
+        flt = {
+            "conference": {"$in": conf_list},
+            **self._year_filter(),
+        }
+
+        # 필요한 필드만
+        proj = {
+            "_id": 0,
+            "title": 1,
+            "author_name": 1,
+            "author_url": 1,
+            "conference": 1,
+            "year": 1,
+            "source": 1,
+            "dblp_url": 1,
+        }
+
+        cursor = self._collection.find(flt, proj, batch_size=2000)
+
+        docs: List[Dict[str, Any]] = []
+        async for d in cursor:
+            if self._should_cancel():
+                raise asyncio.CancelledError()
+            docs.append(d)
+
+        return docs
+
+    # ---------------- option-based target selection ----------------
+
+    @staticmethod
+    def _clean_authors(authors: List[str]) -> List[str]:
+        # 기존 코드처럼 숫자 제거 + strip
+        cleaned = []
+        for a in authors:
+            a2 = re.sub(r"\d+", "", (a or "")).strip()
+            if a2:
+                cleaned.append(a2)
+        return cleaned
+
+    async def _targets_for_option(self, authors: List[str]) -> List[str]:
+        """
+        option에 맞게 한국인인 저자만 target_author 리스트로 만들기.
+        target에는 기존처럼 score를 붙임: 'Name (0.87)'
+        """
+        if not authors:
+            return []
+
+        async def score_tag(name: str) -> str:
+            # get_name_score는 기존 코드 그대로 사용(동기)
+            return f"{name} ({get_name_score(name)})"
+
+        if self.option == 1:
+            if await self.checkKorean(authors[0]):
+                return [await score_tag(authors[0])]
+            return []
+
+        if self.option == 2:
+            idxs = [0, 1]
+            out = []
+            for i in idxs:
+                if i < len(authors) and await self.checkKorean(authors[i]):
+                    out.append(await score_tag(authors[i]))
+            return out
+
+        if self.option == 3:
+            if await self.checkKorean(authors[-1]):
+                return [await score_tag(authors[-1])]
+            return []
+
+        if self.option == 4:
+            out = []
+            if await self.checkKorean(authors[0]):
+                out.append(await score_tag(authors[0]))
+            if len(authors) > 1 and await self.checkKorean(authors[-1]):
+                out.append(await score_tag(authors[-1]))
+            return out
+
+        # else: 저자 중 한 명 이상
+        out = []
+        for a in authors:
+            if await self.checkKorean(a):
+                out.append(await score_tag(a))
+        return out
+
+    # ---------------- author stats (Mongo 기반) ----------------
+
+    @staticmethod
+    def _strip_score_suffix(s: str) -> str:
+        # "Hanbin Hong (1.0)" -> "Hanbin Hong"
+        return re.sub(r"\s*\(\d+(?:\.\d+)?\)\s*$", "", (s or "")).strip()
+
+    async def authorNumCheckerMongo(self, target_author: str) -> Dict[str, Any]:
+        """
+        기존 authorNumChecker는 DBLP 저자 페이지를 파싱해서 (first, first_or_second, last, co_author) 통계를 냈는데,
+        이제는 MongoDB 데이터셋 안에서 동일 통계를 냄.
+        """
+        if not target_author:
+            return {"stats": "(0,0,0,0)", "total": 0}
+
+        if target_author in self._author_stats_cache:
+            return self._author_stats_cache[target_author]
+
+        if self._should_cancel():
+            raise asyncio.CancelledError()
+
+        self.printStatus(f"{target_author} Paper Counting (Mongo)", url=target_author)
+
+        # 데이터셋 전체(또는 너의 서비스에 의미있는 conference들)에 대해 통계
+        # 여기서는 'conference' 필터를 별도로 제한하지 않고, 컬렉션 내 전체를 대상으로 계산.
+        pipeline = [
+            {"$match": {"author_name": target_author}},
+            {
+                "$group": {
+                    "_id": None,
+                    "co_author": {"$sum": 1},
+                    "first_author": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": [{"$arrayElemAt": ["$author_name", 0]}, target_author]},
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                    "first_or_second_author": {
+                        "$sum": {
+                            "$cond": [
+                                {
+                                    "$or": [
+                                        {"$eq": [{"$arrayElemAt": ["$author_name", 0]}, target_author]},
+                                        {"$eq": [{"$arrayElemAt": ["$author_name", 1]}, target_author]},
+                                    ]
+                                },
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                    "last_author": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": [{"$arrayElemAt": ["$author_name", -1]}, target_author]},
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                }
+            },
+        ]
+
         try:
-            stats = {
-                "first_author": 0,
-                "first_or_second_author": 0,
-                "last_author": 0,
-                "co_author": 0,
-            }
-
-            self.printStatus(f"{target_author} Paper Counting", url)
-            res = await asyncRequester(url, session=session)
-            if isinstance(res, tuple):
-                # 오류 상황 처리: 로그 기록 또는 기본값 반환
-                write_log(self.run_id, "asyncRequester returned an error: " + str(res))
-                return stats
-            soup = BeautifulSoup(res, "lxml")
-
-            publ_lists = soup.find_all('ul', class_='publ-list')
-            
-            trynum = 1
-            while True:
-                publ_lists = soup.find_all('ul', class_='publ-list')
-                if publ_lists is None or len(publ_lists) == 0:
-                    trynum += 1
-                    if trynum == 10:
-                        break
-                    continue
+            agg = self._collection.aggregate(pipeline, allowDiskUse=True)
+            row = None
+            async for r in agg:
+                row = r
                 break
-            
-            papers = []
-            for publ_list in publ_lists:
-                publ_list = publ_list.find_all("li", class_=re.compile(r"entry"))  
-                for paper in publ_list:
-                    if self._should_cancel():
-                        raise asyncio.CancelledError()
-                    
-                    if paper.has_attr('id') and paper['id'].split('/')[1] in conf_param_list:
-                        conf = paper['id'].split('/')[1]
-                        pass
-                    else:
-                        continue
-                    
-                    title = paper.find('span', 'title')
-                    if title is not None:
-                        title = title.text
-                        middle = paper.find('cite', 'data tts-content')
-                        authors = middle.select('span[itemprop="name"]:not(.title)')
-                        author_list = [author.get_text(strip=True) for author in authors]
-                        author_list.pop()
 
-                        papers.append({
-                            'title': title,
-                            'authors': author_list,
-                            'conf': conf
-                        })
-            
-            paperCnt = 0
-            for paper in papers:
-                authors = paper["authors"]
-                if target_author in authors:
-                    paperCnt += 1
-                    if authors[0] == target_author:
-                        stats["first_author"] += 1
-                        stats["first_or_second_author"] += 1  # 1저자도 2저자 조건에 포함됨
-                    elif len(authors) > 1 and authors[1] == target_author:
-                        stats["first_or_second_author"] += 1
-                    elif authors[-1] == target_author:
-                        stats["last_author"] += 1
-                    stats["co_author"] += 1
+            if not row:
+                result = {"stats": "(0,0,0,0)", "total": 0}
+                self._author_stats_cache[target_author] = result
+                return result
 
-            return {
-                "stats": f"({stats['first_author']},{stats['first_or_second_author']},{stats['last_author']},{stats['co_author']})",
-                "total": paperCnt
+            fa = int(row.get("first_author", 0))
+            fs = int(row.get("first_or_second_author", 0))
+            la = int(row.get("last_author", 0))
+            co = int(row.get("co_author", 0))
+
+            result = {
+                "stats": f"({fa},{fs},{la},{co})",
+                "total": co,
             }
+            self._author_stats_cache[target_author] = result
+            return result
+
         except asyncio.CancelledError:
             raise
-        except Exception:
-            write_log(self.run_id, traceback.format_exc())
-            return stats
+        except Exception as e:
+            write_log(self.run_id, f"[authorNumCheckerMongo] {target_author} error: {e}")
+            result = {"stats": "(0,0,0,0)", "total": 0}
+            self._author_stats_cache[target_author] = result
+            return result
 
-    def clear_console(self):
-        if platform.system() == "Windows":
-            os.system("cls")
-        else:
-            os.system("clear")
+    # ---------------- main build ----------------
 
+    async def _build_crawl_data(self, docs: List[Dict[str, Any]]) -> None:
+        """
+        Mongo docs -> 기존 CrawlData 형태로 필터링/저장
+        """
+        for d in docs:
+            if self._should_cancel():
+                raise asyncio.CancelledError()
 
-def compute_author_stats(
-    html: str,
-    target_author: str,
-    max_retry: int = 10
-) -> Dict[str, Any]:
-    stats = {
-        "first_author": 0,
-        "first_or_second_author": 0,
-        "last_author": 0,
-        "co_author": 0,
-    }
-
-    soup = BeautifulSoup(html, "lxml")
-
-    trynum = 1
-    publ_lists = soup.find_all("ul", class_="publ-list")
-    while (publ_lists is None or len(publ_lists) == 0) and trynum < max_retry:
-        publ_lists = soup.find_all("ul", class_="publ-list")
-        trynum += 1
-
-    papers: List[Dict[str, Any]] = []
-
-    for publ_list in publ_lists:
-
-        current_year = None
-
-        for li in publ_list.find_all("li", recursive=False):
-
-            # 연도 업데이트
-            if "year" in li.get("class", []):
-                current_year = li.get_text(strip=True)
-                continue
-
-            # entry 처리
-            if not re.search(r"entry", " ".join(li.get("class", []))):
-                continue  # year도 entry도 아닌 li는 무시
-
-            if current_year is None:
-                # year 이전 entry는 무시
-                continue
-
-            conf = None
-            if li.has_attr("id"):
-                parts = li["id"].split("/")
-                if len(parts) > 1:
-                    conf = parts[1]
-
-            # conf 필터링
-            if conf_param_list is not None:
-                if conf is None or conf not in conf_param_list:
+            try:
+                title = (d.get("title") or "").strip()
+                if not title:
                     continue
-            
-            # -------- title --------
-            title_tag = li.find("span", class_="title")
-            if not title_tag:
-                continue
-            title = title_tag.get_text(strip=True)
 
-            # -------- authors --------
-            middle = li.find("cite", class_="data tts-content")
-            if not middle:
-                middle = li  # fallback
+                # 중복 title skip (기존과 동일)
+                if title in self._titleSet:
+                    continue
+                self._titleSet.add(title)
+                self.titleList.append(title)
 
-            authors = middle.select('span[itemprop="name"]:not(.title)')
-            author_list = [a.get_text(strip=True) for a in authors]
+                authors_origin = d.get("author_name") or []
+                authors_url = d.get("author_url") or []
 
-            if len(author_list) > 0:
-                # 기존 코드의 마지막 요소 제거 로직 유지
-                author_list.pop()
+                if not isinstance(authors_origin, list) or not authors_origin:
+                    continue
+                if not isinstance(authors_url, list) or not authors_url:
+                    # 기존 코드도 url 없는 경우 skip 성향이 있음
+                    # 다만 데이터셋이 url 없는 케이스가 있을 수 있으니 필요하면 여기서 완화 가능
+                    continue
 
-            if not author_list:
-                continue
-            
-            conf = param_conf_dict[conf]
-            papers.append(
-                {
-                    "title": title,
-                    "authors": author_list,
-                    "conf": f"{conf} {current_year}",
-                }
-            )
-            
-    # 통계 집계
-    paperCnt = 0
-    for paper in papers:
-        authors = paper["authors"]
-        if target_author in authors:
-            paperCnt += 1
-            if len(authors) >= 1 and authors[0] == target_author:
-                stats["first_author"] += 1
-                stats["first_or_second_author"] += 1  # 1저자는 1or2 저자에도 포함
-            elif len(authors) > 1 and authors[1] == target_author:
-                stats["first_or_second_author"] += 1
-            elif len(authors) >= 1 and authors[-1] == target_author:
-                stats["last_author"] += 1
+                authors = self._clean_authors(authors_origin)
+                if not authors:
+                    continue
 
-            stats["co_author"] += 1
+                # option별 target 추출
+                target = await self._targets_for_option(authors)
+                if not target:
+                    continue
 
-    result = {
-        "stats": (stats['first_author'], stats['first_or_second_author'], stats['last_author'], stats['co_author']),
-        "total": paperCnt,
-        "papers": papers,
-    }
-    return result
+                conf = d.get("conference") or ""
+                year_raw = d.get("year")
+                try:
+                    year = int(year_raw)
+                except Exception:
+                    # 혹시 None/이상치면 skip
+                    continue
 
+                src = d.get("source") or ""
+                dblp_url = d.get("dblp_url") or None
 
-async def fetch_html(url: str, timeout_sec: float = 10) -> str:
-    async with httpx.AsyncClient(timeout=timeout_sec, headers={"User-Agent": "Mozilla/5.0"}) as client:
-        resp = await client.get(url)
-        resp.raise_for_status()
-        return resp.text
+                self.CrawlData.append(
+                    {
+                        "title": title,
+                        "author_name": authors,       # 아직 stats 붙이기 전
+                        "author_url": authors_url,
+                        "target_author": target,      # score 붙어있음
+                        "conference": conf,
+                        "year": year,
+                        "source": src,
+                        "dblp_url": dblp_url,
+                    }
+                )
 
+                self.printStatus(f"{year} {conf} Filtering...", url=src)
 
-if __name__ == "__main__":
-    pcssearch_obj = PCSSEARCH(1, 0.5, 2024, 2024, False)
-    conf_list = ['CCS']
-    asyncio.run(pcssearch_obj.run(conf_list))
-    
-    
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                write_log(self.run_id, f"[_build_crawl_data] error: {e}")
+
+    async def _attach_author_stats(self) -> List[Dict[str, Any]]:
+        """
+        기존 MultiConfCollector의 authorCounter 로직과 유사:
+        - author_name 배열에서 한국인으로 판정되는 저자에 대해 (fa,fs,la,co) 붙이기
+        - target_author 순서대로 total_papers 리스트 생성
+        """
+        resultData: List[Dict[str, Any]] = []
+
+        async def authorCounter(data: Dict[str, Any]) -> None:
+            if self._should_cancel():
+                raise asyncio.CancelledError()
+
+            data_copy = copy.deepcopy(data)
+            new_authors: List[str] = []
+            totals_by_author: Dict[str, int] = {}
+
+            for author in data_copy.get("author_name", []):
+                if await self.checkKorean(author):
+                    stats = await self.authorNumCheckerMongo(author)
+                    new_authors.append(author + stats["stats"])
+                    totals_by_author[author] = int(stats["total"])
+                else:
+                    new_authors.append(author)
+
+            data_copy["author_name"] = new_authors
+
+            # target_author 기준 total_papers 정렬 유지
+            target_names = [self._strip_score_suffix(t) for t in data_copy.get("target_author", [])]
+            data_copy["total_papers"] = [totals_by_author.get(name, 0) for name in target_names]
+
+            resultData.append(data_copy)
+
+        tasks = [authorCounter(d) for d in self.CrawlData]
+        # 너무 많으면 한 번에 gather가 부담일 수 있어서 배치 처리
+        batch_size = int(os.getenv("AUTHOR_STATS_BATCH", "500"))
+        for i in range(0, len(tasks), batch_size):
+            if self._should_cancel():
+                raise asyncio.CancelledError()
+            await asyncio.gather(*tasks[i : i + batch_size])
+
+        return resultData
+
+    async def run(self, conf_list: List[str]) -> Dict[int, Dict[str, Any]]:
+        """
+        최종 반환 형태: {0: element, 1: element, ...}
+        element는 기존과 동일한 필드 구성 + dblp_url(있으면)
+        """
+        if self._should_cancel():
+            raise asyncio.CancelledError()
+
+        if self._collection is None:
+            self._collection = await get_papers_col()
+
+        docs = await self._fetch_papers(conf_list)
+
+        self.printStatus("MongoDB Filtering...", url="mongodb")
+        await self._build_crawl_data(docs)
+
+        if self.countOption:
+            self.printStatus("Author Stats Attaching...", url="mongodb")
+            resultData = await self._attach_author_stats()
+        else:
+            resultData = self.CrawlData
+
+        # 기존 정렬: (conference, -year)
+        final_sorted = sorted(resultData, key=lambda x: (x.get("conference", ""), -int(x.get("year", 0))))
+        final_dict = {i: el for i, el in enumerate(final_sorted)}
+
+        self.printStatus("Done.", url="mongodb")
+        return final_dict

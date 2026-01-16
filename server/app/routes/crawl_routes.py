@@ -1,37 +1,26 @@
-# app/routes/pcssearch_mongo.py
-
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse, JSONResponse
 from uuid import uuid4
 import asyncio
 import json
-
+import httpx
+from fastapi import Request
+from fastapi.responses import HTMLResponse
 from app.libs.exceptions import NotFoundException, InternalServerErrorException
 from app.schemas.search import SearchRequest
-from app.services.search_service import PCSSEARCHMongo
-
-from app.core.job_store import (
-    create_job,
-    get_job,
-    finish_job,
-    fail_job,
-    cancel_job,
-)
-
+from app.services.crawl_service import PCSSEARCH
+from app.core.job_store import create_job, get_job, finish_job, fail_job, cancel_job
+from app.libs.exceptions import NotFoundException, InternalServerErrorException
+from app.schemas.search import AuthorStatsRequest, AuthorStatsResponse
+from app.services.crawl_service import compute_author_stats, fetch_html
 from app.data import get_conferences_for_ui
 from app.core.templates import templates
-import httpx
-from app.services.crawl_service import compute_author_stats, fetch_html
-from app.schemas.search import AuthorStatsRequest, AuthorStatsResponse
-
 
 router = APIRouter()
-
 
 @router.get("/conferences")
 async def conferences():
     return JSONResponse(get_conferences_for_ui())
-
 
 # 1) 작업 시작: job_id 즉시 반환
 @router.post("/start")
@@ -40,13 +29,7 @@ async def start_search(req: SearchRequest):
     options = req.model_dump() if hasattr(req, "model_dump") else req.dict()
     job = create_job(job_id, options=options)
 
-    # SearchRequest 필드명은 기존 그대로 사용:
-    # - option
-    # - uncertainty (threshold)
-    # - startyear, endyear
-    # - countOption
-    # - selectedConferences
-    pcs = PCSSEARCHMongo(
+    pcs = PCSSEARCH(
         option=req.option,
         threshold=req.uncertainty,
         startyear=req.startyear,
@@ -59,35 +42,22 @@ async def start_search(req: SearchRequest):
 
     async def runner():
         try:
-            # started 이벤트
-            try:
-                job.queue.put_nowait({"type": "event", "event": "started", "job_id": job_id})
-            except Exception:
-                pass
-
+            job.queue.put_nowait({"type": "event", "event": "started", "job_id": job_id})
             result = await pcs.run(req.selectedConferences)
-
             finish_job(job_id, result if isinstance(result, dict) else {"result": result})
-
-            # done 이벤트
-            try:
-                job.queue.put_nowait({"type": "event", "event": "done", "job_id": job_id})
-            except Exception:
-                pass
-
+            job.queue.put_nowait({"type": "event", "event": "done", "job_id": job_id})
+        
         except asyncio.CancelledError:
             # 취소된 경우
             try:
                 job.queue.put_nowait({"type": "event", "event": "cancelled", "job_id": job_id})
             except Exception:
                 pass
-
+        
         except Exception as e:
             fail_job(job_id, str(e))
             try:
-                job.queue.put_nowait(
-                    {"type": "event", "event": "error", "job_id": job_id, "error": str(e)}
-                )
+                job.queue.put_nowait({"type": "event", "event": "error", "job_id": job_id, "error": str(e)})
             except Exception:
                 pass
 
@@ -96,12 +66,11 @@ async def start_search(req: SearchRequest):
 
     return {
         "job_id": job_id,
-        "events_url": f"/api/search/events/{job_id}",
-        "result_url": f"/api/search/result/{job_id}",
-        "page_url": f"/api/search/page/{job_id}",
-        "cancel_url": f"/api/search/cancel/{job_id}",
+        "events_url": f"/api/crawl/events/{job_id}",
+        "result_url": f"/api/crawl/result/{job_id}",
+        "page_url": f"/api/crawl/page/{job_id}",
+        "cancel_url": f"/api/crawl/cancel/{job_id}",
     }
-
 
 # 2) SSE 이벤트 스트림
 @router.get("/events/{job_id}")
@@ -116,17 +85,18 @@ async def search_events(job_id: str):
 
         while True:
             try:
-                # 15초마다 heartbeat
+                # 15초마다 heartbeat (프록시/브라우저 연결 유지에 도움)
                 item = await asyncio.wait_for(job.queue.get(), timeout=15.0)
                 payload = item if isinstance(item, dict) else {"type": "status", "msg": str(item)}
-
-                # status는 message 이벤트로
+                
+                # status/log는 "message" 이벤트로 통일
                 if payload.get("type") == "status":
                     yield _sse("message", payload)
                 else:
+                    # started/done/error 등
                     yield _sse("event", payload)
 
-                # 종료 이벤트면 스트림 종료
+                # done/error면 스트림 종료
                 if payload.get("event") in ("done", "error", "cancelled"):
                     break
 
@@ -146,11 +116,7 @@ async def search_events(job_id: str):
 
 def _sse(event_name: str, data: dict) -> str:
     # SSE 포맷: event: <name>\ndata: <json>\n\n
-    return (
-        f"event: {event_name}\n"
-        + f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
-    )
-
+    return f"event: {event_name}\n" + f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 # 3) 최종 JSON 결과 조회
 @router.get("/result/{job_id}")
@@ -167,11 +133,11 @@ async def search_result(job_id: str):
 
     if job.status == "error":
         raise InternalServerErrorException(job.error)
+        
 
     return {"status": "done", "result": job.result}
 
 
-# 4) 결과 HTML 페이지(로딩/완료 화면)
 @router.get("/page/{job_id}", response_class=HTMLResponse)
 async def search_page(request: Request, job_id: str):
     job = get_job(job_id)
@@ -198,14 +164,15 @@ async def search_page(request: Request, job_id: str):
             {
                 "request": request,
                 "job_id": job_id,
-                "events_url": f"/api/search/events/{job_id}",
-                "page_url": f"/api/search/page/{job_id}",
-                "cancel_url": f"/api/search/cancel/{job_id}",
+                "events_url": f"/api/crawl/events/{job_id}",
+                "page_url": f"/api/crawl/page/{job_id}",
+                "cancel_url": f"/api/crawl/cancel/{job_id}",
                 "options": options,
                 "option_text": option_text,
             },
         )
 
+    # done이면 결과 렌더링
     pythonResult = job.result or {}
     return templates.TemplateResponse(
         "results.html",
@@ -219,7 +186,6 @@ async def search_page(request: Request, job_id: str):
     )
 
 
-# 5) 취소
 @router.post("/cancel/{job_id}")
 async def search_cancel(job_id: str):
     job = get_job(job_id)
@@ -228,7 +194,7 @@ async def search_cancel(job_id: str):
 
     ok = cancel_job(job_id)
     if ok:
-        # SSE 즉시 반영 이벤트
+        # SSE 쪽에 바로 표시되도록 이벤트도 넣어줌(즉시 반영)
         try:
             job.queue.put_nowait({"type": "event", "event": "cancelled", "job_id": job_id})
         except Exception:
