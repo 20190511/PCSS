@@ -249,6 +249,17 @@
         text-decoration: underline; /* 밑줄 효과 */
       }
 
+      .hint-box {
+        margin: 10px 0 14px 0;
+        padding: 10px 12px;
+        border: 1px solid #f5c2c2;
+        background: #fff4f4;
+        color: #8a1d1d;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
       /* 다크 모드 스타일 */
       @media (prefers-color-scheme: dark) {
         body {
@@ -328,6 +339,12 @@
           color: #ff88a2; /* hover 시 조금 더 밝은 빨강 */
           text-decoration: underline; /* 밑줄 효과 */
         }
+
+        .hint-box {
+          border-color: #5a2a2a;
+          background: #2b1b1b;
+          color: #ffb3c2;
+        }
       }
     </style>
   </head>
@@ -374,6 +391,10 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="hint-box">
+        논문 카드에서 <b>저자명</b>을 클릭하면 새 탭에서 <b>실적 요약</b>을 확인할 수 있습니다.
+      </div>
 
       <div id="papers-container"></div>
 

@@ -112,6 +112,27 @@
       text-align: center;
       color: var(--text-muted);
     }
+
+    .notice {
+      max-width: 900px;
+      margin: 10px auto 16px auto;
+      padding: 10px 12px;
+      border: 1px solid #f5c2c2;
+      background: #fff4f4;
+      color: #8a1d1d;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .notice {
+        border-color: #5a2a2a;
+        background: #2b1b1b;
+        color: #ffb3c2;
+      }
+    }
+    
   </style>
 </head>
 
@@ -121,6 +142,11 @@
 
   <div class="profile">
     <a href="{{ url }}" target="_blank">DBLP 프로필</a>
+  </div>
+
+  <div class="notice">
+    본 통계는 <b>PCSS 목록에 포함된 학회</b> 기준으로만 집계됩니다.
+    (DBLP 전체 실적이 아니라 PCSS에서 사용하는 학회 범위에 한정됩니다.)
   </div>
 
   {% if stats and stats|length == 4 %}

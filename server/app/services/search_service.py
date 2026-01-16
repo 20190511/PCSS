@@ -325,10 +325,8 @@ class PCSSEARCHMongo:
         if self._should_cancel():
             raise asyncio.CancelledError()
 
-        self.printStatus(f"{target_author} Paper Counting (Mongo)", url=target_author)
+        self.printStatus(f"{target_author} Paper Counting", url=target_author)
 
-        # 데이터셋 전체(또는 너의 서비스에 의미있는 conference들)에 대해 통계
-        # 여기서는 'conference' 필터를 별도로 제한하지 않고, 컬렉션 내 전체를 대상으로 계산.
         pipeline = [
             {"$match": {"author_name": target_author}},
             {
