@@ -16,7 +16,6 @@ from rich.progress import (
 )
 from rich.console import Console
 import json
-from app.libs.llm import single_name_llm
 
 console = Console()
 
@@ -171,7 +170,7 @@ if __name__ == "__main__":
         print("=== DBLP 데이터 다운로드 ===")
         download_dblp_xml_gz()
 
-    print("=== 저자 추출 ===")
+    print("\n=== 저자 추출 ===")
     if not os.path.exists(os.path.join(os.path.dirname(__file__), "all_authors.json")):
         authors = extract_authors_iteratively(os.path.join(os.path.dirname(__file__), "dblp.xml"))  # 1000명으로 제한
         print(f"총 {len(authors)}명의 저자를 찾았습니다.")
@@ -186,12 +185,12 @@ if __name__ == "__main__":
     with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'w', encoding='utf-8') as f:
         json.dump(authors, f, ensure_ascii=False, indent=2)
         
-    from app.data import name_dict
+    from app.libs.llm import single_name_llm, name_dict
     authors = [name for name in authors if name not in name_dict]
     print(f"새로운 {len(authors)}명의 저자를 찾았습니다.")
     
-    print("=== LLM 처리 시작 ===")
-
+    print("\n=== LLM 처리 시작 ===")
+    
     with Progress(
         TextColumn("[bold blue]{task.description}"),
         BarColumn(),
