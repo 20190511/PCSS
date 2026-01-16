@@ -186,7 +186,7 @@ if __name__ == "__main__":
     with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'w', encoding='utf-8') as f:
         json.dump(authors, f, ensure_ascii=False, indent=2)
         
-    from app.db import name_dict
+    from app.data import name_dict
     authors = [name for name in authors if name not in name_dict]
     print(f"새로운 {len(authors)}명의 저자를 찾았습니다.")
     
