@@ -16,7 +16,6 @@ from rich.progress import (
 )
 from rich.console import Console
 import json
-import math
 from app.db import name_col
 
 def get_headers():    
@@ -25,18 +24,15 @@ def get_headers():
         "Authorization": f"Bearer {CUSTOM_TOKEN}",
     }
 
-LLM_MODEL = os.getenv("LLM_MODEL")
 LLM_URL = os.getenv("CUSTOM_API_URL")
 CUSTOM_TOKEN = os.getenv("CUSTOM_TOKEN")
 
 console = Console()
 
 # ======= LLM 함수 =======
-if not LLM_MODEL:
-    # 모델 ID 조회
-    model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
-    model_resp.raise_for_status()
-    LLM_MODEL = model_resp.json()["data"][0]["id"]
+model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
+model_resp.raise_for_status()
+LLM_MODEL = model_resp.json()["data"][0]["id"]
 
 def single_name_llm(name):    
     result = llm_api_answer(

@@ -1,6 +1,6 @@
 import requests
 import re
-from app.config import LLM_URL, LLM_MODEL
+from app.config import LLM_URL
 from app.data import name_dict
 from app.db import name_col
 from app.config import NAME_CACHE
@@ -18,6 +18,11 @@ def get_headers():
         "Authorization": f"Bearer {CUSTOM_TOKEN}",
     }
     
+# 모델 조회
+model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
+model_resp.raise_for_status()
+LLM_MODEL = model_resp.json()["data"][0]["id"]
+
 def single_name_llm(name):
     if NAME_CACHE:
         try:
