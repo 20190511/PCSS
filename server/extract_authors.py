@@ -290,6 +290,7 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             interrupted = True
             console.print("\n[yellow]Interrupted by user. Stopping LLM processing...[/]")
+            os._exit(0)
 
     print("LLM 처리 완료.")
     print("결과는 DB에 저장되었습니다.")
