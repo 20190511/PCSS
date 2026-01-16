@@ -254,7 +254,9 @@ if __name__ == "__main__":
     print(f"새로운 {len(authors)}명의 저자를 찾았습니다.")
     
     print("\n=== LLM 처리 시작 ===")
-    
+    print(f"모델: {LLM_MODEL}")
+    interrupted = False
+
     with Progress(
         TextColumn("[bold blue]{task.description}"),
         BarColumn(),
@@ -272,22 +274,23 @@ if __name__ == "__main__":
             name="-",
             score="-",
         )
-        
-        for author in authors:
-            try:
-                score = single_name_llm(author)
-            except Exception as e:
-                score = 0.0
-                console.print(f"[red]LLM error for '{author}':[/] {e}")
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Interrupted by user. Cleaning up...[/]")
-            
-            progress.update(
-                task,
-                advance=1,
-                name=author,
-                score=score,
-            )
+
+        try:
+            for author in authors:
+                # (중요) 여기서는 Exception과 KeyboardInterrupt를 섞어 잡지 말고,
+                # LLM 에러만 처리
+                try:
+                    score = single_name_llm(author)
+                except Exception as e:
+                    score = 0.0
+                    console.print(f"[red]LLM error for '{author}':[/] {e}")
+
+                progress.update(task, advance=1, name=author, score=score)
+
+        except KeyboardInterrupt:
+            interrupted = True
+            console.print("\n[yellow]Interrupted by user. Stopping LLM processing...[/]")
+
     print("LLM 처리 완료.")
     print("결과는 DB에 저장되었습니다.")
     
