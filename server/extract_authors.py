@@ -152,6 +152,7 @@ def download_dblp_xml_gz(
                 f_out.write(chunk)
                 progress.update(extract_task, advance=len(chunk))
 
+    cleanup_files(gz_path)
     return gz_path, xml_path
 
 def cleanup_files(*paths: Path | str):
@@ -229,7 +230,6 @@ if __name__ == "__main__":
     
     cleanup_files(
         os.path.join(os.path.dirname(__file__), "dblp.xml"),
-        os.path.join(os.path.dirname(__file__), "dblp.xml.gz"),
         os.path.join(os.path.dirname(__file__), "all_authors.json"),
     )
 
