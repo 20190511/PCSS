@@ -72,6 +72,12 @@ class PCSSEARCHMongo:
 
         # Mongo collection
         self._collection = None
+        
+        # progress tracking
+        self._total_docs: int = 0
+        self._processed_docs: int = 0
+        self._matched_docs: int = 0  # 필터 통과(결과 포함)된 논문 수
+
 
 
     # ---------------- cancel / emit ----------------
@@ -105,6 +111,14 @@ class PCSSEARCHMongo:
 
     def printStatus(self, msg: str = "", url: Optional[str] = None) -> None:
         try:
+            total = int(self._total_docs or 0)
+            done = int(self._processed_docs or 0)
+            matched = int(self._matched_docs or 0)
+
+            progress = None
+            if total > 0:
+                progress = round((done / total) * 100, 2)
+
             payload = {
                 "type": "status",
                 "ts": datetime.utcnow().isoformat() + "Z",
@@ -112,10 +126,19 @@ class PCSSEARCHMongo:
                 "url": url,
                 "paper_count": len(self.CrawlData),
                 "korean_authors": len(self.checkedNameList),
+
+                # ✅ 추가: 진행률/카운터
+                "progress": {
+                    "total": total,
+                    "done": done,
+                    "matched": matched,
+                    "percent": progress,
+                },
             }
             self._emit_status_throttled(payload)
         except Exception:
             pass
+
 
     # ---------------- LLM: korean check ----------------
 
@@ -166,8 +189,6 @@ class PCSSEARCHMongo:
         if name in self._korean_cache:
             return self._korean_cache[name]
 
-        self.printStatus(msg="LLM Checking Korean...", url=name)
-
         score = await self._llm_score(name, timeout_sec=5.0)
 
         if self._should_cancel():
@@ -198,8 +219,6 @@ class PCSSEARCHMongo:
     ) -> List[Dict[str, Any]]:
         if self._should_cancel():
             raise asyncio.CancelledError()
-
-        self.printStatus("MongoDB Loading...", url="mongodb")
 
         flt = {
             "conference": {"$in": conf_list},
@@ -390,10 +409,12 @@ class PCSSEARCHMongo:
         """
         Mongo docs -> 기존 CrawlData 형태로 필터링/저장
         """
-        for d in docs:
+        for idx, d in enumerate(docs, start=1):
             if self._should_cancel():
                 raise asyncio.CancelledError()
 
+            self._processed_docs = idx
+            
             try:
                 title = (d.get("title") or "").strip()
                 if not title:
@@ -447,13 +468,19 @@ class PCSSEARCHMongo:
                         "dblp_url": dblp_url,
                     }
                 )
-
-                self.printStatus(f"{year} {conf} Filtering...", url=src)
+                
+                self._matched_docs += 1
 
             except asyncio.CancelledError:
                 raise
             except Exception as e:
                 write_log(self.run_id, f"[_build_crawl_data] error: {e}")
+            
+            if idx == 1 or idx % 25 == 0 or idx == self._total_docs:
+                self.printStatus(
+                    msg=f"Filtering... ({idx}/{self._total_docs})",
+                    url="mongodb",
+                )
 
     async def _attach_author_stats(self) -> List[Dict[str, Any]]:
         """
@@ -509,6 +536,10 @@ class PCSSEARCHMongo:
             self._collection = await get_papers_col()
 
         docs = await self._fetch_papers(conf_list)
+        
+        self._total_docs = len(docs)
+        self._processed_docs = 0
+        self._matched_docs = 0
 
         self.printStatus("MongoDB Filtering...", url="mongodb")
         await self._build_crawl_data(docs)
