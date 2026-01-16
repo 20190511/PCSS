@@ -17,6 +17,9 @@ from rich.progress import (
 from rich.console import Console
 import json
 from app.db import name_col
+from datetime import datetime, timezone
+from pymongo import UpdateOne
+from pymongo.errors import BulkWriteError
 
 def get_headers():    
     return {
@@ -219,7 +222,7 @@ def cleanup_files(*paths: Path | str):
         except Exception as e:
             console.print(f"[red]Failed to delete {p}:[/] {e}")
 
-if __name__ == "__main__": 
+def main():
     if not os.path.exists(os.path.join(os.path.dirname(__file__), "dblp.xml")):
         print("=== DBLP 데이터 다운로드 ===")
         download_dblp_xml_gz()
@@ -273,41 +276,65 @@ if __name__ == "__main__":
         )
 
         try:
-            BULK_SIZE = 100  # 또는 100, 1000
-            bulk_docs = []
-            
+            BULK_SIZE = 100
+            ops: list[UpdateOne] = []
+
             for author in authors:
+                score_display = "-"  # progress 출력용
+
                 try:
                     score = single_name_llm(author)
-                    
-                    if type(score) == list and score[0] == False:
-                        console.print(f"[red]LLM error for '{author}':[/] No numeric result found. Response: {score[1]}")
+
+                    # LLM이 숫자 못 뽑았을 때
+                    if isinstance(score, list) and score and score[0] is False:
+                        console.print(
+                            f"[red]LLM error for '{author}':[/] No numeric result found. Response: {score[1]}"
+                        )
+                        progress.update(task, advance=1, name=author, score="ERR")
                         continue
-                    
-                    bulk_docs.append({
-                        "name": author,
-                        "score": score,
-                    })
 
-                    if len(bulk_docs) >= BULK_SIZE:
-                        name_col.insert_many(bulk_docs, ordered=False)
-                        bulk_docs.clear()
-                        
+                    ops.append(
+                        UpdateOne(
+                            {"name": author},
+                            {
+                                "$set": {"score": score},
+                                "$setOnInsert": {"created_at": datetime.now(timezone.utc)},
+                                "$currentDate": {"updated_at": True},
+                            },
+                            upsert=True,
+                        )
+                    )
+
+                    # 배치 실행
+                    if len(ops) >= BULK_SIZE:
+                        try:
+                            name_col.bulk_write(ops, ordered=False)
+                        except BulkWriteError as e:
+                            console.print(f"[yellow]BulkWriteError (ignored):[/] {e.details.get('writeErrors', [])[:1]}")
+                        finally:
+                            ops.clear()
+
                 except Exception as e:
-                    score = 0.0
+                    # LLM 호출/파싱 전체 예외
                     console.print(f"[red]LLM error for '{author}':[/] {e}")
+                    score_display = 0.0
 
-                progress.update(task, advance=1, name=author, score=score)
-            
-            if bulk_docs:
-                name_col.insert_many(bulk_docs, ordered=False)
-                bulk_docs.clear()
+                # 진행률 업데이트는 항상 실행
+                progress.update(task, advance=1, name=author, score=score_display)
+
+            # 남은 작업 flush
+            if ops:
+                try:
+                    name_col.bulk_write(ops, ordered=False)
+                except BulkWriteError as e:
+                    console.print(f"[yellow]BulkWriteError (ignored):[/] {e.details.get('writeErrors', [])[:1]}")
+                finally:
+                    ops.clear()
 
         except KeyboardInterrupt:
-            interrupted = True
             console.print("\n[yellow]Interrupted by user. Stopping LLM processing...[/]")
             os._exit(0)
-
+        
     print("LLM 처리 완료.")
     print("결과는 DB에 저장되었습니다.")
     
@@ -315,3 +342,7 @@ if __name__ == "__main__":
         os.path.join(os.path.dirname(__file__), "dblp.xml"),
         os.path.join(os.path.dirname(__file__), "all_authors.json"),
     )
+
+
+if __name__ == "__main__": 
+    name_col.create_index("name", unique=True)
