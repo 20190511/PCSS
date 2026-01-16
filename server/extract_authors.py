@@ -79,6 +79,7 @@ def llm_api_answer(query, model):
         headers=get_headers(),
         timeout=60,
     )
+    print(response.text)
     result = response.json()
     return result["choices"][0]["message"]["content"]
 
