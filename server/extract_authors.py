@@ -228,6 +228,7 @@ if __name__ == "__main__":
     cleanup_files(
         os.path.join(os.path.dirname(__file__), "dblp.xml"),
         os.path.join(os.path.dirname(__file__), "dblp.xml.gz"),
+        os.path.join(os.path.dirname(__file__), "new_authors.json"),
     )
 
     
