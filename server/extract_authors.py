@@ -16,9 +16,77 @@ from rich.progress import (
 )
 from rich.console import Console
 import json
+import math
+from app.db import name_col
+
+def get_headers():    
+    return {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {CUSTOM_TOKEN}",
+    }
+
+LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_URL = os.getenv("CUSTOM_API_URL")
+CUSTOM_TOKEN = os.getenv("CUSTOM_TOKEN")
 
 console = Console()
 
+# ======= LLM 함수 =======
+if not LLM_MODEL:
+    # 모델 ID 조회
+    model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
+    model_resp.raise_for_status()
+    LLM_MODEL = model_resp.json()["data"][0]["id"]
+
+def single_name_llm(name):    
+    result = llm_api_answer(
+        query = f"Express the likelihood of this {name} being Korean using only a number between 0~1. You need to say number only",
+        model = LLM_MODEL
+    )
+    
+    # 숫자만 추출 (지수 표기법 방지)
+    match = re.findall(r"\d+\.\d+|\d+", result)
+    if not match:
+        return 0.0  # 예외 처리: 결과가 없을 경우 기본값
+
+    value = float(match[0])  # 숫자 문자열을 float으로 변환
+
+    # 숫자 범위 고정 (0.0 ~ 1.0)
+    value = max(0.0, min(1.0, value))
+
+    # 소수점 1자리까지 포맷팅
+    formatted_value = "{:.1f}".format(value)
+    
+    formatted_value = float(formatted_value)
+    name_dict[name] = formatted_value
+    
+    name_col.update_one(
+        {"name": name},
+        {"$set": {"score": formatted_value}},
+        upsert=True
+    )
+    return formatted_value  # 결과 반환 (0.0 ~ 1.0)
+
+def llm_api_answer(query, model):
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are an expert in determining the likelihood that a given name is Korean."},
+            {"role": "user", "content": query},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    response = requests.post(
+        f"{LLM_URL}/chat/completions",
+        json=payload,
+        headers=get_headers(),
+        timeout=60,
+    )
+    result = response.json()
+    return result["choices"][0]["message"]["content"]
+
+# ======= 저자 추출 함수 =======
 def extract_authors_iteratively(
     xml_file_path: str,
     max_authors: int | None = None,
