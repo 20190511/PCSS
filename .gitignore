@@ -22,6 +22,7 @@ __pycache__/
 all_authors.json
 all_names.json
 dblp.xml
+dblp.xml.gz
 
 
 # PyCharm 관련 파일 및 폴더 무시
