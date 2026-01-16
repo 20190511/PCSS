@@ -52,9 +52,7 @@ def single_name_llm(name):
     # 소수점 1자리까지 포맷팅
     formatted_value = "{:.1f}".format(value)
     
-    formatted_value = float(formatted_value)
-    name_dict[name] = formatted_value
-    
+    formatted_value = float(formatted_value)    
     return formatted_value  # 결과 반환 (0.0 ~ 1.0)
 
 def llm_api_answer(query, model):
