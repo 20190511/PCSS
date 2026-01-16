@@ -39,7 +39,7 @@ def single_name_llm(name):
         query = f"Express the likelihood of this {name} being Korean using only a number between 0~1. You need to say number only",
         model = LLM_MODEL
     )
-    
+    print(result)
     # 숫자만 추출 (지수 표기법 방지)
     match = re.findall(r"\d+\.\d+|\d+", result)
     if not match:
@@ -56,7 +56,7 @@ def single_name_llm(name):
     
     formatted_value = float(formatted_value)
     name_dict[name] = formatted_value
-    
+    print(f"Name: {name}, Score: {formatted_value}")
     name_col.update_one(
         {"name": name},
         {"$set": {"score": formatted_value}},
@@ -231,77 +231,79 @@ def cleanup_files(*paths: Path | str):
 
 
 if __name__ == "__main__": 
-    if not os.path.exists(os.path.join(os.path.dirname(__file__), "dblp.xml")):
-        print("=== DBLP 데이터 다운로드 ===")
-        download_dblp_xml_gz()
+    
+    single_name_llm("Yojun Moon")
+    # if not os.path.exists(os.path.join(os.path.dirname(__file__), "dblp.xml")):
+    #     print("=== DBLP 데이터 다운로드 ===")
+    #     download_dblp_xml_gz()
 
-    print("\n=== 저자 추출 ===")
-    if not os.path.exists(os.path.join(os.path.dirname(__file__), "all_authors.json")):
-        authors = extract_authors_iteratively(os.path.join(os.path.dirname(__file__), "dblp.xml"))  # 1000명으로 제한
-        print(f"총 {len(authors)}명의 저자를 찾았습니다.")
-    else:
-        with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'r', encoding='utf-8') as f:
-            authors = json.load(f)
-        print(f"'all_authors.json'에서 {len(authors)}명의 저자를 불러왔습니다.")
+    # print("\n=== 저자 추출 ===")
+    # if not os.path.exists(os.path.join(os.path.dirname(__file__), "all_authors.json")):
+    #     authors = extract_authors_iteratively(os.path.join(os.path.dirname(__file__), "dblp.xml"))  # 1000명으로 제한
+    #     print(f"총 {len(authors)}명의 저자를 찾았습니다.")
+    # else:
+    #     with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'r', encoding='utf-8') as f:
+    #         authors = json.load(f)
+    #     print(f"'all_authors.json'에서 {len(authors)}명의 저자를 불러왔습니다.")
     
-    authors = [re.sub(r'\s*\d+\s*$', '', s) for s in authors]  # 이름 끝의 숫자 제거
-    authors = list(set(authors))  # 중복 제거
+    # authors = [re.sub(r'\s*\d+\s*$', '', s) for s in authors]  # 이름 끝의 숫자 제거
+    # authors = list(set(authors))  # 중복 제거
     
-    with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'w', encoding='utf-8') as f:
-        json.dump(authors, f, ensure_ascii=False, indent=2)
+    # with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'w', encoding='utf-8') as f:
+    #     json.dump(authors, f, ensure_ascii=False, indent=2)
         
-    from app.libs.llm import single_name_llm, name_dict
-    authors = [name for name in authors if name not in name_dict]
-    print(f"새로운 {len(authors)}명의 저자를 찾았습니다.")
+    # from app.libs.llm import single_name_llm, name_dict
+    # authors = [name for name in authors if name not in name_dict]
+    # print(f"새로운 {len(authors)}명의 저자를 찾았습니다.")
     
-    print("\n=== LLM 처리 시작 ===")
-    print(f"모델: {LLM_MODEL}")
-    interrupted = False
+    # print("\n=== LLM 처리 시작 ===")
+    # print(f"모델: {LLM_MODEL}")
+    # interrupted = False
 
-    with Progress(
-        TextColumn("[bold blue]{task.description}"),
-        BarColumn(),
-        TextColumn("{task.completed}/{task.total}"),
-        TextColumn("Current: [bold green]{task.fields[name]}"),
-        TextColumn("Score: [bold yellow]{task.fields[score]}"),
-        TimeElapsedColumn(),
-        TimeRemainingColumn(),
-        console=console,
-    ) as progress:
+    # with Progress(
+    #     TextColumn("[bold blue]{task.description}"),
+    #     BarColumn(),
+    #     TextColumn("{task.completed}/{task.total}"),
+    #     TextColumn("Current: [bold green]{task.fields[name]}"),
+    #     TextColumn("Score: [bold yellow]{task.fields[score]}"),
+    #     TimeElapsedColumn(),
+    #     TimeRemainingColumn(),
+    #     console=console,
+    # ) as progress:
 
-        task = progress.add_task(
-            "Processing authors with LLM",
-            total=len(authors),
-            name="-",
-            score="-",
-        )
+    #     task = progress.add_task(
+    #         "Processing authors with LLM",
+    #         total=len(authors),
+    #         name="-",
+    #         score="-",
+    #     )
 
-        try:
-            for author in authors:
-                # (중요) 여기서는 Exception과 KeyboardInterrupt를 섞어 잡지 말고,
-                # LLM 에러만 처리
-                try:
-                    score = single_name_llm(author)
-                    if score == False:
-                        console.print(f"[red]LLM error for '{author}':[/] No numeric result found.")
-                        continue
-                except Exception as e:
-                    score = 0.0
-                    console.print(f"[red]LLM error for '{author}':[/] {e}")
+    #     try:
+    #         for author in authors:
+    #             # (중요) 여기서는 Exception과 KeyboardInterrupt를 섞어 잡지 말고,
+    #             # LLM 에러만 처리
+    #             try:
+    #                 score = single_name_llm(author)
+    #                 if score == False:
+    #                     console.print(f"[red]LLM error for '{author}':[/] No numeric result found.")
+    #                     continue
+    #             except Exception as e:
+    #                 score = 0.0
+    #                 console.print(f"[red]LLM error for '{author}':[/] {e}")
 
-                progress.update(task, advance=1, name=author, score=score)
+    #             progress.update(task, advance=1, name=author, score=score)
 
-        except KeyboardInterrupt:
-            interrupted = True
-            console.print("\n[yellow]Interrupted by user. Stopping LLM processing...[/]")
-            os._exit(0)
+    #     except KeyboardInterrupt:
+    #         interrupted = True
+    #         console.print("\n[yellow]Interrupted by user. Stopping LLM processing...[/]")
+    #         os._exit(0)
 
-    print("LLM 처리 완료.")
-    print("결과는 DB에 저장되었습니다.")
+    # print("LLM 처리 완료.")
+    # print("결과는 DB에 저장되었습니다.")
     
-    cleanup_files(
-        os.path.join(os.path.dirname(__file__), "dblp.xml"),
-        os.path.join(os.path.dirname(__file__), "all_authors.json"),
-    )
+    # cleanup_files(
+    #     os.path.join(os.path.dirname(__file__), "dblp.xml"),
+    #     os.path.join(os.path.dirname(__file__), "all_authors.json"),
+    # )
 
     
