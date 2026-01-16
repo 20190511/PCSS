@@ -11,8 +11,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.spinner import Spinner
 
-console = Console()
-
+console = extract_authors.console
 
 def run_job():
     xml_path = os.path.join(os.path.dirname(__file__), "dblp.xml")
