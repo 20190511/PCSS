@@ -169,23 +169,25 @@ if __name__ == "__main__":
     if not os.path.exists(os.path.join(os.path.dirname(__file__), "dblp.xml")):
         print("=== DBLP 데이터 다운로드 ===")
         download_dblp_xml_gz()
-        
+
     print("=== 저자 추출 ===")
-    authors = extract_authors_iteratively(os.path.join(os.path.dirname(__file__), "dblp.xml"))  # 1000명으로 제한
-    print(f"총 {len(authors)}명의 저자를 찾았습니다.")
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), "all_authors.json")):
+        authors = extract_authors_iteratively(os.path.join(os.path.dirname(__file__), "dblp.xml"))  # 1000명으로 제한
+        print(f"총 {len(authors)}명의 저자를 찾았습니다.")
+    else:
+        with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'r', encoding='utf-8') as f:
+            authors = json.load(f)
+        print(f"'all_authors.json'에서 {len(authors)}명의 저자를 불러왔습니다.")
     
     authors = [re.sub(r'\s*\d+\s*$', '', s) for s in authors]  # 이름 끝의 숫자 제거
     authors = list(set(authors))  # 중복 제거
     
+    with open(os.path.join(os.path.dirname(__file__), 'all_authors.json'), 'w', encoding='utf-8') as f:
+        json.dump(authors, f, ensure_ascii=False, indent=2)
         
     from app.db import name_dict
     authors = [name for name in authors if name not in name_dict]
     print(f"새로운 {len(authors)}명의 저자를 찾았습니다.")
-    
-    with open(os.path.join(os.path.dirname(__file__), 'new_authors.json'), 'w', encoding='utf-8') as f:
-        json.dump(authors, f, ensure_ascii=False, indent=2)
-        
-    print("새로운 저자 목록을 'new_authors.json'에 저장했습니다.")
     
     print("=== LLM 처리 시작 ===")
 
@@ -228,7 +230,7 @@ if __name__ == "__main__":
     cleanup_files(
         os.path.join(os.path.dirname(__file__), "dblp.xml"),
         os.path.join(os.path.dirname(__file__), "dblp.xml.gz"),
-        os.path.join(os.path.dirname(__file__), "new_authors.json"),
+        os.path.join(os.path.dirname(__file__), "all_authors.json"),
     )
 
     
