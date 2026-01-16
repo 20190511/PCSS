@@ -493,9 +493,15 @@
 
                 const conferenceHeader = document.createElement("div");
                 conferenceHeader.className = "conference-header";
-                const confSource = groupedPapers[author][year][conference][0]?.source || "#";
+                const confDblpUrl =
+                  groupedPapers[author][year][conference][0]?.dblp_url || "#";
+
                 conferenceHeader.innerHTML = `
-                  <a class="conference-link" href="${confSource}" target="_blank" rel="noopener">
+                  <a class="conference-link"
+                    href="${confDblpUrl}"
+                    target="_blank"
+                    rel="noopener"
+                    onclick="event.stopPropagation()">
                     ${conference}
                   </a>
                   <span class="toggle-icon" style="margin-left:auto;">▼</span>
@@ -522,9 +528,12 @@
                   const card = document.createElement("div");
                   card.className = "card";
 
-                  const titleEl = document.createElement("div");
-                  titleEl.className = "card-title";
+                  const titleEl = document.createElement("a");
+                  titleEl.className = "card-title paper-source-link";
                   titleEl.textContent = paper.title;
+                  titleEl.href = paper.source || "#";
+                  titleEl.target = "_blank";
+                  titleEl.rel = "noopener";
                   card.appendChild(titleEl);
 
                   // 저자 리스트
