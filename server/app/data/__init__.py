@@ -25,20 +25,14 @@ print("Loading conferences from DB")
 _conf_docs = list(
     conf_col.find(
         {},
-        {"_id": 0, "name": 1, "param": 1, "kind": 1, "urls": 1},
+        {"_id": 0, "name": 1, "params": 1, "kind": 1, "urls": 1},
     )
 )
 
 def _normalize_params(d: dict) -> list[str]:
-    # 새 스키마: params 배열
     ps = d.get("params")
     if isinstance(ps, list) and ps:
         return [str(x).strip() for x in ps if str(x).strip()]
-
-    # 구 스키마: param 단일 값
-    p = d.get("param")
-    if isinstance(p, str) and p.strip():
-        return [p.strip()]
 
     return []
 
