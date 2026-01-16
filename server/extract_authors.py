@@ -43,7 +43,7 @@ def single_name_llm(name):
     # 숫자만 추출 (지수 표기법 방지)
     match = re.findall(r"\d+\.\d+|\d+", result)
     if not match:
-        return 0.0  # 예외 처리: 결과가 없을 경우 기본값
+        return False
 
     value = float(match[0])  # 숫자 문자열을 float으로 변환
 
@@ -79,7 +79,6 @@ def llm_api_answer(query, model):
         headers=get_headers(),
         timeout=60,
     )
-    print(response.text)
     result = response.json()
     return result["choices"][0]["message"]["content"]
 
@@ -282,6 +281,9 @@ if __name__ == "__main__":
                 # LLM 에러만 처리
                 try:
                     score = single_name_llm(author)
+                    if score == False:
+                        console.print(f"[red]LLM error for '{author}':[/] {e}")
+                        continue
                 except Exception as e:
                     score = 0.0
                     console.print(f"[red]LLM error for '{author}':[/] {e}")
