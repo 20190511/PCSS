@@ -37,7 +37,7 @@ model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
 model_resp.raise_for_status()
 LLM_MODEL = model_resp.json()["data"][0]["id"]
 
-def single_name_llm(name):    
+def judge_name(name):    
     result = llm_api_answer(
         query = f"Express the likelihood of this {name} being Korean using only a number between 0~1. You need to say number only",
         model = LLM_MODEL
@@ -283,7 +283,7 @@ def main():
                 score_display = "-"  # progress 출력용
 
                 try:
-                    score = single_name_llm(author)
+                    score = judge_name(author)
 
                     # LLM이 숫자 못 뽑았을 때
                     if isinstance(score, list) and score and score[0] is False:
@@ -345,4 +345,4 @@ def main():
 
 
 if __name__ == "__main__": 
-    name_col.create_index("name", unique=True)
+    main()

@@ -7,6 +7,7 @@ from app.config import NAME_CACHE
 import math
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -35,30 +36,32 @@ def single_name_llm(name):
         model = LLM_MODEL
     )
     
-
     # 숫자만 추출 (지수 표기법 방지)
-    match = re.findall(r"\d+\.\d+|\d+", result)
+    match = re.findall(r"\d+\.\d+|\d+", str(result))
     if not match:
-        return 0.0  # 예외 처리: 결과가 없을 경우 기본값
-
-    value = float(match[0])  # 숫자 문자열을 float으로 변환
-
-    # 숫자 범위 고정 (0.0 ~ 1.0)
-    value = max(0.0, min(1.0, value))
-
-    # 소수점 1자리까지 포맷팅
-    formatted_value = "{:.1f}".format(value)
-    
-    formatted_value = float(formatted_value)
-    name_dict[name] = formatted_value
+        score = 0.0
+    else:
+        try:
+            score = float(match[0])
+        except Exception:
+            score = 0.0
+            
+    score = max(0.0, min(1.0, score))
+    score = float(f"{score:.1f}")
+    name_dict[name] = score
     
     if NAME_CACHE:
+        now = datetime.now(timezone.utc)
         name_col.update_one(
             {"name": name},
-            {"$set": {"score": formatted_value}},
+            {
+                "$set": {"score": score},
+                "$setOnInsert": {"created_at": now},
+                "$currentDate": {"updated_at": True},
+            },
             upsert=True
         )
-    return formatted_value  # 결과 반환 (0.0 ~ 1.0)
+    return score 
 
 def llm_api_answer(query, model):
     payload = {
