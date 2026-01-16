@@ -7,7 +7,7 @@ from rich.prompt import Prompt, Confirm
 from rich.json import JSON
 from rich import box
 
-BASE_URL = "http://localhost:8000/api/conf"  # 필요시 수정
+BASE_URL = "https://pcss.knpu.re.kr/api/conf"  # 필요시 수정
 console = Console()
 
 
@@ -17,17 +17,20 @@ console = Console()
 CREATE_TEMPLATES = [
     {
         "name": "CoNEXT",
-        "param": "conext",
+        "params": ["conext"],
         "kind": "Networks",
         "urls": ["https://dblp.org/db/conf/conext/index.html"],
     },
     {
         "name": "IMC",
-        "param": "imc",
+        "params": ["imc"],
         "kind": "Networks",
         "urls": ["https://dblp.org/db/conf/imc/index.html"],
     },
 ]
+
+def _primary_param(doc: dict) -> str:
+    return (doc.get("params") or [""])[0]
 
 
 # ================== CLIENT ==================
@@ -79,6 +82,15 @@ class ConferenceClient:
     def delete_url(self, param: str, url: str):
         r = self.session.delete(self._url(f"/{param}/urls"), params={"url": url})
         self._check(r)
+    
+    def add_param(self, base_param: str, new_param: str):
+        r = self.session.post(self._url(f"/{base_param}/params"), json={"param": new_param})
+        self._check(r)
+
+    def delete_param(self, base_param: str, del_param: str):
+        # DELETE에 body를 보내려면 requests는 request()를 쓰는게 안전
+        r = self.session.request("DELETE", self._url(f"/{base_param}/params"), json={"param": del_param})
+        self._check(r)
 
 
 client = ConferenceClient(BASE_URL)
@@ -99,6 +111,24 @@ def header():
 def pause():
     console.print()
     Prompt.ask("엔터를 누르면 계속합니다", default="")
+
+def add_url_flow():
+    kinds = client.get_kinds()
+    kind = pick_from_table(...)
+
+    docs = client.get_by_kind(kind)
+    conf = pick_from_table(...)
+    base = _primary_param(conf)
+    add_url(base)
+
+def delete_url_flow():
+    kinds = client.get_kinds()
+    kind = pick_from_table(...)
+
+    docs = client.get_by_kind(kind)
+    conf = pick_from_table(...)
+    base = _primary_param(conf)
+    delete_url(base)
 
 
 def pick_from_table(title: str, columns: list[str], rows: list[list[str]], item_payloads: list[object]):
@@ -151,22 +181,33 @@ def show_by_kind():
 
     docs = client.get_by_kind(kind)
 
-    # kind 내 conference 목록 표시 + 선택(다음 단계에서 단일 조회/URL관리/삭제)
     conf = pick_from_table(
         title=f"Conferences in [{kind}] (선택해서 관리)",
-        columns=["Name", "Param", "URLs(count)"],
-        rows=[[d["name"], d["param"], str(len(d.get("urls", [])))] for d in docs],
+        columns=["Name", "Primary Param", "Params(#)", "URLs(#)"],
+        rows=[
+            [
+                d.get("name", ""),
+                _primary_param(d) or "-",
+                str(len(d.get("params") or [])),
+                str(len(d.get("urls") or [])),
+            ]
+            for d in docs
+        ],
         item_payloads=docs,
     )
     if not conf:
         return
 
-    # 선택된 conf 관리 메뉴로 이동
-    manage_conference(conf["param"])
+    base = _primary_param(conf)
+    if not base:
+        console.print(Panel("이 conference는 params가 비어있습니다.", border_style="red"))
+        pause()
+        return
+
+    manage_conference(base)
 
 
 def show_conference():
-    # 직접 param 입력 제거 -> kind -> conf 선택 -> 상세 조회
     kinds = client.get_kinds()
     kind = pick_from_table(
         title="Kind 선택",
@@ -180,15 +221,16 @@ def show_conference():
     docs = client.get_by_kind(kind)
     conf = pick_from_table(
         title=f"Conference 선택 ({kind})",
-        columns=["Name", "Param"],
-        rows=[[d["name"], d["param"]] for d in docs],
+        columns=["Name", "Primary Param", "Params(#)"],
+        rows=[[d.get("name",""), _primary_param(d) or "-", str(len(d.get("params") or []))] for d in docs],
         item_payloads=docs,
     )
     if not conf:
         return
 
-    doc = client.get_conference(conf["param"])
-    console.print(Panel(JSON.from_data(doc), title=f"[{conf['param']}]", border_style="cyan"))
+    base = _primary_param(conf)
+    doc = client.get_conference(base)
+    console.print(Panel(JSON.from_data(doc), title=f"[{base}]", border_style="cyan"))
     pause()
 
 
@@ -202,7 +244,7 @@ def create_conference():
     payload = pick_from_table(
         title="Conference 생성 (템플릿 선택)",
         columns=["Name", "Param", "Kind", "URLs(count)"],
-        rows=[[t["name"], t["param"], t["kind"], str(len(t.get("urls", [])))] for t in CREATE_TEMPLATES],
+        rows=[[t["name"], (t.get("params") or ["-"])[0], t["kind"], str(len(t.get("urls", [])))] for t in CREATE_TEMPLATES],
         item_payloads=CREATE_TEMPLATES,
     )
     if not payload:
@@ -232,7 +274,7 @@ def delete_conference():
     conf = pick_from_table(
         title=f"삭제할 Conference 선택 ({kind})",
         columns=["Name", "Param"],
-        rows=[[d["name"], d["param"]] for d in docs],
+        rows=[[d.get("name",""), _primary_param(d) or "-"] for d in docs],
         item_payloads=docs,
     )
     if not conf:
@@ -246,70 +288,24 @@ def delete_conference():
     pause()
 
 
-def add_url():
-    # kind -> conf 선택은 그대로 (번호 선택)
-    kinds = client.get_kinds()
-    kind = pick_from_table(
-        title="Kind 선택",
-        columns=["Kind"],
-        rows=[[k] for k in kinds],
-        item_payloads=kinds,
-    )
-    if not kind:
-        return
-
-    docs = client.get_by_kind(kind)
-    conf = pick_from_table(
-        title=f"URL 추가할 Conference 선택 ({kind})",
-        columns=["Name", "Param"],
-        rows=[[d["name"], d["param"]] for d in docs],
-        item_payloads=docs,
-    )
-    if not conf:
-        return
-
-    # ✅ 여기만 변경: URL을 직접 입력받기
+def add_url(base_param: str):
     url = Prompt.ask("추가할 URL 입력").strip()
     if not url:
         console.print(Panel("URL이 비어있습니다.", border_style="red"))
         pause()
         return
-
-    # (선택) 간단한 검증
     if not (url.startswith("http://") or url.startswith("https://")):
         console.print(Panel("URL은 http:// 또는 https:// 로 시작해야 합니다.", border_style="red"))
         pause()
         return
 
-    client.add_url(conf["param"], url)
-    console.print(f"[bold green]URL added[/bold green] -> {conf['param']} : {url}")
+    client.add_url(base_param, url)
+    console.print(f"[bold green]URL added[/bold green] -> {base_param} : {url}")
     pause()
 
 
-
-def delete_url():
-    # direct param/url 입력 제거 -> kind -> conf 선택 -> conf.urls 목록에서 번호 선택 후 삭제
-    kinds = client.get_kinds()
-    kind = pick_from_table(
-        title="Kind 선택",
-        columns=["Kind"],
-        rows=[[k] for k in kinds],
-        item_payloads=kinds,
-    )
-    if not kind:
-        return
-
-    docs = client.get_by_kind(kind)
-    conf = pick_from_table(
-        title=f"URL 삭제할 Conference 선택 ({kind})",
-        columns=["Name", "Param", "URLs(count)"],
-        rows=[[d["name"], d["param"], str(len(d.get("urls", [])))] for d in docs],
-        item_payloads=docs,
-    )
-    if not conf:
-        return
-
-    full = client.get_conference(conf["param"])
+def delete_url(base_param: str):
+    full = client.get_conference(base_param)
     urls = full.get("urls", [])
     if not urls:
         console.print(Panel("삭제할 URL이 없습니다.", border_style="yellow"))
@@ -317,7 +313,7 @@ def delete_url():
         return
 
     url = pick_from_table(
-        title=f"삭제할 URL 선택 ({conf['param']})",
+        title=f"삭제할 URL 선택 ({base_param})",
         columns=["URL"],
         rows=[[u] for u in urls],
         item_payloads=urls,
@@ -327,42 +323,83 @@ def delete_url():
 
     console.print(Panel(f"[red]{url}[/red]\n삭제할까요?", title="확인", border_style="red"))
     if Confirm.ask("삭제?", default=False):
-        client.delete_url(conf["param"], url)
+        client.delete_url(base_param, url)
         console.print("[bold red]URL deleted[/bold red]")
     pause()
 
+def add_param(base_param: str):
+    new_param = Prompt.ask("추가할 param 입력 (예: conext2025)").strip()
+    if not new_param:
+        console.print(Panel("param이 비어있습니다.", border_style="red"))
+        pause()
+        return
+    client.add_param(base_param, new_param)
+    console.print(f"[bold green]Param added[/bold green] -> {base_param} + {new_param}")
+    pause()
 
-def manage_conference(param: str):
-    # param은 이미 번호 선택으로 들어오는 값
+
+def delete_param(base_param: str):
+    doc = client.get_conference(base_param)
+    params = doc.get("params") or []
+    if len(params) <= 1:
+        console.print(Panel("params가 1개뿐이라 삭제할 수 없습니다.", border_style="yellow"))
+        pause()
+        return
+
+    # base_param(대표)도 포함해서 목록에서 선택
+    target = pick_from_table(
+        title=f"삭제할 param 선택 ({base_param})",
+        columns=["param"],
+        rows=[[p] for p in params],
+        item_payloads=params,
+    )
+    if not target:
+        return
+
+    console.print(Panel(f"[red]{target}[/red]\n삭제할까요?", title="확인", border_style="red"))
+    if Confirm.ask("삭제?", default=False):
+        client.delete_param(base_param, target)
+        console.print("[bold red]Param deleted[/bold red]")
+    pause()
+
+
+def manage_conference(base_param: str):
     while True:
-        doc = client.get_conference(param)
+        doc = client.get_conference(base_param)
 
         header()
-        console.print(Panel(JSON.from_data(doc), title="현재 Conference", border_style="cyan"))
+        console.print(Panel(JSON.from_data(doc), title=f"현재 Conference ({base_param})", border_style="cyan"))
 
         table = Table(title="Conference 관리", box=box.SIMPLE, show_lines=True)
         table.add_column("번호", justify="right")
         table.add_column("기능", style="cyan")
 
-        table.add_row("1", "URL 추가(후보에서 선택)")
-        table.add_row("2", "URL 삭제(목록에서 선택)")
-        table.add_row("3", "Conference 삭제")
+        table.add_row("1", "URL 추가")
+        table.add_row("2", "URL 삭제")
+        table.add_row("3", "param 추가")
+        table.add_row("4", "param 삭제")
+        table.add_row("5", "Conference 삭제")
         table.add_row("0", "뒤로")
 
         console.print(table)
 
-        choice = Prompt.ask("선택", choices=["0", "1", "2", "3"])
+        choice = Prompt.ask("선택", choices=["0", "1", "2", "3", "4", "5"])
         if choice == "0":
             return
         elif choice == "1":
-            add_url()
+            add_url(base_param)
         elif choice == "2":
-            delete_url()
+            delete_url(base_param)
         elif choice == "3":
-            # 같은 param 삭제 흐름으로 연결
+            add_param(base_param)
+        elif choice == "4":
+            delete_param(base_param)
+        elif choice == "5":
             console.print(Panel("삭제 메뉴로 이동합니다.", border_style="yellow"))
             pause()
-            delete_conference()
+            client.delete_conference(base_param)
+            console.print("[bold red]Deleted[/bold red]")
+            pause()
             return
 
 
@@ -373,8 +410,8 @@ MENU = {
     "3": ("Conference 단일 조회", show_conference),
     "4": ("Conference 생성(템플릿 선택)", create_conference),
     "5": ("Conference 삭제(선택)", delete_conference),
-    "6": ("Conference URL 추가(후보 선택)", add_url),
-    "7": ("Conference URL 삭제(목록 선택)", delete_url),
+    "6": ("Conference URL 추가(후보 선택)", add_url_flow),
+    "7": ("Conference URL 삭제(목록 선택)", delete_url_flow),
     "0": ("종료", None),
 }
 

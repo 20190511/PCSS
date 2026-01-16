@@ -9,3 +9,9 @@ class CreateConferenceRequest(BaseModel):
     param: str
     kind: str
     urls: List[str] = []
+
+class AddParamRequest(BaseModel):
+    param: str
+
+class DeleteParamRequest(BaseModel):
+    param: str

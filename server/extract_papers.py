@@ -32,11 +32,12 @@ console = Console()
 
 # Conference map 로드
 def load_conference_map():
-    conferences = conf_col.find({}, {"_id": 0, "param": 1, "name": 1})
+    conferences = conf_col.find({}, {"_id": 0, "params": 1, "name": 1})
     conf_map = {}
     for conf in conferences:
-        if conf.get('param'):
-            conf_map[conf['param']] = conf['name']
+        if conf.get('params'):
+            for param in conf['params']:
+                conf_map[param] = conf['name']
     return conf_map
 
 # 메인 트랙 판별
