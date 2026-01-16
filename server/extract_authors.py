@@ -310,5 +310,5 @@ if __name__ == "__main__":
     #     os.path.join(os.path.dirname(__file__), "all_authors.json"),
     # )
 
-    single_name_llm("Yojun Moon")
-    
+    result = single_name_llm("Yojun Moon")
+    print(result)
