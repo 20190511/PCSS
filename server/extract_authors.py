@@ -42,7 +42,7 @@ def single_name_llm(name):
     # 숫자만 추출 (지수 표기법 방지)
     match = re.findall(r"\d+\.\d+|\d+", result)
     if not match:
-        return False
+        return [False, result]  # 숫자가 없으면 실패 반환
 
     value = float(match[0])  # 숫자 문자열을 float으로 변환
 
@@ -276,8 +276,8 @@ if __name__ == "__main__":
                 try:
                     score = single_name_llm(author)
                     
-                    if score == False:
-                        console.print(f"[red]LLM error for '{author}':[/] No numeric result found.")
+                    if type(score) == list and score[0] == False:
+                        console.print(f"[red]LLM error for '{author}':[/] No numeric result found. Response: {score[1]}")
                         continue
                     
                     bulk_docs.append({
