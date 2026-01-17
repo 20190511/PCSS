@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 from .conf_routes import router as conf_router
-from .crawl_routes import router as crawl_router
 from .search_routes import router as search_router
 from .page_routes import router as page_router
+from .author_routes import router as author_router
 
 api_router = APIRouter()    
 
 api_router.include_router(conf_router, prefix="/conf", tags=["conferences"])
-api_router.include_router(crawl_router, prefix="/crawl", tags=["crawl"])
 api_router.include_router(search_router, prefix="/search", tags=["search"])
 api_router.include_router(page_router, prefix="/page", tags=["page"])
+api_router.include_router(author_router, prefix="/author", tags=["author"])

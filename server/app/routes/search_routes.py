@@ -1,6 +1,6 @@
 # app/routes/pcssearch_mongo.py
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from uuid import uuid4
 import asyncio
@@ -9,7 +9,6 @@ import json
 from app.libs.exceptions import NotFoundException, InternalServerErrorException
 from app.schemas.search import SearchRequest
 from app.services.search_service import PCSSEARCHMongo
-from app.services.author_service import compute_author_stats_mongo
 
 from app.core.job_store import (
     create_job,
@@ -21,9 +20,6 @@ from app.core.job_store import (
 
 from app.data import get_conferences_for_ui
 from app.core.templates import templates
-import httpx
-from app.services.crawl_service import compute_author_stats, fetch_html
-from app.schemas.search import AuthorStatsRequest, AuthorStatsResponse
 
 
 router = APIRouter()

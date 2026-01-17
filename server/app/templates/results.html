@@ -608,14 +608,17 @@
 
           const form = document.createElement("form");
           form.method = "POST";
-          form.action = "/author-stats/page"; // HTML 렌더링 라우트
+          form.action = "/author/stats/page"; // HTML 렌더링 라우트
           form.target = "_blank";
+          
+          const uncertainty = {{ options.uncertainty | tojson }};
 
           // 서버가 필요로 하는 필드만 전달
           const fields = {
             target_author: payload.name,
             url: payload.url,
             include_papers: "true"
+            uncertainty: String(uncertainty),
           };
 
           Object.entries(fields).forEach(([k, v]) => {
