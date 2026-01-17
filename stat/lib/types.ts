@@ -1,65 +1,52 @@
-export interface LogDocument {
+export interface LogEntry {
   _id: string
-  type: "page_view" | "search" | "detail_view" | "api_call"
-  timestamp: Date
+  ts: string
+  type: string
   ip: string
-  user_agent: string
-  path: string
-  referrer?: string
   method: string
-  search_options?: {
-    conferences?: string[]
-    uncertainty?: number
-    year_start?: number
-    year_end?: number
-    query?: string
-  }
+  path: string
+  user_agent: string
+  [key: string]: unknown
 }
 
-export interface SummaryStats {
-  totalEvents: number
-  uniqueIPs: number
-  typeBreakdown: { type: string; count: number }[]
-  methodBreakdown: { method: string; count: number }[]
-  todayEvents: number
-  weekEvents: number
-}
-
-export interface TimeSeriesData {
-  date: string
-  count: number
+export interface StatsData {
+  totalVisitors: number
   pageViews: number
-  searches: number
-  detailViews: number
+  searchRequests: number
+  avgSessionTime: string
+  visitorChange: number
+  pageViewChange: number
+  searchChange: number
+  sessionChange: number
 }
 
-export interface TopItem {
-  value: string
+export interface DailyVisitorData {
+  date: string
+  visitors: number
+  pageviews: number
+}
+
+export interface LogTypeData {
+  name: string
+  value: number
+  label: string
+}
+
+export interface HourlyData {
+  hour: string
+  requests: number
+}
+
+export interface BrowserData {
+  name: string
+  percentage: number
   count: number
 }
 
-export interface SearchOptionStats {
-  totalSearches: number
-  avgUncertainty: number
-  conferenceDistribution: { conference: string; count: number }[]
-  yearRangeDistribution: { range: string; count: number }[]
-  uncertaintyHistogram: { range: string; count: number }[]
-}
-
-export interface FunnelData {
-  homeVisits: number
-  searches: number
-  detailViews: number
-  homeToSearchRate: number
-  searchToDetailRate: number
-}
-
-export interface HourlyDistribution {
-  hour: number
-  count: number
-}
-
-export interface DailyDistribution {
-  day: string
-  count: number
+export interface FilterParams {
+  startDate?: string
+  endDate?: string
+  type?: string
+  page?: number
+  limit?: number
 }
