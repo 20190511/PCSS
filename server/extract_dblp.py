@@ -34,15 +34,21 @@ def elem_to_dict(elem):
     
     for child in elem:
         tag = child.tag
-        text = child.text
-        if not text:
-            continue
+        
+        # 1. 텍스트 추출 방식 변경: 하위 태그(<i>, <sup> 등) 포함 모든 텍스트 병합
+        text = "".join(child.itertext()).strip()
             
+        # 2. 속성 처리: 텍스트가 없어도 속성이 있으면 저장해야 함
         if child.attrib:
             value = dict(child.attrib)
-            value['text'] = text
+            if text:
+                value['text'] = text
         else:
             value = text
+
+        # 텍스트도 없고 속성도 없으면 건너뜀 (빈 태그)
+        if not value and value != "":
+            continue
 
         if tag in data:
             if isinstance(data[tag], list):
@@ -50,7 +56,8 @@ def elem_to_dict(elem):
             else:
                 data[tag] = [data[tag], value]
         else:
-            if tag in ['author', 'editor', 'cite', 'cdrom', 'url']:
+            # 리스트로 저장할 필드들은 여기서 정의
+            if tag in ['author', 'editor', 'cite', 'cdrom', 'url', 'crossref']:
                 data[tag] = [value]
             else:
                 data[tag] = value
