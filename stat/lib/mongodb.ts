@@ -52,8 +52,4 @@ async function printAllLogsToTerminal() {
   }
 }
 
-// dev에서 핫리로드로 중복 출력 방지
-if (!global._printedLogsOnce) {
-  global._printedLogsOnce = true
-  void printAllLogsToTerminal()
-}
+printAllLogsToTerminal()
