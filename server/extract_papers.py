@@ -35,8 +35,6 @@ console = Console()
 def _parse_param_to_rule(param: str, conf_name: str) -> dict | None:
     """
     conf_col.params에 들어갈 수 있는 문자열을 룰로 변환.
-
-    지원 문법 (하드코딩 없음):
       - "pldi"                : base=pldi (그 venue_id 전체 매칭)
       - "pacmpl:PLDI"         : base=pacmpl + article의 number="PLDI"일 때만 매칭
       - "pacmmod:3:1"         : base=pacmmod + article의 volume="3" and number="1"
