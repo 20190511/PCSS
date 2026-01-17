@@ -459,6 +459,10 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
     count = 0
     matched_count = 0
     context = None
+    
+    total_upserted = 0   # 새로 insert된 문서 수
+    total_modified = 0   # update로 실제 수정된 문서 수
+    total_matched = 0    # 기존 문서와 매칭된 수(업서트 제외)
 
     progress = Progress(
         SpinnerColumn(),
@@ -603,7 +607,15 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                     )
 
                     if len(batch_ops) >= BATCH_SIZE:
-                        papers_col.bulk_write(batch_ops, ordered=False)
+                        res = papers_col.bulk_write(batch_ops, ordered=False)
+                        total_upserted += res.upserted_count
+                        total_modified += res.modified_count
+                        total_matched += res.matched_count
+                        
+                        console.print(
+                            f"[dim]batch flush[/dim] "
+                            f"upserted={res.upserted_count}, modified={res.modified_count}, matched={res.matched_count}"
+                        )
                         batch_ops.clear()
 
                     elem.clear()
@@ -614,9 +626,17 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                     elem.clear()
 
             if batch_ops:
-                papers_col.bulk_write(batch_ops, ordered=False)
-                batch_ops.clear()
+                res = papers_col.bulk_write(batch_ops, ordered=False)
+                total_upserted += res.upserted_count
+                total_modified += res.modified_count
+                total_matched += res.matched_count
 
+                console.print(
+                    f"[dim]final flush[/dim] "
+                    f"upserted={res.upserted_count}, modified={res.modified_count}, matched={res.matched_count}"
+                )
+                batch_ops.clear()
+                
     except Exception:
         console.print("[bold red]파싱 중 오류 발생[/bold red]")
         import traceback
@@ -715,10 +735,6 @@ def main():
     # (참고) rules_index는 base별 룰 목록이라 "타겟 학회 수"는 conf 수와 다를 수 있음
     total_rules = sum(len(v) for v in rules_index.values())
     print(f"로드된 params(rule) 수: {total_rules}")
-
-    print("기존 papers_col 전체 삭제 중...")
-    result = papers_col.delete_many({})
-    print(f"삭제된 문서 수: {result.deleted_count}")
 
     print("PID 인덱스 생성 중(저자 Home Page 레코드)...")
     name_to_pid = build_name_to_pid_index(xml_path)
