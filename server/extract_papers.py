@@ -432,7 +432,7 @@ def is_main_track(elem, title, booktitle):
 
 
 # DBLP 파싱 & DB 적재
-def parse_dblp(xml_path, rules_index, name_to_pid):
+def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
     paper_tags = {"inproceedings", "article"}
 
     abs_xml_path = os.path.abspath(xml_path)
@@ -455,14 +455,21 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
         os.chdir(original_cwd)
         return
 
+    # =========================
+    #  이번 실행 마킹값
+    # =========================
+    run_ts = datetime.now(timezone.utc)
+
     batch_ops = []
     count = 0
     matched_count = 0
     context = None
-    
-    total_upserted = 0   # 새로 insert된 문서 수
-    total_modified = 0   # update로 실제 수정된 문서 수
-    total_matched = 0    # 기존 문서와 매칭된 수(업서트 제외)
+
+    total_upserted = 0
+    total_modified = 0
+    total_matched = 0
+
+    completed = False  # 파싱 정상 완료 여부
 
     progress = Progress(
         SpinnerColumn(),
@@ -493,7 +500,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                     count += 1
                     progress.update(task_id, scan=count)
 
-                    # params 기반으로 conf name resolve (하드코딩 없음)
                     official_conf_name = resolve_conf_name(elem, rules_index)
                     if not official_conf_name:
                         elem.clear()
@@ -504,12 +510,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                     title = elem.findtext("title")
                     booktitle_xml = elem.findtext("booktitle")
                     venue_str = booktitle_xml if booktitle_xml else elem.findtext("journal")
-
-                    # if not is_main_track(elem, title, venue_str):
-                    #     elem.clear()
-                    #     while elem.getprevious() is not None:
-                    #         del elem.getparent()[0]
-                    #     continue
 
                     matched_count += 1
                     progress.update(task_id, saved=matched_count)
@@ -531,7 +531,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
 
                     authors = []
                     author_urls = []
-                    author_pids = []  # (선택) 디버깅/분석용으로 pid도 저장하고 싶으면
+                    author_pids = []
 
                     for author in elem.findall("author"):
                         name = (author.text or "").strip()
@@ -542,7 +542,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
 
                         pid = name_to_pid.get(name)
 
-                        # 충돌(동명이인 등)로 pid가 여러 개면 안전하게 fallback
                         if isinstance(pid, list):
                             enc = urllib.parse.quote_plus(name)
                             author_urls.append(f"https://dblp.org/search/author?q={enc}")
@@ -550,15 +549,12 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                             continue
 
                         if pid:
-                            # PID 기반 author page (정규 형태는 .html)
                             author_urls.append(f"https://dblp.org/pid/{pid}.html")
                             author_pids.append(pid)
                         else:
-                            # 매핑이 없으면 검색으로 fallback
                             enc = urllib.parse.quote_plus(name)
                             author_urls.append(f"https://dblp.org/search/author?q={enc}")
                             author_pids.append(None)
-
 
                     record = {
                         "title": title,
@@ -568,7 +564,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                         "year": int(year) if year and year.isdigit() else year,
                         "source": source,
                         "dblp_url": dblp_url,
-                        # ---- 추천: 추후 검증/디버깅용 메타 ----
                         "dblp_key": elem.get("key"),
                         "type": elem.tag,
                         "journal": elem.findtext("journal"),
@@ -578,10 +573,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                         "crossref": elem.findtext("crossref"),
                     }
 
-                    # timestamps
-                    now = datetime.now(timezone.utc)
-
-                    # filter: dblp_key가 없으면 안전하게 스킵(또는 다른 키로 fallback)
                     dblp_key = record.get("dblp_key")
                     if not dblp_key:
                         elem.clear()
@@ -589,7 +580,13 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                             del elem.getparent()[0]
                         continue
 
-                    # upsert operation
+                    # =========================
+                    # upsert에 last_seen_at 찍기
+                    # - 기존 문서면 updated_at 갱신 + last_seen_at 갱신
+                    # - 새 문서면 created_at 추가
+                    # =========================
+                    now = datetime.now(timezone.utc)
+
                     batch_ops.append(
                         UpdateOne(
                             {"dblp_key": dblp_key},
@@ -597,6 +594,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                                 "$set": {
                                     **record,
                                     "updated_at": now,
+                                    "last_seen_at": run_ts,  # 추가
                                 },
                                 "$setOnInsert": {
                                     "created_at": now,
@@ -611,7 +609,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                         total_upserted += res.upserted_count
                         total_modified += res.modified_count
                         total_matched += res.matched_count
-                        
+
                         console.print(
                             f"[dim]batch flush[/dim] "
                             f"upserted={res.upserted_count}, modified={res.modified_count}, matched={res.matched_count}"
@@ -625,6 +623,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                 elif elem.tag == "dblp":
                     elem.clear()
 
+            # 마지막 남은 batch flush
             if batch_ops:
                 res = papers_col.bulk_write(batch_ops, ordered=False)
                 total_upserted += res.upserted_count
@@ -636,12 +635,14 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                     f"upserted={res.upserted_count}, modified={res.modified_count}, matched={res.matched_count}"
                 )
                 batch_ops.clear()
-                
+
+        completed = True  # 정상적으로 끝까지 돈 경우에만 True
+
     except Exception:
         console.print("[bold red]파싱 중 오류 발생[/bold red]")
         import traceback
-
         console.print(traceback.format_exc())
+
     finally:
         os.chdir(original_cwd)
         if context:
@@ -651,6 +652,23 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
         f"[bold green]완료[/bold green]: 메인 트랙 논문 "
         f"[bold]{matched_count}[/bold]개 DB 저장"
     )
+
+    # =========================
+    #  동기화 삭제 단계
+    # - 이번 실행에서 못 본 문서는 삭제
+    # - 파싱이 정상 완료된 경우에만 수행 (completed=True)
+    # =========================
+    if completed and target_confs:
+        del_filter = {
+            "conference": {"$in": target_confs},
+            "last_seen_at": {"$ne": run_ts},
+        }
+        del_res = papers_col.delete_many(del_filter)
+        console.print(
+            f"[yellow]동기화 삭제[/yellow]: {del_res.deleted_count} docs deleted"
+        )
+    else:
+        console.print("[dim]동기화 삭제 단계 스킵(파싱 비정상 종료 또는 target_confs 없음)[/dim]")
 
 
 # 다운로드/압축해제
@@ -732,16 +750,26 @@ def main():
         print("학회 정보 로드 실패")
         sys.exit(1)
 
-    # (참고) rules_index는 base별 룰 목록이라 "타겟 학회 수"는 conf 수와 다를 수 있음
     total_rules = sum(len(v) for v in rules_index.values())
     print(f"로드된 params(rule) 수: {total_rules}")
+
+    # (추가) 이번 실행에서 관리(동기화)할 conf 목록
+    target_confs_set = set()
+    for rules in rules_index.values():
+        for r in rules:
+            if r.get("conf"):
+                target_confs_set.add(r["conf"])
+    target_confs = sorted(target_confs_set)
+    print(f"동기화 대상 conference 수: {len(target_confs)}")
 
     print("PID 인덱스 생성 중(저자 Home Page 레코드)...")
     name_to_pid = build_name_to_pid_index(xml_path)
     if not name_to_pid:
         print("PID 인덱스 생성 실패(혹은 0건). author_url은 검색 링크로만 생성될 수 있음.")
 
-    parse_dblp(xml_path, rules_index, name_to_pid)
+    # (변경) target_confs 전달
+    parse_dblp(xml_path, rules_index, name_to_pid, target_confs)
+
 
 
 if __name__ == "__main__":
