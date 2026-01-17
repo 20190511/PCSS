@@ -59,13 +59,6 @@ export function StatsCards() {
       icon: Search,
       description: "search_start 이벤트",
     },
-    {
-      title: "평균 세션",
-      value: data.avgSessionTime,
-      change: data.sessionChange,
-      icon: TrendingUp,
-      description: "사용자당 평균",
-    },
   ]
 
   return (
