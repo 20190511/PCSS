@@ -237,16 +237,3 @@ async def search_cancel(job_id: str):
         return {"status": "cancelled", "job_id": job_id}
 
     return {"status": "failed", "job_id": job_id}
-
-
-@router.post("/author-stats", response_model=AuthorStatsResponse)
-async def author_stats(payload: AuthorStatsRequest):
-    result = await compute_author_stats_mongo(
-        target_author=payload.target_author,
-        include_papers=payload.include_papers,
-        conf_list=getattr(payload, "conf_list", None),
-        startyear=getattr(payload, "startyear", None),
-        endyear=getattr(payload, "endyear", None),
-    )
-
-    return result

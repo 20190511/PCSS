@@ -40,6 +40,144 @@ xml_path = os.path.join(BASE_DIR, "dblp.xml")
 BATCH_SIZE = 1000  # MongoDB bulk insert 크기
 console = Console()
 
+def _extract_pid_from_homepages_key(key: str) -> str | None:
+    """
+    homepages/... 형태의 key에서 pid 부분만 뽑는다.
+    예) "homepages/d/StephanDiehl" -> "d/StephanDiehl"
+        "homepages/64/5383"        -> "64/5383"
+    """
+    if not key:
+        return None
+    key = key.strip()
+    if not key.startswith("homepages/"):
+        return None
+    pid = key[len("homepages/") :].strip()
+    return pid or None
+
+
+def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
+    """
+    dblp.xml에서 <www> 중 <title>Home Page</title> 레코드만 훑어서
+    author-name -> pid(homepages key 기반) 매핑을 만든다.
+
+    주의: 동명이인/충돌이 (이론상) 있을 수 있어, 같은 name에 pid가 여러 개면 list로 저장.
+    """
+    abs_xml_path = os.path.abspath(xml_path)
+    xml_dir = os.path.dirname(abs_xml_path)
+    filename_only = os.path.basename(abs_xml_path)
+    dtd_path = os.path.join(xml_dir, "dblp.dtd")
+
+    if not os.path.exists(dtd_path):
+        console.print(f"[bold red]DTD 파일 없음:[/bold red] {dtd_path}")
+        return {}
+
+    original_cwd = os.getcwd()
+    os.chdir(xml_dir)
+
+    # name -> pid or [pid, pid, ...]
+    name_to_pid: dict[str, str | list[str]] = {}
+
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]PID 인덱스 생성 중(Home Page www)[/bold blue]"),
+        BarColumn(),
+        TextColumn("seen: {task.fields[seen]}"),
+        TextColumn("indexed: {task.fields[indexed]}"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=False,
+    )
+
+    context = None
+    try:
+        # DTD 로드 체크 (parse_dblp와 동일한 안정성 확보)
+        etree.DTD(file=dtd_path)
+
+        context = etree.iterparse(
+            filename_only,
+            events=("end",),
+            load_dtd=True,
+            huge_tree=True,
+            recover=True,
+        )
+
+        with progress:
+            task_id = progress.add_task("pid-index", total=None, seen=0, indexed=0)
+
+            seen = 0
+            indexed = 0
+
+            for _, elem in context:
+                if elem.tag != "www":
+                    # 메모리 절약
+                    continue
+
+                seen += 1
+                progress.update(task_id, seen=seen)
+
+                title = (elem.findtext("title") or "").strip()
+                if title != "Home Page":
+                    # Home Page 레코드만 사람 프로필로 사용
+                    elem.clear()
+                    while elem.getprevious() is not None:
+                        del elem.getparent()[0]
+                    continue
+
+                key = (elem.get("key") or "").strip()
+                pid = _extract_pid_from_homepages_key(key)
+                if not pid:
+                    elem.clear()
+                    while elem.getprevious() is not None:
+                        del elem.getparent()[0]
+                    continue
+
+                # merged/redirect 케이스: <crossref>homepages/...<crossref>
+                # 이런 경우 primary pid로 매핑해주는 게 안전함.
+                crossref = (elem.findtext("crossref") or "").strip()
+                if crossref.startswith("homepages/"):
+                    primary_pid = _extract_pid_from_homepages_key(crossref)
+                    if primary_pid:
+                        pid = primary_pid
+
+                # 이 www 레코드 안의 모든 author(별칭 포함)를 pid에 매핑
+                for a in elem.findall("author"):
+                    name = (a.text or "").strip()
+                    if not name:
+                        continue
+
+                    existing = name_to_pid.get(name)
+                    if existing is None:
+                        name_to_pid[name] = pid
+                        indexed += 1
+                    else:
+                        # 충돌(이름 동일인데 pid 다름): list로 보관
+                        if isinstance(existing, list):
+                            if pid not in existing:
+                                existing.append(pid)
+                        else:
+                            if existing != pid:
+                                name_to_pid[name] = [existing, pid]
+
+                progress.update(task_id, indexed=indexed)
+
+                elem.clear()
+                while elem.getprevious() is not None:
+                    del elem.getparent()[0]
+
+    except Exception:
+        console.print("[bold red]PID 인덱스 생성 중 오류 발생[/bold red]")
+        import traceback
+        console.print(traceback.format_exc())
+        return {}
+    finally:
+        os.chdir(original_cwd)
+        if context:
+            del context
+
+    console.print(f"[green]PID 인덱스 생성 완료[/green]: {len(name_to_pid)} names")
+    return name_to_pid
+
+
 # Params 기반 룰 파싱/로딩
 def _parse_param_to_rule(param: str, conf_name: str) -> dict | None:
     """
@@ -293,7 +431,7 @@ def is_main_track(elem, title, booktitle):
 
 
 # DBLP 파싱 & DB 적재
-def parse_dblp(xml_path, rules_index):
+def parse_dblp(xml_path, rules_index, name_to_pid):
     paper_tags = {"inproceedings", "article"}
 
     abs_xml_path = os.path.abspath(xml_path)
@@ -388,15 +526,34 @@ def parse_dblp(xml_path, rules_index):
 
                     authors = []
                     author_urls = []
+                    author_pids = []  # (선택) 디버깅/분석용으로 pid도 저장하고 싶으면
+
                     for author in elem.findall("author"):
-                        if author.text:
-                            authors.append(author.text)
-                            pid = author.get("pid")
-                            if pid:
-                                author_urls.append(f"https://dblp.org/pid/{pid}")
-                            else:
-                                enc = urllib.parse.quote_plus(author.text)
-                                author_urls.append(f"https://dblp.org/search/author?q={enc}")
+                        name = (author.text or "").strip()
+                        if not name:
+                            continue
+
+                        authors.append(name)
+
+                        pid = name_to_pid.get(name)
+
+                        # 충돌(동명이인 등)로 pid가 여러 개면 안전하게 fallback
+                        if isinstance(pid, list):
+                            enc = urllib.parse.quote_plus(name)
+                            author_urls.append(f"https://dblp.org/search/author?q={enc}")
+                            author_pids.append(None)
+                            continue
+
+                        if pid:
+                            # PID 기반 author page (정규 형태는 .html)
+                            author_urls.append(f"https://dblp.org/pid/{pid}.html")
+                            author_pids.append(pid)
+                        else:
+                            # 매핑이 없으면 검색으로 fallback
+                            enc = urllib.parse.quote_plus(name)
+                            author_urls.append(f"https://dblp.org/search/author?q={enc}")
+                            author_pids.append(None)
+
 
                     record = {
                         "title": title,
@@ -536,7 +693,12 @@ def main():
     result = papers_col.delete_many({})
     print(f"삭제된 문서 수: {result.deleted_count}")
 
-    parse_dblp(xml_path, rules_index)
+    print("PID 인덱스 생성 중(저자 Home Page 레코드)...")
+    name_to_pid = build_name_to_pid_index(xml_path)
+    if not name_to_pid:
+        print("PID 인덱스 생성 실패(혹은 0건). author_url은 검색 링크로만 생성될 수 있음.")
+
+    parse_dblp(xml_path, rules_index, name_to_pid)
 
 
 if __name__ == "__main__":
