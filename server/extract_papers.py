@@ -109,7 +109,9 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
 
             for _, elem in context:
                 if elem.tag != "www":
-                    # 메모리 절약
+                    elem.clear()
+                    while elem.getprevious() is not None:
+                        del elem.getparent()[0]
                     continue
 
                 seen += 1

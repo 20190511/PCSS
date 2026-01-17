@@ -3,7 +3,7 @@ import sys
 import json
 
 # 서버 주소 설정 (환경에 맞게 변경하세요)
-API_BASE_URL = "https://pcss.knpu.re.kr/api/conf"
+API_BASE_URL = "https://pcss.r-e.kr/api/conf"
 
 def print_header(title):
     print("\n" + "=" * 40)
@@ -106,17 +106,30 @@ def api_delete_url(param, url):
     except Exception as e:
         print(f"Error deleting URL: {e}")
 
-def api_add_param(base_param, new_param):
+def api_add_params(base_param, new_params):
+    """
+    new_params: List[str]
+    """
     try:
-        # Schema: AddParamRequest(param=...)
-        resp = requests.post(f"{API_BASE_URL}/{base_param}/params", json={"param": new_param})
+        resp = requests.post(
+            f"{API_BASE_URL}/{base_param}/params/batch",
+            json={"params": new_params}
+        )
         if resp.status_code == 409:
-            print(">> [실패] 해당 파라미터는 이미 다른 컨퍼런스에서 사용 중입니다.")
-            return
+            print(">> [실패] 입력한 파라미터 중 일부가 이미 다른 컨퍼런스에서 사용 중입니다.")
+            return False
         resp.raise_for_status()
-        print(">> [성공] 별칭(Param) 추가 완료")
+        print(">> [성공] 별칭(Param) 여러 개 추가 완료")
+        return True
     except Exception as e:
-        print(f"Error adding param: {e}")
+        print(f"Error adding params: {e}")
+        # 디버깅용
+        try:
+            print(resp.text)
+        except:
+            pass
+        return False
+
 
 def api_delete_param(base_param, target_param):
     try:
@@ -229,7 +242,7 @@ def flow_manage_params():
     while True:
         print(f"\n현재 선택된 컨퍼런스: {conf.get('name')}")
         print(f"파라미터 목록: {conf.get('params', [])}")
-        print("1. 파라미터 추가 (Add Alias)")
+        print("1. 파라미터 추가 (여러 개 가능, 콤마 구분)")
         print("2. 파라미터 삭제")
         print("0. 뒤로 가기")
 
@@ -237,11 +250,14 @@ def flow_manage_params():
         if choice == '0':
             break
         elif choice == '1':
-            new_p = get_user_input("추가할 파라미터 입력")
-            if new_p:
-                api_add_param(base_param, new_p)
-                if new_p not in conf['params']:
-                    conf['params'].append(new_p)
+            param_str = get_user_input("추가할 파라미터 입력 (여러 개면 콤마로 구분)")
+            new_params = [p.strip() for p in param_str.split(",") if p.strip()]
+            if new_params:
+                ok = api_add_params(base_param, new_params)
+                if ok:
+                    for p in new_params:
+                        if p not in conf['params']:
+                            conf['params'].append(p)
         elif choice == '2':
             params = conf.get('params', [])
             target = get_user_selection(params)

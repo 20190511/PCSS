@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.db import conf_col
-from app.schemas.conf import AddUrlRequest, AddParamRequest, DeleteParamRequest, CreateConferenceRequest
+from app.schemas.conf import AddUrlRequest, AddParamsRequest, AddParamRequest, DeleteParamRequest, CreateConferenceRequest
 
 router = APIRouter()
 
@@ -130,27 +130,31 @@ async def delete_conference(param: str):
         raise HTTPException(404, "Conference not found")
     return {"status": "deleted", "param": param}
 
-@router.post("/{param}/params")
-async def add_param(param: str, body: AddParamRequest):
-    new_param = body.param.strip()
-    if not new_param:
-        raise HTTPException(422, "param is empty")
 
-    # 다른 문서에서 이미 쓰는 param이면 막기
-    exists = conf_col.find_one({"params": new_param}, {"_id": 1})
+@router.post("/{param}/params")
+async def add_params_batch(param: str, body: AddParamsRequest):
+    new_params = [p.strip() for p in body.params if p.strip()]
+    if not new_params:
+        raise HTTPException(422, "params is empty")
+
+    # 다른 문서에서 이미 쓰는 param이면 막기 (전체 검사)
+    exists = conf_col.find_one(
+        {"$or": [{"params": {"$in": new_params}}, {"param": {"$in": new_params}}]},
+        {"_id": 1}
+    )
     if exists:
-        raise HTTPException(409, "param already exists in another conference")
+        raise HTTPException(409, "one of params already exists in another conference")
 
     result = conf_col.update_one(
         {"$or": [{"params": param}, {"param": param}]},
-        {"$addToSet": {"params": new_param}},
+        {"$addToSet": {"params": {"$each": new_params}}},
     )
     if result.matched_count == 0:
         raise HTTPException(404, "Conference not found")
 
-    # 구 필드 있으면 제거(원하면 유지 가능)
     conf_col.update_one({"$or": [{"params": param}, {"param": param}]}, {"$unset": {"param": ""}})
-    return {"status": "added", "base": param, "param": new_param}
+    return {"status": "added", "base": param, "params": new_params}
+
 
 
 @router.delete("/{param}/params")
