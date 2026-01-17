@@ -166,7 +166,7 @@ def parse_and_save(xml_path):
     console.print(f"[bold green]Done![/bold green] Total {count} records saved.")
 
 if __name__ == '__main__':
-    if not os.exists(os.path.join(BASE_DIR, XML_FILENAME)): 
+    if not os.path.exists(os.path.join(BASE_DIR, XML_FILENAME)): 
         download_dblp_assets(BASE_DIR)
     xml_full_path = os.path.join(BASE_DIR, XML_FILENAME)
     parse_and_save(xml_full_path)
