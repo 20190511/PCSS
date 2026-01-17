@@ -21,9 +21,25 @@ def run_job():
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {name} 완료")
 
 
+def next_monthly_run(now: datetime) -> datetime:
+    """
+    다음 실행 시각: 매달 1일 00:00:00
+    - 지금이 1일 00:00:00 이전이면 이번 달 1일 00:00:00 (이미 지났다면 아래에서 다음 달로 넘김)
+    - 지금이 그 시각 이후면 다음 달 1일 00:00:00
+    """
+    # 이번 달 1일 00:00:00
+    candidate = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # 이미 지났으면 다음 달 1일 00:00:00
+    if candidate <= now:
+        candidate = candidate + relativedelta(months=1)
+
+    return candidate
+
+
 def seconds_until_next_run(now: datetime) -> int:
-    next_run = now + relativedelta(months=1)
-    return int((next_run - now).total_seconds())
+    target = next_monthly_run(now)
+    return int((target - now).total_seconds())
 
 
 def format_timedelta(seconds: int) -> str:
@@ -35,7 +51,7 @@ def format_timedelta(seconds: int) -> str:
 
 def main():
     print("=== DBLP Monthly Extractor ===")
-    print("논문 / 저자 정보 월 1회 자동 갱신\n")
+    print("논문 / 저자 정보 매달 1일 00:00에 자동 갱신\n")
 
     while True:
         start_time = datetime.now()
@@ -50,8 +66,8 @@ def main():
             traceback.print_exc()
 
         now = datetime.now()
-        wait_seconds = seconds_until_next_run(now)
-        next_run_time = now + relativedelta(months=1)
+        next_run_time = next_monthly_run(now)
+        wait_seconds = int((next_run_time - now).total_seconds())
 
         print("\n=== 대기 상태 ===")
         print(f"다음 실행 시각: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")

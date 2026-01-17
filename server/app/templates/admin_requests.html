@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Admin Requests</title>
+  <style>
+    /* 기본 라이트 모드 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+  
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+  
+    h2 {
+      text-align: center;
+      margin: 28px 0 18px;
+      color: rgba(200, 1, 80, 1);
+      font-size: 28px;
+    }
+  
+    /* 카드 느낌의 래퍼 */
+    .card {
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  
+    /* 테이블 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      border-radius: 10px;
+      overflow: hidden; /* 둥근 모서리 유지 */
+    }
+  
+    thead th {
+      background-color: #f3f3f3;
+      color: #34495e;
+      font-weight: bold;
+      text-align: left;
+      padding: 12px 12px;
+      border-bottom: 1px solid #ddd;
+      font-size: 14px;
+    }
+  
+    tbody td {
+      padding: 12px 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+  
+    tbody tr:hover td {
+      background-color: #fafafa;
+    }
+  
+    /* 상태 텍스트 */
+    .type-add {
+      color: rgba(200, 1, 80, 1);
+      font-weight: bold;
+    }
+  
+    .type-del {
+      color: #34495e;
+      font-weight: bold;
+    }
+  
+    .type-unknown {
+      color: #999;
+      font-weight: bold;
+    }
+  
+    /* 액션 버튼 */
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  
+    .btn-approve {
+      background-color: rgba(200, 1, 80, 1);
+      color: #fff;
+    }
+  
+    .btn-approve:hover {
+      background-color: rgb(194, 50, 108);
+    }
+  
+    .btn-deny {
+      background-color: #34495e;
+      color: #fff;
+      margin-left: 8px;
+    }
+  
+    .btn-deny:hover {
+      background-color: #2c3e50;
+    }
+  
+    /* 액션 셀에서 버튼 줄바꿈 방지 */
+    .actions {
+      white-space: nowrap;
+    }
+  
+    /* 빈 상태 */
+    .empty {
+      text-align: center;
+      color: #777;
+      padding: 18px;
+      font-size: 14px;
+    }
+  
+    /* 작은 화면 반응형 */
+    @media (max-width: 768px) {
+      .container {
+        padding: 12px;
+      }
+  
+      h2 {
+        font-size: 22px;
+        margin: 20px 0 14px;
+      }
+  
+      .card {
+        padding: 12px;
+      }
+  
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+  
+      thead {
+        display: none;
+      }
+  
+      tbody tr {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        background: #fff;
+      }
+  
+      tbody td {
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+  
+      /* 각 td 앞에 라벨 표시하려면 HTML에 data-label을 넣는 방식이 베스트인데,
+         지금 HTML을 안 바꾸는 조건이라 최소한으로만 반응형 처리 */
+      .actions {
+        justify-content: flex-end;
+      }
+  
+      .btn {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+    }
+  
+    /* 다크 모드 */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #181818;
+        color: #e0e0e0;
+      }
+  
+      .container {
+        background-color: transparent;
+      }
+  
+      h2 {
+        color: #ff88a2;
+      }
+  
+      .card {
+        background-color: #242424;
+        border: 1px solid #444;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      }
+  
+      table {
+        background-color: #2c2c2c;
+      }
+  
+      thead th {
+        background-color: #3a3a3a;
+        color: #ff88a2;
+        border-bottom: 1px solid #444;
+      }
+  
+      tbody td {
+        background-color: #242424;
+        border-bottom: 1px solid #333;
+        color: #e0e0e0;
+      }
+  
+      tbody tr:hover td {
+        background-color: #2a2a2a;
+      }
+  
+      .btn-approve {
+        background-color: #b3305c;
+      }
+  
+      .btn-approve:hover {
+        background-color: #a02c52;
+      }
+  
+      .btn-deny {
+        background-color: #555;
+      }
+  
+      .btn-deny:hover {
+        background-color: #444;
+      }
+  
+      .type-add {
+        color: #ff88a2;
+      }
+  
+      .type-del {
+        color: #ddd;
+      }
+  
+      .type-unknown {
+        color: #aaa;
+      }
+  
+      .empty {
+        color: #aaa;
+      }
+    }
+  </style>  
+</head>
+<body>
+  <div class="container">
+    <h2>요청 리스트</h2>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>현재 점수</th>
+            <th>요청 타입</th>
+            <th>요청 시각(UTC)</th>
+            <th>액션</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for r in requests %}
+          <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.score }}</td>
+            <td>
+              {% if r.type == 1 %}
+                <span class="type-add">ADD(한국인으로 표시)</span>
+              {% elif r.type == 0 %}
+                <span class="type-del">DELETE(한국인 표시 해제)</span>
+              {% else %}
+                <span class="type-unknown">UNKNOWN</span>
+              {% endif %}
+            </td>
+            <td>{{ r.updated_at }}</td>
+            <td class="actions">
+              <form method="post" action="/author/requests/approve" style="display:inline;">
+                <input type="hidden" name="name" value="{{ r.name }}">
+                <button class="btn btn-approve" type="submit">수락</button>
+              </form>
+              
+              <form method="post" action="/author/requests/deny" style="display:inline; margin-left:8px;">
+                <input type="hidden" name="name" value="{{ r.name }}">
+                <button class="btn btn-deny" type="submit">거절/삭제</button>
+              </form>                 
+            </td>
+          </tr>
+          {% endfor %}
+
+          {% if requests|length == 0 %}
+          <tr>
+            <td class="empty" colspan="5">대기 중인 요청이 없습니다.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

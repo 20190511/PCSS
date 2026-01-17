@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import Form
 from app.core.templates import templates
 from app.services.author_service import compute_author_stats_mongo
@@ -41,6 +41,20 @@ async def author_stats_page(
             "is_korean": is_korean,
         },
     )
+
+
+@router.get("/request/korean")
+async def get_korean_requests():
+    requests = list(req_korean_col.find({}))
+    response = []
+    for req in requests:
+        response.append({
+            "name": req["name"],
+            "score": req["score"],
+            "type": req["type"],
+            "updated_at": req["updated_at"],
+        })
+    return {"requests": response}
 
 
 @router.post("/korean/{param}")
@@ -128,3 +142,66 @@ async def request_delete_korean_stat(param: str):
         upsert=True,
     )
     return {"status": "Requested", "param": param}
+
+
+@router.get("/requests", response_class=HTMLResponse)
+async def admin_requests_page(request: Request):
+    reqs = list(req_korean_col.find({}).sort("updated_at", -1))
+
+    items = []
+    for r in reqs:
+        items.append({
+            "name": r.get("name", ""),
+            "score": r.get("score", 0),
+            "type": r.get("type", None),  # 1: add, 0: delete
+            "updated_at": r.get("updated_at", None).isoformat() if r.get("updated_at", None) else "",
+        })
+
+    return templates.TemplateResponse(
+        "admin_requests.html",
+        {"request": request, "requests": items},
+    )
+
+
+def apply_korean_score(param: str, score: int):
+    """
+    add_korean_stat / delete_korean_stat와 동일한 핵심 로직
+    (권장: DB 성공 후 dict 반영)
+    """
+    if param not in name_dict:
+        raise NotFoundException("Name not found")
+
+    result = name_col.update_one(
+        {"name": param},
+        {"$set": {"score": score, "updated_at": datetime.now(timezone.utc)}},
+    )
+    if result.matched_count == 0:
+        raise NotFoundException("Name not found in DB")
+
+    name_dict[param] = score
+    
+
+@router.post("/requests/approve")
+async def approve_korean_request(name: str = Form(...)):
+    req_doc = req_korean_col.find_one({"name": name})
+    if not req_doc:
+        raise NotFoundException("No pending request")
+
+    req_type = req_doc.get("type", None)
+    if req_type not in (0, 1):
+        raise NotFoundException("Invalid request type")
+
+    new_score = 1 if req_type == 1 else 0
+    apply_korean_score(name, new_score)
+
+    req_korean_col.delete_one({"name": name})
+    return RedirectResponse(url="/author/requests", status_code=303)
+
+
+@router.post("/requests/deny")
+async def deny_korean_request(name: str = Form(...)):
+    result = req_korean_col.delete_one({"name": name})
+    if result.deleted_count == 0:
+        raise NotFoundException("No pending request to deny")
+
+    return RedirectResponse(url="/author/requests", status_code=303)
