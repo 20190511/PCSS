@@ -8,9 +8,9 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "로그 분석 대시보드",
-  description: "MongoDB 접속 로그 분석 대시보드",
-  generator: "v0.app",
+  title: "PCSS Stat",
+  description: "PCSS Access Logs Statistics Dashboard",
+  generator: "Yojun Moon",
 }
 
 export default function RootLayout({

@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev",
+    "dev": "next dev -p 3002",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start -p 3002"
   },
   "dependencies": {
     "@aws-sdk/credential-providers": "latest",

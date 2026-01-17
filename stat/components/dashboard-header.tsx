@@ -1,16 +1,26 @@
-"use client"
+"use client";
 
-import { CalendarIcon, Activity } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { format } from "date-fns"
-import { ko } from "date-fns/locale"
-import { useFilter } from "@/lib/filter-context"
+import { CalendarIcon, Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { useFilter } from "@/lib/filter-context";
 
 export function DashboardHeader() {
-  const { dateRange, setDateRange, logType, setLogType } = useFilter()
+  const { dateRange, setDateRange, logType, setLogType } = useFilter();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -21,8 +31,10 @@ export function DashboardHeader() {
               <Activity className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">로그 분석</h1>
-              <p className="text-sm text-muted-foreground">MongoDB Access Logs</p>
+              <h1 className="text-xl font-semibold text-foreground">
+                로그 분석
+              </h1>
+              <p className="text-sm text-muted-foreground">PCSS Access Logs</p>
             </div>
           </div>
 
@@ -76,5 +88,5 @@ export function DashboardHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
