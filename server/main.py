@@ -1,19 +1,21 @@
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timezone
+from app.db import log_col
 
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes import api_router
 from app.routes.author_routes import router as author_router
 from app.routes.page_routes import router as page_router
-from app.db.mongo import get_client
-
-app = FastAPI(title="PCSS API", version="1.0.0")
+from app.db.mongo import get_mongo_client
+from app.libs.logger import get_client_ip
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 
+app = FastAPI(title="PCSS API", version="1.0.0")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 app.add_middleware(
@@ -33,7 +35,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def _startup():
-    await get_client()
+    await get_mongo_client()
     
 app.include_router(api_router, prefix="/api")
 app.include_router(page_router)

@@ -1,6 +1,7 @@
 from app.db import errors_col
 from datetime import datetime
 from bson import ObjectId
+from fastapi import Request
 
 
 def write_log(run_id, message):
@@ -28,3 +29,15 @@ def write_log(run_id, message):
             )
     except Exception as e:
         print("Failed to write log:", str(e))
+        
+def get_client_ip(request: Request) -> str:
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        # "client, proxy1, proxy2" 형태일 수 있음
+        return xff.split(",")[0].strip()
+    xrip = request.headers.get("x-real-ip")
+    if xrip:
+        return xrip.strip()
+    if request.client:
+        return request.client.host
+    return "unknown"

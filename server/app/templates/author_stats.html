@@ -158,44 +158,75 @@
   </div>
 
   <div class="profile">
-    {% if is_korean %}  
-      <a href="#" class="action-link"
-         onclick="event.preventDefault(); requestToggleKorean(false);">
+    <a href="#" id="korean-action-link" class="action-link"
+       onclick="event.preventDefault(); handleKoreanAction();">
+      {% if is_korean %}
         요청: 한국인이 아닙니다
-      </a>
-    {% else %}
-      <a href="#" class="action-link"
-         onclick="event.preventDefault(); requestToggleKorean(true);">
-        한국인입니다
-      </a>
-    {% endif %}
-  </div>
+      {% else %}
+        요청: 한국인입니다
+      {% endif %}
+    </a>
+  </div>  
   
   <script>
-    async function requestToggleKorean(makeKorean) {
-      const name = {{ name | tojson }};
-      const endpoint = makeKorean
-        ? `/author/add/korean/${encodeURIComponent(name)}`
-        : `/author/delete/korean/${encodeURIComponent(name)}`;
+    const authorName = {{ name | tojson }};
+    const initialIsKorean = {{ is_korean | tojson }};
   
-      try {
-        const res = await fetch(endpoint, { method: "POST" });
-        const data = await res.json();
+    // UI 상태: false=요청(정정 요청 보내기), true=요청취소(취소 요청 보내기)
+    let uiPending = false;
   
-        if (!res.ok) {
-          alert(data?.detail ?? "요청에 실패했습니다.");
-          return;
-        }
+    function setLinkText() {
+      const link = document.getElementById("korean-action-link");
+      if (!link) return;
   
-        alert("요청이 접수되었습니다.");
-        // 선택: 요청 후 새로고침해서 화면 상태 갱신
-        location.reload();
-      } catch (e) {
-        alert("네트워크 오류가 발생했습니다.");
+      if (!uiPending) {
+        link.textContent = initialIsKorean
+          ? "요청: 한국인이 아닙니다"
+          : "요청: 한국인입니다";
+      } else {
+        link.textContent = "요청 취소";
       }
     }
+  
+    async function handleKoreanAction() {
+      // 1) 요청 전 상태 -> add/delete 요청 보내고, UI는 즉시 '요청 취소'로 변경
+      if (!uiPending) {
+        uiPending = true;
+        setLinkText();
+  
+        alert("요청을 전송했습니다."); // 성공 여부 무관, 항상 뜸
+  
+        const endpoint = initialIsKorean
+          ? `/author/delete/korean/${encodeURIComponent(authorName)}`
+          : `/author/add/korean/${encodeURIComponent(authorName)}`;
+  
+        try {
+          await fetch(endpoint, { method: "POST" });
+        } catch (e) {
+          // 네트워크 오류여도 UI는 유지
+        }
+        return;
+      }
+  
+      // 2) '요청 취소' 상태 -> cancel 라우트로 전송
+      alert("요청 취소를 전송했습니다."); // 항상 뜸
+  
+      const cancelEndpoint = `/author/cancel/korean/${encodeURIComponent(authorName)}`;
+      try {
+        await fetch(cancelEndpoint, { method: "POST" });
+      } catch (e) {
+        // 실패해도 알림은 이미 뜸
+      }
+  
+      // 취소 후 UI는 다시 요청 상태로 복귀
+      uiPending = false;
+      setLinkText();
+    }
+  
+    // 초기 텍스트 세팅
+    setLinkText();
   </script>  
-
+  
   <div class="notice">
     본 통계는 <b>PCSS 목록에 포함된 학회</b> 기준으로만 집계됩니다.
     (DBLP 전체 실적이 아니라 PCSS에서 사용하는 학회 범위에 한정됩니다.)

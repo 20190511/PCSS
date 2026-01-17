@@ -92,7 +92,7 @@ async def _ensure_tunnel_started() -> int:
     return _tunnel_local_port
 
 
-async def get_client() -> AsyncIOMotorClient:
+async def get_mongo_client() -> AsyncIOMotorClient:
     """
     AsyncIOMotorClient를 싱글턴으로 생성.
     로컬이면 SSH 터널을 열고 127.0.0.1:<local_port>로 접속.
@@ -117,7 +117,7 @@ async def get_db() -> AsyncIOMotorDatabase:
     global _db
     if _db is not None:
         return _db
-    client = await get_client()
+    client = await get_mongo_client()
     _db = client[DB_NAME]
     return _db
 

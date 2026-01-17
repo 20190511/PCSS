@@ -42,6 +42,7 @@ async def author_stats_page(
         },
     )
 
+
 @router.post("/korean/{param}")
 async def add_korean_stat(param: str):
     if param not in name_dict:
@@ -95,6 +96,20 @@ async def request_add_korean_stat(param: str):
         upsert=True,
     )
     return {"status": "Requested", "param": param}
+
+
+@router.post("/cancel/korean/{param}")
+async def cancel_korean_request(param: str):
+    if param not in name_dict:
+        raise NotFoundException("Name not found")
+
+    result = req_korean_col.delete_one({"name": param})
+
+    if result.deleted_count == 0:
+        # 취소할 요청이 없을 때
+        raise NotFoundException("No pending request to cancel")
+
+    return {"status": "Canceled", "param": param}
 
 
 @router.post("/delete/korean/{param}")

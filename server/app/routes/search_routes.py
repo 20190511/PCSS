@@ -1,15 +1,11 @@
-# app/routes/pcssearch_mongo.py
-
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from uuid import uuid4
 import asyncio
 import json
-
 from app.libs.exceptions import NotFoundException, InternalServerErrorException
 from app.schemas.search import SearchRequest
 from app.services.search_service import PCSSEARCHMongo
-
 from app.core.job_store import (
     create_job,
     get_job,
@@ -17,32 +13,40 @@ from app.core.job_store import (
     fail_job,
     cancel_job,
 )
-
 from app.data import get_conferences_for_ui
 from app.core.templates import templates
-
+from app.db import log_col
+from datetime import datetime, timezone
+from app.libs.logger import get_client_ip
 
 router = APIRouter()
-
 
 @router.get("/conferences")
 async def conferences():
     return JSONResponse(get_conferences_for_ui())
 
 
-# 1) 작업 시작: job_id 즉시 반환
 @router.post("/start")
-async def start_search(req: SearchRequest):
+async def start_search(req: SearchRequest, request: Request):
+    ip = get_client_ip(request)
     job_id = str(uuid4())
     options = req.model_dump() if hasattr(req, "model_dump") else req.dict()
+    
+    try:
+        log_col.insert_one({
+            "ts": datetime.now(timezone.utc),
+            "type": "search_start",
+            "ip": ip,
+            "job_id": job_id,
+            "options": options,
+            "user_agent": request.headers.get("user-agent", ""),
+            "referer": request.headers.get("referer", ""),
+        })
+    except Exception:
+        pass
+    
     job = create_job(job_id, options=options)
 
-    # SearchRequest 필드명은 기존 그대로 사용:
-    # - option
-    # - uncertainty (threshold)
-    # - startyear, endyear
-    # - countOption
-    # - selectedConferences
     pcs = PCSSEARCHMongo(
         option=req.option,
         threshold=req.uncertainty,
@@ -100,7 +104,6 @@ async def start_search(req: SearchRequest):
     }
 
 
-# 2) SSE 이벤트 스트림
 @router.get("/events/{job_id}")
 async def search_events(job_id: str):
     job = get_job(job_id)
@@ -149,7 +152,6 @@ def _sse(event_name: str, data: dict) -> str:
     )
 
 
-# 3) 최종 JSON 결과 조회
 @router.get("/result/{job_id}")
 async def search_result(job_id: str):
     job = get_job(job_id)
@@ -168,7 +170,6 @@ async def search_result(job_id: str):
     return {"status": "done", "result": job.result}
 
 
-# 4) 결과 HTML 페이지(로딩/완료 화면)
 @router.get("/page/{job_id}", response_class=HTMLResponse)
 async def search_page(request: Request, job_id: str):
     job = get_job(job_id)
@@ -216,9 +217,8 @@ async def search_page(request: Request, job_id: str):
     )
 
 
-# 5) 취소
 @router.post("/cancel/{job_id}")
-async def search_cancel(job_id: str):
+async def search_cancel(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
         raise NotFoundException("job not found")
