@@ -31,3 +31,29 @@ export async function getDatabase(): Promise<Db> {
 }
 
 export default clientPromise
+
+async function printAllLogsToTerminal() {
+  try {
+    const db = await getDatabase()
+    const logs = await db.collection("logs").find({}).toArray()
+
+    console.log("\n========== [PCSS] logs collection dump ==========")
+    console.log("count =", logs.length)
+    console.log(
+      logs.map((d) => ({
+        ...d,
+        _id: d._id?.toString?.() ?? d._id,
+        ts: d.ts instanceof Date ? d.ts.toISOString() : d.ts,
+      }))
+    )
+    console.log("========== [PCSS] end ==========\n")
+  } catch (e) {
+    console.error("[PCSS] Failed to dump logs:", e)
+  }
+}
+
+// dev에서 핫리로드로 중복 출력 방지
+if (!global._printedLogsOnce) {
+  global._printedLogsOnce = true
+  void printAllLogsToTerminal()
+}
