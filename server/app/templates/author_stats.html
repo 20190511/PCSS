@@ -125,16 +125,17 @@
       line-height: 1.4;
     }
 
-    .btn {
-      background: var(--color-accent);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
+    .action-link {
+      color: var(--color-accent);
+      text-decoration: underline;
       cursor: pointer;
       font-size: 13px;
+      display: inline-block;
+      margin-top: 6px;
     }
-    .btn:hover { opacity: 0.9; }
+    .action-link:hover {
+      opacity: 0.9;
+    }
     
     
     @media (prefers-color-scheme: dark) {
@@ -156,15 +157,17 @@
     <a href="{{ url }}" target="_blank">DBLP 프로필</a>
   </div>
 
-  <div class="card" style="text-align:center;">
-    {% if is_korean %}
-      <div class="title">현재 상태: 한국인으로 표시됨</div>
-      <div class="conf">잘못 분류되었다면 아래 버튼으로 정정 요청을 보낼 수 있습니다.</div>
-      <button class="btn" onclick="requestToggleKorean(false)">한국인이 아닙니다</button>
+  <div class="profile">
+    {% if is_korean %}  
+      <a href="#" class="action-link"
+         onclick="event.preventDefault(); requestToggleKorean(false);">
+        요청: 한국인이 아닙니다
+      </a>
     {% else %}
-      <div class="title">현재 상태: 한국인이 아닌 것으로 표시됨</div>
-      <div class="conf">한국인이라면 아래 버튼으로 정정 요청을 보낼 수 있습니다.</div>
-      <button class="btn" onclick="requestToggleKorean(true)">한국인입니다</button>
+      <a href="#" class="action-link"
+         onclick="event.preventDefault(); requestToggleKorean(true);">
+        한국인입니다
+      </a>
     {% endif %}
   </div>
   
@@ -172,8 +175,8 @@
     async function requestToggleKorean(makeKorean) {
       const name = {{ name | tojson }};
       const endpoint = makeKorean
-        ? `/add/korean/${encodeURIComponent(name)}`
-        : `/delete/korean/${encodeURIComponent(name)}`;
+        ? `/author/add/korean/${encodeURIComponent(name)}`
+        : `/author/delete/korean/${encodeURIComponent(name)}`;
   
       try {
         const res = await fetch(endpoint, { method: "POST" });

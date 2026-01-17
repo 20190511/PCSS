@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes import api_router
+from app.routes.author_routes import router as author_router
 from app.routes.page_routes import router as page_router
 from app.db.mongo import get_client
 
@@ -36,3 +37,4 @@ async def _startup():
     
 app.include_router(api_router, prefix="/api")
 app.include_router(page_router)
+app.include_router(author_router, prefix="/author")
