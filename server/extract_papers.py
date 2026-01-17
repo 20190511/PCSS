@@ -19,6 +19,18 @@ from rich.progress import (
 )
 from rich.console import Console
 
+# params에 param 추가 시 규칙
+"""
+    conf_col.params에 들어갈 수 있는 문자열을 룰로 변환.
+      - "sp"                  : base=sp (prefix 제한 없이 venue_id=sp 전체 매칭)
+      --> "conf/sp"             : prefix=conf + base=sp (key가 conf/... 인 것만 매칭)
+      - "pacmpl:PLDI"         : base=pacmpl + article의 number="PLDI"일 때만 매칭
+      - "journals/pacmpl:PLDI": prefix=journals + base=pacmpl (journals/... 인 것만)
+      - "pacmmod:3:1"         : base=pacmmod + article volume/number
+      --> "pacmmod:3:1:2025"    : base=pacmmod + volume/number/year
+      - "crossref:...."       : elem.crossref가 정확히 일치할 때 매칭
+"""
+
 # =========================
 # 설정
 # =========================
@@ -28,10 +40,7 @@ xml_path = os.path.join(BASE_DIR, "dblp.xml")
 BATCH_SIZE = 1000  # MongoDB bulk insert 크기
 console = Console()
 
-
-# =========================
 # Params 기반 룰 파싱/로딩
-# =========================
 def _parse_param_to_rule(param: str, conf_name: str) -> dict | None:
     """
     conf_col.params에 들어갈 수 있는 문자열을 룰로 변환.
@@ -184,7 +193,7 @@ def resolve_conf_name(elem, rules_index: dict[str, list[dict]]) -> str | None:
     year = (elem.findtext("year") or "").strip()
 
     for rule in rules:
-        # ✅ 핵심: 룰에 prefix가 지정되어 있으면 key_prefix가 반드시 일치해야 함
+        # 룰에 prefix가 지정되어 있으면 key_prefix가 반드시 일치해야 함
         if rule.get("prefix") and rule["prefix"] != key_prefix:
             continue
 
@@ -215,9 +224,7 @@ def resolve_conf_name(elem, rules_index: dict[str, list[dict]]) -> str | None:
 
     return None
 
-# =========================
 # 메인 트랙 판별
-# =========================
 def is_main_track(elem, title, booktitle):
     if not title:
         return False
@@ -285,9 +292,7 @@ def is_main_track(elem, title, booktitle):
     return True
 
 
-# =========================
 # DBLP 파싱 & DB 적재
-# =========================
 def parse_dblp(xml_path, rules_index):
     paper_tags = {"inproceedings", "article"}
 
@@ -444,9 +449,7 @@ def parse_dblp(xml_path, rules_index):
     )
 
 
-# =========================
 # 다운로드/압축해제
-# =========================
 def download_dblp_xml_gz(
     url: str = "https://dblp.uni-trier.de/xml/dblp.xml.gz",
     out_dir: str | Path = os.path.dirname(__file__),
