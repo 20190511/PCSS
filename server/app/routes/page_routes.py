@@ -24,6 +24,6 @@ async def homepage(request: Request):
                 "referer": request.headers.get("referer", ""),
             })
     except Exception:
-        pass
+        print("Failed to log homepage visit event")
 
     return templates.TemplateResponse("homepage.html", {"request": request})

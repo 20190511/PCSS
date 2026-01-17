@@ -33,17 +33,18 @@ async def start_search(req: SearchRequest, request: Request):
     options = req.model_dump() if hasattr(req, "model_dump") else req.dict()
     
     try:
-        log_col.insert_one({
-            "ts": datetime.now(timezone.utc),
-            "type": "search_start",
-            "ip": ip,
-            "job_id": job_id,
-            "options": options,
-            "user_agent": request.headers.get("user-agent", ""),
-            "referer": request.headers.get("referer", ""),
-        })
+        if ip not in ["127.0.0.1", "::1"]:
+            log_col.insert_one({
+                "ts": datetime.now(timezone.utc),
+                "type": "search_start",
+                "ip": ip,
+                "job_id": job_id,
+                "options": options,
+                "user_agent": request.headers.get("user-agent", ""),
+                "referer": request.headers.get("referer", ""),
+            })
     except Exception:
-        pass
+        print("Failed to log search start event")
     
     job = create_job(job_id, options=options)
 
