@@ -193,7 +193,7 @@ class PCSSEARCHMongo:
         if self._should_cancel():
             raise asyncio.CancelledError()
 
-        is_k = bool(score > self.threshold)
+        is_k = bool(score >= self.threshold)
         self._korean_cache[name] = is_k  # bool은 여기만
 
         if is_k:
