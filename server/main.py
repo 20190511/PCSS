@@ -23,8 +23,6 @@ app.add_middleware(
     allow_origins=[
         "http://pcss.r-e.kr",
         "https://pcss.r-e.kr",
-        "http://pcss.r-e.kr:3000",
-        "http://pcss.r-e.kr:8000",
         "http://localhost:3000",
         "http://localhost:8000",
     ],

@@ -18,6 +18,8 @@ from rich.progress import (
     SpinnerColumn,
 )
 from rich.console import Console
+from datetime import datetime, timezone
+from pymongo import UpdateOne
 
 # params에 param 추가 시 규칙
 """
@@ -453,7 +455,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
         os.chdir(original_cwd)
         return
 
-    batch_docs = []
+    batch_ops = []
     count = 0
     matched_count = 0
     context = None
@@ -572,11 +574,37 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                         "crossref": elem.findtext("crossref"),
                     }
 
-                    batch_docs.append(record)
+                    # timestamps
+                    now = datetime.now(timezone.utc)
 
-                    if len(batch_docs) >= BATCH_SIZE:
-                        papers_col.insert_many(batch_docs, ordered=False)
-                        batch_docs.clear()
+                    # filter: dblp_key가 없으면 안전하게 스킵(또는 다른 키로 fallback)
+                    dblp_key = record.get("dblp_key")
+                    if not dblp_key:
+                        elem.clear()
+                        while elem.getprevious() is not None:
+                            del elem.getparent()[0]
+                        continue
+
+                    # upsert operation
+                    batch_ops.append(
+                        UpdateOne(
+                            {"dblp_key": dblp_key},
+                            {
+                                "$set": {
+                                    **record,
+                                    "updated_at": now,
+                                },
+                                "$setOnInsert": {
+                                    "created_at": now,
+                                },
+                            },
+                            upsert=True,
+                        )
+                    )
+
+                    if len(batch_ops) >= BATCH_SIZE:
+                        papers_col.bulk_write(batch_ops, ordered=False)
+                        batch_ops.clear()
 
                     elem.clear()
                     while elem.getprevious() is not None:
@@ -585,9 +613,9 @@ def parse_dblp(xml_path, rules_index, name_to_pid):
                 elif elem.tag == "dblp":
                     elem.clear()
 
-            if batch_docs:
-                papers_col.insert_many(batch_docs, ordered=False)
-                batch_docs.clear()
+            if batch_ops:
+                papers_col.bulk_write(batch_ops, ordered=False)
+                batch_ops.clear()
 
     except Exception:
         console.print("[bold red]파싱 중 오류 발생[/bold red]")
