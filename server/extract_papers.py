@@ -35,11 +35,13 @@ console = Console()
 def _parse_param_to_rule(param: str, conf_name: str) -> dict | None:
     """
     conf_col.params에 들어갈 수 있는 문자열을 룰로 변환.
-      - "pldi"                : base=pldi (그 venue_id 전체 매칭)
+      - "sp"                  : base=sp (prefix 제한 없이 venue_id=sp 전체 매칭)
+      - "conf/sp"             : prefix=conf + base=sp (key가 conf/... 인 것만 매칭)
       - "pacmpl:PLDI"         : base=pacmpl + article의 number="PLDI"일 때만 매칭
-      - "pacmmod:3:1"         : base=pacmmod + article의 volume="3" and number="1"
-      - "pacmmod:3:1:2025"    : base=pacmmod + volume/number/year 모두 일치
-      - "crossref:...."       : elem.crossref가 정확히 일치할 때 매칭 (원하면 사용)
+      - "journals/pacmpl:PLDI": prefix=journals + base=pacmpl (journals/... 인 것만)
+      - "pacmmod:3:1"         : base=pacmmod + article volume/number
+      - "pacmmod:3:1:2025"    : base=pacmmod + volume/number/year
+      - "crossref:...."       : elem.crossref가 정확히 일치할 때 매칭
     """
     if not param:
         return None
@@ -65,51 +67,60 @@ def _parse_param_to_rule(param: str, conf_name: str) -> dict | None:
     if not parts:
         return None
 
-    base = parts[0].lower()
+    # prefix/base 분리 지원: "conf/sp" -> prefix="conf", base="sp"
+    main = parts[0].lower()
+    prefix = None
+    base = main
+    if "/" in main:
+        prefix, base = main.split("/", 1)
 
-    # "pldi"
+    # "pldi" / "conf/pldi"
     if len(parts) == 1:
         return {
             "kind": "base",
             "base": base,
+            "prefix": prefix,  
             "conf": conf_name,
-            "specificity": 10,
+            "specificity": 20 if prefix else 10,  
             "raw": raw,
         }
 
-    # "pacmpl:PLDI" -> article number 트랙
+    # "pacmpl:PLDI" / "journals/pacmpl:PLDI"
     if len(parts) == 2:
         return {
             "kind": "track",
             "base": base,
+            "prefix": prefix,  
             "number": parts[1].lower(),
             "conf": conf_name,
-            "specificity": 50,
+            "specificity": 55 if prefix else 50,
             "raw": raw,
         }
 
-    # "pacmmod:3:1" -> article volume/number 이슈
+    # "pacmmod:3:1"
     if len(parts) == 3:
         return {
             "kind": "issue",
             "base": base,
-            "volume": parts[1],  # 문자열로 비교 (DBLP XML도 문자열)
+            "prefix": prefix,  
+            "volume": parts[1],
             "number": parts[2].lower(),
             "conf": conf_name,
-            "specificity": 60,
+            "specificity": 65 if prefix else 60,
             "raw": raw,
         }
 
-    # "pacmmod:3:1:2025" -> article volume/number/year
+    # "pacmmod:3:1:2025"
     if len(parts) >= 4:
         return {
             "kind": "issue_year",
             "base": base,
+            "prefix": prefix,  
             "volume": parts[1],
             "number": parts[2].lower(),
             "year": parts[3],
             "conf": conf_name,
-            "specificity": 70,
+            "specificity": 75 if prefix else 70,
             "raw": raw,
         }
 
@@ -142,15 +153,17 @@ def load_conference_rules_index() -> dict[str, list[dict]]:
 def resolve_conf_name(elem, rules_index: dict[str, list[dict]]) -> str | None:
     """
     elem 하나를 보고 rules_index(params 기반 규칙들)로 어떤 conf인지 결정.
-    - hardcoding 없이 rules_index(=DB에 저장된 params)로만 판단
-    - 같은 base에 여러 규칙이 있으면 specificity 높은 규칙부터 적용
+    - prefix가 있는 룰(conf/sp 등)은 key_prefix와 일치할 때만 적용됨
     """
     key = (elem.get("key") or "").strip()
+
+    key_prefix = None
     venue_id = None
     if key:
         parts = key.split("/")
         if len(parts) >= 2:
-            venue_id = parts[1].lower()
+            key_prefix = parts[0].lower()  
+            venue_id = parts[1].lower()    
 
     # crossref 규칙이 있으면 먼저 검사
     crossref = (elem.findtext("crossref") or "").strip().lower()
@@ -166,38 +179,34 @@ def resolve_conf_name(elem, rules_index: dict[str, list[dict]]) -> str | None:
     if not rules:
         return None
 
-    # article에서 사용할 수 있는 정보
     number = (elem.findtext("number") or "").strip().lower()
     volume = (elem.findtext("volume") or "").strip()
     year = (elem.findtext("year") or "").strip()
 
-    # 규칙 적용 (정렬되어 있으니 첫 매칭 리턴)
     for rule in rules:
+        # ✅ 핵심: 룰에 prefix가 지정되어 있으면 key_prefix가 반드시 일치해야 함
+        if rule.get("prefix") and rule["prefix"] != key_prefix:
+            continue
+
         kind = rule["kind"]
 
-        # base 규칙: venue_id만 맞으면 OK (inproceedings/article 둘 다 허용)
         if kind == "base":
             return rule["conf"]
 
-        # 아래는 article에서만 의미 있음
         if elem.tag != "article":
             continue
 
         if kind == "track":
-            # 예: pacmpl:PLDI -> elem.number == "PLDI"
             if number and number == rule["number"]:
                 return rule["conf"]
 
         elif kind == "issue":
-            # 예: pacmmod:3:1 -> elem.volume == "3" and elem.number == "1"
             if volume and number and volume == rule["volume"] and number == rule["number"]:
                 return rule["conf"]
 
         elif kind == "issue_year":
             if (
-                volume
-                and number
-                and year
+                volume and number and year
                 and volume == rule["volume"]
                 and number == rule["number"]
                 and year == rule["year"]
@@ -205,7 +214,6 @@ def resolve_conf_name(elem, rules_index: dict[str, list[dict]]) -> str | None:
                 return rule["conf"]
 
     return None
-
 
 # =========================
 # 메인 트랙 판별
@@ -349,11 +357,11 @@ def parse_dblp(xml_path, rules_index):
                     booktitle_xml = elem.findtext("booktitle")
                     venue_str = booktitle_xml if booktitle_xml else elem.findtext("journal")
 
-                    if not is_main_track(elem, title, venue_str):
-                        elem.clear()
-                        while elem.getprevious() is not None:
-                            del elem.getparent()[0]
-                        continue
+                    # if not is_main_track(elem, title, venue_str):
+                    #     elem.clear()
+                    #     while elem.getprevious() is not None:
+                    #         del elem.getparent()[0]
+                    #     continue
 
                     matched_count += 1
                     progress.update(task_id, saved=matched_count)
