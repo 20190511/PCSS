@@ -335,19 +335,19 @@
             <label>검색 기준:</label>
             <div class="author-role-group">
               <label>
-                <input type="checkbox" name="author_role" value="1" checked>
+                <input type="checkbox" name="option" value="1" checked>
                 1저자
               </label>
               <label>
-                <input type="checkbox" name="author_role" value="2">
+                <input type="checkbox" name="option" value="2">
                 2저자
               </label>
               <label>
-                <input type="checkbox" name="author_role" value="3">
+                <input type="checkbox" name="option" value="3">
                 마지막 저자
               </label>
               <label>
-                <input type="checkbox" name="author_role" value="4">
+                <input type="checkbox" name="option" value="4">
                 공저자
               </label>
             </div>
@@ -493,10 +493,10 @@
 </body>
 
 <script>
-  document.querySelectorAll('input[name="author_role"]').forEach(cb => {
+  document.querySelectorAll('input[name="option"]').forEach(cb => {
     cb.addEventListener('change', function () {
       if (this.checked) {
-        document.querySelectorAll('input[name="author_role"]').forEach(other => {
+        document.querySelectorAll('input[name="option"]').forEach(other => {
           if (other !== this) other.checked = false;
         });
       }

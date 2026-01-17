@@ -86,72 +86,59 @@ document.addEventListener("DOMContentLoaded", () => {
   submitBtn.addEventListener("click", async () => {
     const formData = new FormData(form);
     const filters = Object.fromEntries(formData.entries());
-
+  
+    const selectedRoleEl = document.querySelector(
+      'input[name="option"]:checked'
+    );
+  
+    if (!selectedRoleEl) {
+      alert("검색 기준을 하나 선택해주세요");
+      return;
+    }
+  
+    const option = Number(selectedRoleEl.value);
+  
     const selectedConferences = Array.from(
       document.querySelectorAll(".conference-checkbox")
     )
-      .filter((cb) => cb.checked)
-      .map((cb) => cb.value);
-
-    filters.selectedConferences = selectedConferences;
-
-    // 입력값 검증
-    if (!filters.option) {
-      alert("옵션을 선택해주세요");
-      return;
-    }
-    if (!filters.startyear || !filters.endyear) {
-      alert("시작 연도와 종료 연도를 입력해주세요");
-      return;
-    }
-
-    const startyear = parseInt(filters.startyear, 10);
-    const endyear = parseInt(filters.endyear, 10);
-    if (Number.isNaN(startyear) || Number.isNaN(endyear)) {
-      alert("연도 입력이 올바르지 않습니다");
-      return;
-    }
-    if (startyear > endyear) {
-      alert("시작 연도는 종료 연도보다 작거나 같아야 합니다");
-      return;
-    }
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+  
     if (selectedConferences.length === 0) {
       alert("최소 하나 이상의 학회를 선택해주세요!");
       return;
     }
-
-    // 타입 정리(서버 Pydantic에서 int/float 기대하면 안전)
+  
+    const startyear = Number(filters.startyear);
+    const endyear = Number(filters.endyear);
+  
+    if (startyear > endyear) {
+      alert("시작 연도는 종료 연도보다 작거나 같아야 합니다");
+      return;
+    }
+  
     const payload = {
-      option: String(filters.option), // SearchRequest가 int면 Number(...)로 바꿔도 됨
+      option,
       uncertainty: Number(filters.uncertainty),
       startyear,
       endyear,
-      countOption: filters.countOption ?? "no", // UI 주석이면 기본값
       selectedConferences,
     };
-
-    try {
-      // FastAPI start
-      const resp = await fetch(`${API_BASE}${API_PREFIX}/search/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!resp.ok) {
-        throw new Error((await resp.text()) || `HTTP ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      // data: { job_id, events_url, result_url, page_url }
-
-      // FastAPI가 렌더하는 페이지로 이동
-      window.location.href = `${API_BASE}${data.page_url}`;
-    } catch (err) {
-      console.error("Error:", err);
-      alert("검색 시작 실패: " + (err?.message || err));
+  
+    const resp = await fetch("/api/search/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  
+    if (!resp.ok) {
+      alert("검색 시작 실패");
+      return;
     }
-  });
+  
+    const data = await resp.json();
+    window.location.href = data.page_url;
+  });  
 });
 
 // ---------------------------
