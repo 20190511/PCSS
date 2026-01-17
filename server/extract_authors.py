@@ -348,6 +348,131 @@ def main():
         os.path.join(os.path.dirname(__file__), "all_authors.json"),
     )
 
+def rejudge_high_score_names(
+    threshold: float = 0.7,
+    batch_size: int = 500,
+    bulk_size: int = 100,
+):
+    """
+    DB에서 score >= threshold 인 이름들을 다시 LLM 판정 후 업데이트합니다.
+    - batch_size: 커서를 한 번에 어느 정도 가져올지 (네트워크/메모리 균형)
+    - bulk_size: Mongo bulk_write flush 단위
+    """
+    console.print(f"\n[bold cyan]=== Rejudge start ===[/] threshold={threshold}")
+
+    # 1) 대상 수 계산 (진행률 total)
+    total = name_col.count_documents({"score": {"$gte": threshold}})
+    console.print(f"[cyan]Targets:[/] {total}")
+
+    if total == 0:
+        console.print("[dim]No documents to rejudge.[/]")
+        return
+
+    cursor = name_col.find(
+        {"score": {"$gte": threshold}},
+        {"_id": 0, "name": 1, "score": 1},
+        batch_size=batch_size,
+        no_cursor_timeout=True,
+    )
+
+    ops: list[UpdateOne] = []
+
+    with Progress(
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total}"),
+        TextColumn("Current: [bold green]{task.fields[name]}"),
+        TextColumn("Old: [bold yellow]{task.fields[old_score]}"),
+        TextColumn("New: [bold magenta]{task.fields[new_score]}"),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+
+        task = progress.add_task(
+            "Rejudging names with LLM",
+            total=total,
+            name="-",
+            old_score="-",
+            new_score="-",
+        )
+
+        try:
+            for doc in cursor:
+                name = doc.get("name", "")
+                old_score = doc.get("score", None)
+
+                new_score_display = "ERR"
+
+                try:
+                    new_score = judge_name(name)
+
+                    # 숫자 파싱 실패 케이스 (네 judge_name 규약)
+                    if isinstance(new_score, list) and new_score and new_score[0] is False:
+                        console.print(
+                            f"[red]LLM error for '{name}':[/] No numeric result. Response: {new_score[1]}"
+                        )
+                        progress.update(task, advance=1, name=name, old_score=old_score, new_score="ERR")
+                        continue
+
+                    try:
+                        new_score_display = float(new_score)
+                    except Exception:
+                        new_score_display = new_score
+
+                    ops.append(
+                        UpdateOne(
+                            {"name": name},
+                            {
+                                "$set": {"score": new_score},
+                                "$currentDate": {"updated_at": True},
+                            },
+                            upsert=False,  # 이미 있는 것만 재판정하는 목적
+                        )
+                    )
+
+                    if len(ops) >= bulk_size:
+                        try:
+                            name_col.bulk_write(ops, ordered=False)
+                        except BulkWriteError as e:
+                            console.print(
+                                f"[yellow]BulkWriteError (ignored):[/] {e.details.get('writeErrors', [])[:1]}"
+                            )
+                        finally:
+                            ops.clear()
+
+                except Exception as e:
+                    console.print(f"[red]LLM error for '{name}':[/] {e}")
+
+                progress.update(task, advance=1, name=name, old_score=old_score, new_score=new_score_display)
+
+            # flush
+            if ops:
+                try:
+                    name_col.bulk_write(ops, ordered=False)
+                except BulkWriteError as e:
+                    console.print(
+                        f"[yellow]BulkWriteError (ignored):[/] {e.details.get('writeErrors', [])[:1]}"
+                    )
+                finally:
+                    ops.clear()
+
+        finally:
+            cursor.close()
+
+    console.print("[bold cyan]=== Rejudge done ===[/]")
 
 if __name__ == "__main__": 
-    main()
+    choice = input("1: Main Extraction\n2: Rejudge High Score Names\nSelect option (1/2): ")
+    if choice == "1":   
+        main()
+    elif choice == "2":
+        threshold_input = input("Enter threshold (default 0.7): ")
+        try:
+            threshold = float(threshold_input) if threshold_input else 0.7
+        except ValueError:
+            print("Invalid input. Using default threshold 0.7.")
+            threshold = 0.7
+        rejudge_high_score_names(threshold=threshold)
+    else:
+        print("Invalid choice. Exiting.")
