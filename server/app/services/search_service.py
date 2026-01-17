@@ -127,7 +127,6 @@ class PCSSEARCHMongo:
                 "paper_count": len(self.CrawlData),
                 "korean_authors": len(self.checkedNameList),
 
-                # ✅ 추가: 진행률/카운터
                 "progress": {
                     "total": total,
                     "done": done,

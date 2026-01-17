@@ -9,6 +9,7 @@ import json
 from app.libs.exceptions import NotFoundException, InternalServerErrorException
 from app.schemas.search import SearchRequest
 from app.services.search_service import PCSSEARCHMongo
+from app.services.author_service import compute_author_stats_mongo
 
 from app.core.job_store import (
     create_job,
@@ -240,19 +241,12 @@ async def search_cancel(job_id: str):
 
 @router.post("/author-stats", response_model=AuthorStatsResponse)
 async def author_stats(payload: AuthorStatsRequest):
-    try:
-        html = await fetch_html(str(payload.url), payload.timeout_sec)
-    except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch url: {e}") from e
-
-    result = compute_author_stats(
-        html=html,
+    result = await compute_author_stats_mongo(
         target_author=payload.target_author,
-        max_retry=payload.max_retry,
+        include_papers=payload.include_papers,
+        conf_list=getattr(payload, "conf_list", None),
+        startyear=getattr(payload, "startyear", None),
+        endyear=getattr(payload, "endyear", None),
     )
-
-    # include_papers가 아니면 papers 필드 제거
-    if not payload.include_papers:
-        result.pop("papers", None)
 
     return result
