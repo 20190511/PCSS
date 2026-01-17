@@ -307,27 +307,38 @@
       <div class="form-section">
         <form id="filter-form" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
           <!-- 드롭다운 메뉴 -->
-          <div class="form-group">
-            <label for="dropdown">옵션:</label>
-            <select id="option" name="option">
-              <option value="1">1저자가 한국인</option>
-              <option value="2">1저자 또는 2저자가 한국인</option>
-              <option value="3">마지막 저자가 한국인</option>
-              <option value="4">1저자 또는 마지막 저자가 한국인</option>
-              <option value="5">저자 중 한 명 이상이 한국인</option>
-            </select>
-          </div>
+          <div class="form-group" style="flex-direction: column; align-items: flex-start;">
+            <label>검색 기준:</label>
+            <div class="checkbox-group">
+              <label>
+                <input type="checkbox" name="author_role" value="1">
+                1저자
+              </label>
+              <label>
+                <input type="checkbox" name="author_role" value="2">
+                2저자
+              </label>
+              <label>
+                <input type="checkbox" name="author_role" value="3">
+                마지막 저자
+              </label>
+              <label>
+                <input type="checkbox" name="author_role" value="4">
+                공저자 (위치 무관)
+              </label>
+            </div>
+          </div>          
           <!-- 시작 연도 선택 -->
           <div class="form-group">
             <label for="startyear">시작 연도:</label>
             <select id="startyear" name="startyear">
               <script>
                 const startSelect = document.getElementById("startyear");
-                for (let i = 2010; i <= 2025; i++) {
+                for (let i = 2010; i <= 2026; i++) {
                   let option = document.createElement("option");
                   option.value = i;
                   option.textContent = i;
-                  if (i === 2024) {
+                  if (i === 2025) {
                     option.selected = true; // 기본값 설정
                   }
                   startSelect.appendChild(option);
@@ -349,7 +360,7 @@
 
                   // 2) 옵션 재생성
                   endSelect.innerHTML = "";
-                  for (let i = startValue; i <= 2025; i++) {
+                  for (let i = startValue; i <= 2026; i++) {
                     const opt = document.createElement("option");
                     opt.value = i;
                     opt.textContent = i;
@@ -357,7 +368,7 @@
                   }
 
                   // 3) 이전 선택이 여전히 유효하면 유지, 아니면 시작 연도로 설정
-                  if (prev !== null && prev >= startValue && prev <= 2025) {
+                  if (prev !== null && prev >= startValue && prev <= 2026) {
                     endSelect.value = String(prev);
                   } else {
                     endSelect.value = String(startValue);
@@ -365,7 +376,7 @@
                 }
 
                 // 기본값: 시작 연도(초기 기본 2024)에 맞춰 렌더링
-                updateEndYearOptions(2024);
+                updateEndYearOptions(2025);
 
                 // 시작 연도 변경 시: 끝 연도 옵션 갱신하되, 기존 선택 유지 가능하면 유지
                 startSelect.addEventListener("change", function () {
