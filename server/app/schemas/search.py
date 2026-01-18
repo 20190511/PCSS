@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
 class SearchRequest(BaseModel):
-    option: int
+    option: List[int]
     uncertainty: float
     startyear: int
     endyear: int

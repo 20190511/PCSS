@@ -51,7 +51,7 @@ async def start_search(req: SearchRequest, request: Request):
     job = create_job(job_id, options=options)
 
     pcs = PCSSEARCHMongo(
-        option=req.option,
+        options=req.option,
         threshold=req.uncertainty,
         startyear=req.startyear,
         endyear=req.endyear,
@@ -185,11 +185,10 @@ async def search_page(request: Request, job_id: str):
     options = job.options or {}
 
     option_map = {
-        1: "1저자가 한국인",
-        2: "1저자 또는 2저자가 한국인",
-        3: "마지막 저자가 한국인",
-        4: "1저자 또는 마지막 저자가 한국인",
-        5: "저자 중 한 명 이상이 한국인",
+        1: "1저자",
+        2: "2저자" ,
+        3: "마지막 저자",
+        4: "기타 공저자",
     }
     option_text = option_map.get(int(options.get("option", 0)), "옵션 미선택")
 

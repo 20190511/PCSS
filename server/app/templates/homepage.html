@@ -559,16 +559,4 @@
       </div>
     </footer>
   </body>
-
-  <script>
-    document.querySelectorAll('input[name="option"]').forEach((cb) => {
-      cb.addEventListener("change", function () {
-        if (this.checked) {
-          document.querySelectorAll('input[name="option"]').forEach((other) => {
-            if (other !== this) other.checked = false;
-          });
-        }
-      });
-    });
-  </script>
 </html>

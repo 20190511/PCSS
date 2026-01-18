@@ -5,7 +5,7 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from app.libs.llm import get_name_score, single_name_llm
 from app.libs.logger import write_log
 from app.data import name_dict
@@ -20,7 +20,7 @@ class PCSSEARCHMongo:
         1: 1저자
         2: 1저자 또는 2저자
         3: 마지막 저자
-        4: 1저자 또는 마지막 저자
+        4: 기타 공저자(중간 저자)
         else: 저자 중 한 명 이상
     - threshold: 한국인 판정 임계값 (single_name_llm 결과)
     - countOption: True면 저자 통계(본 MongoDB 데이터셋 기준)도 붙임
@@ -28,7 +28,7 @@ class PCSSEARCHMongo:
 
     def __init__(
         self,
-        option: int,
+        options: List[int], 
         threshold: float,
         startyear: int,
         endyear: int,
@@ -37,7 +37,7 @@ class PCSSEARCHMongo:
         event_queue: Optional[Any] = None,
         cancel_check: Optional[Any] = None,
     ):
-        self.option = int(option)
+        self.options = options
         self.threshold = float(threshold)
         self.startyear = int(startyear)
         self.endyear = int(endyear)
@@ -260,55 +260,54 @@ class PCSSEARCHMongo:
 
     async def _targets_for_option(self, authors: List[str]) -> List[str]:
         """
-        option에 맞게 한국인인 저자만 target_author 리스트로 만들기.
-        target에는 기존처럼 score를 붙임: 'Name (0.87)'
+        self.options에 포함된 조건들의 합집합(OR)을 구함.
+        - 1: 1저자 (Index 0)
+        - 2: 2저자 (Index 1)
+        - 3: 마지막 저자 (Index -1)
+        - 4: 기타 공저자 (Index 2 ~ -2)
         """
         if not authors:
             return []
+        
+        # 중복 방지를 위해 Set 사용 (예: 1인 저자는 1저자이면서 마지막 저자임)
+        found_targets = set()
 
-        async def score_tag(name: str) -> str:
-            # get_name_score는 기존 코드 그대로 사용(동기)
+        async def get_tag(name: str) -> str:
             return f"{name} ({get_name_score(name)})"
 
-        if self.option == 1:
+        # [Option 1] 1저자
+        if 1 in self.options:
             if await self.checkKorean(authors[0]):
-                return [await score_tag(authors[0])]
-            return []
+                found_targets.add(await get_tag(authors[0]))
 
-        if self.option == 2:
-            idxs = [0, 1]
-            out = []
-            for i in idxs:
-                if i < len(authors) and await self.checkKorean(authors[i]):
-                    out.append(await score_tag(authors[i]))
-            return out
+        # [Option 2] 2저자 (저자가 2명 이상일 때만)
+        if 2 in self.options:
+            if len(authors) >= 2 and await self.checkKorean(authors[1]):
+                found_targets.add(await get_tag(authors[1]))
 
-        if self.option == 3:
+        # [Option 3] 마지막 저자
+        if 3 in self.options:
             if await self.checkKorean(authors[-1]):
-                return [await score_tag(authors[-1])]
-            return []
+                found_targets.add(await get_tag(authors[-1]))
 
-        if self.option == 4:
-            out = []
+        # [Option 4] 기타 공저자 (1, 2, Last 제외한 중간 저자들)
+        if 4 in self.options:
+            # 저자가 4명 이상이어야 중간 저자가 존재함 (A, B, [C...], D)
+            if len(authors) >= 4:
+                # index 2(3번째) 부터 마지막 바로 앞(-1)까지
+                for a in authors[2:-1]:
+                    if await self.checkKorean(a):
+                        found_targets.add(await get_tag(a))
 
-            # 공저자는 1저자, 2저자, 마지막 저자를 제외한 경우만: index 2 ~ len(authors)-2
-            if len(authors) < 4:
-                return []
+        # [Option Empty] 만약 옵션이 하나도 선택 안됐다면? (전체 검색 로직 유지 시)
+        # 필요하다면 아래 주석 해제. 현재는 선택된 것만 OR로 처리.
+        # if not self.options:
+        #     for a in authors:
+        #         if await self.checkKorean(a):
+        #             found_targets.add(await get_tag(a))
 
-            for a in authors[2:-1]:
-                if await self.checkKorean(a):
-                    out.append(await score_tag(a))
-
-            return out
-
-
-        # else: 저자 중 한 명 이상
-        out = []
-        for a in authors:
-            if await self.checkKorean(a):
-                out.append(await score_tag(a))
-        return out
-
+        return list(found_targets)
+    
     # ---------------- author stats (Mongo 기반) ----------------
 
     @staticmethod
