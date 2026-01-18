@@ -150,13 +150,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const formData = new FormData(form);
       const filters = Object.fromEntries(formData.entries());
 
-      const selectedRoleEl = document.querySelector('input[name="option"]:checked');
-      if (!selectedRoleEl) {
-        alert("검색 기준을 하나 선택해주세요");
+      // [수정 1] 단일 선택 -> 다중 선택으로 로직 변경
+      // name="option"인 체크박스 중 checked 된 것들을 모두 가져옴
+      const selectedRoleEls = document.querySelectorAll('input[name="option"]:checked');
+
+      if (selectedRoleEls.length === 0) {
+        alert("검색 기준을 하나 이상 선택해주세요");
         return;
       }
 
-      const option = Number(selectedRoleEl.value);
+      // [수정 2] 선택된 값들을 숫자 배열로 변환 (예: [1, 3])
+      const options = Array.from(selectedRoleEls).map((el) => Number(el.value));
 
       const selectedConferences = Array.from(document.querySelectorAll(".conference-checkbox"))
         .filter((cb) => cb.checked)
@@ -176,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const payload = {
-        option,
+        options: options, // 백엔드 스키마인 List[int]에 맞춰 배열로 전송
         uncertainty: Number(filters.uncertainty),
         startyear,
         endyear,

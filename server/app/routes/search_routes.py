@@ -51,7 +51,7 @@ async def start_search(req: SearchRequest, request: Request):
     job = create_job(job_id, options=options)
 
     pcs = PCSSEARCHMongo(
-        options=req.option,
+        options=req.options,
         threshold=req.uncertainty,
         startyear=req.startyear,
         endyear=req.endyear,
