@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from uuid import uuid4
 from datetime import datetime, timezone
 import secrets
-
+from pymongo import ReturnDocument
 from app.libs.exceptions import NotFoundException
 from app.schemas.subscription import (
     SubscriptionCreateRequest,
@@ -247,20 +247,21 @@ async def manage_page(request: Request):
             "subscription_id": str(uuid4()),
             "email": email_norm,
             "conferences": [],
-            "options": [1],     
+            "options": [1],
             "threshold": 0.8,
             "is_enabled": True,
             "created_at": now,
             "updated_at": now,
         }
 
-        subscription_col.update_one(
+        # 한 번의 DB 호출로 upsert 후 결과 문서 반환
+        doc = subscription_col.find_one_and_update(
             {"email": email_norm},
             {"$setOnInsert": default_doc, "$set": {"updated_at": now}},
             upsert=True,
+            return_document=ReturnDocument.AFTER,
+            projection={"_id": 0},
         )
-
-        doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
 
     return templates.TemplateResponse(
         "manage_subscription.html",
