@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -82,8 +82,9 @@
       }
 
       .mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
       }
 
       /* ===== 학회 관리용 레이아웃(홈 스타일에 맞춘 카드/그리드) ===== */
@@ -220,7 +221,7 @@
         font-size: 14px;
         outline: none;
       }
-      
+
       .search:focus {
         border-color: rgba(200, 1, 80, 0.6);
         box-shadow: 0 0 0 3px rgba(200, 1, 80, 0.12);
@@ -313,11 +314,18 @@
         -webkit-appearance: none;
         -moz-appearance: none;
         padding-right: 34px; /* 화살표 자리 */
-        background-image: linear-gradient(45deg, transparent 50%, #666 50%),
+        background-image:
+          linear-gradient(45deg, transparent 50%, #666 50%),
           linear-gradient(135deg, #666 50%, transparent 50%),
           linear-gradient(to right, transparent, transparent);
-        background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px, 0 0;
-        background-size: 5px 5px, 5px 5px, 100% 100%;
+        background-position:
+          calc(100% - 16px) 15px,
+          calc(100% - 11px) 15px,
+          0 0;
+        background-size:
+          5px 5px,
+          5px 5px,
+          100% 100%;
         background-repeat: no-repeat;
       }
 
@@ -337,22 +345,29 @@
         background-color: #fff;
         color: #333;
       }
-      
-      /* Kind select 화살표도 예쁘게(툴바 select랑 동일 톤) */
+
+      /* 분야 select 화살표도 예쁘게(툴바 select랑 동일 톤) */
       select.kind-field {
         cursor: pointer;
         appearance: none;
         -webkit-appearance: none;
         -moz-appearance: none;
         padding-right: 34px;
-        background-image: linear-gradient(45deg, transparent 50%, #666 50%),
+        background-image:
+          linear-gradient(45deg, transparent 50%, #666 50%),
           linear-gradient(135deg, #666 50%, transparent 50%),
           linear-gradient(to right, transparent, transparent);
-        background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px, 0 0;
-        background-size: 5px 5px, 5px 5px, 100% 100%;
+        background-position:
+          calc(100% - 16px) 15px,
+          calc(100% - 11px) 15px,
+          0 0;
+        background-size:
+          5px 5px,
+          5px 5px,
+          100% 100%;
         background-repeat: no-repeat;
       }
-      
+
       .kind-field:focus {
         border-color: rgba(200, 1, 80, 0.6);
         box-shadow: 0 0 0 3px rgba(200, 1, 80, 0.12);
@@ -439,7 +454,8 @@
         }
 
         .toolbar select {
-          background-image: linear-gradient(45deg, transparent 50%, #bbb 50%),
+          background-image:
+            linear-gradient(45deg, transparent 50%, #bbb 50%),
             linear-gradient(135deg, #bbb 50%, transparent 50%),
             linear-gradient(to right, transparent, transparent);
         }
@@ -455,7 +471,7 @@
           border: 1px solid #555;
           color: #eee;
         }
-      
+
         .search:focus {
           border-color: rgba(255, 136, 162, 0.7);
           box-shadow: 0 0 0 3px rgba(255, 136, 162, 0.15);
@@ -465,13 +481,14 @@
           border: 1px solid #555;
           color: #eee;
         }
-      
+
         select.kind-field {
-          background-image: linear-gradient(45deg, transparent 50%, #bbb 50%),
+          background-image:
+            linear-gradient(45deg, transparent 50%, #bbb 50%),
             linear-gradient(135deg, #bbb 50%, transparent 50%),
             linear-gradient(to right, transparent, transparent);
         }
-      
+
         .kind-field:focus {
           border-color: rgba(255, 136, 162, 0.7);
           box-shadow: 0 0 0 3px rgba(255, 136, 162, 0.15);
@@ -499,25 +516,18 @@
       <h1>PCSS 학회 관리</h1>
 
       <div class="topbar">
-        <div class="notice" style="margin:0; flex: 1;">
+        <div class="notice" style="margin: 0; flex: 1">
           <b>관리자 전용</b> 학회 키(params)와 kind/name을 관리합니다.
         </div>
       </div>
 
       {% if error %}
       <div class="notice error"><b>오류:</b> {{ error }}</div>
-      {% endif %}
-
-      {% if success %}
+      {% endif %} {% if success %}
       <div class="notice"><b>{{ success }}</b></div>
-      {% endif %}
-      
-      {% set kinds = [] %}
-      {% for c in conferences %}
-        {% if c.kind not in kinds %}
-          {% set _ = kinds.append(c.kind) %}
-        {% endif %}
-      {% endfor %}
+      {% endif %} {% set kinds = [] %} {% for c in conferences %} {% if c.kind
+      not in kinds %} {% set _ = kinds.append(c.kind) %} {% endif %} {% endfor
+      %}
 
       <div class="grid-2">
         <!-- 좌측: 생성 -->
@@ -526,38 +536,54 @@
 
           <form method="post" action="/conferences/manage/create">
             <div class="form-group">
-              <label for="kindSelect">Kind</label>
-            
-              <div style="flex:1; min-width:220px; display:flex; gap:10px; flex-wrap:wrap;">
-                <!-- 기존 Kind 선택 -->
-                <select id="kindSelect" class="search kind-field" style="min-width: 180px;">
+              <label for="kindSelect">분야</label>
+
+              <div
+                style="
+                  flex: 1;
+                  min-width: 220px;
+                  display: flex;
+                  gap: 10px;
+                  flex-wrap: wrap;
+                "
+              >
+                <!-- 기존 분야 선택 -->
+                <select
+                  id="kindSelect"
+                  class="search kind-field"
+                  style="min-width: 180px"
+                >
                   <option value="">직접 입력</option>
                   {% for k in kinds %}
-                    <option value="{{ k }}">{{ k }}</option>
+                  <option value="{{ k }}">{{ k }}</option>
                   {% endfor %}
                 </select>
-                
+
                 <input
                   id="kindInput"
                   type="text"
                   class="search kind-field"
                   placeholder="예: ML, CV, NLP"
-                  style="flex:1; min-width:220px;"
+                  style="flex: 1; min-width: 220px"
                 />
-                
-            
+
                 <!-- 서버로 실제로 보내는 값 -->
                 <input id="kind" name="kind" type="hidden" />
               </div>
-            </div>            
+            </div>
 
             <div class="form-group">
               <label for="name">이름</label>
-              <input id="name" name="name" type="text" placeholder="예: NeurIPS" />
+              <input
+                id="name"
+                name="name"
+                type="text"
+                placeholder="예: NeurIPS"
+              />
             </div>
 
-            <div class="form-group" style="align-items:flex-start;">
-              <label for="params_text" style="margin-top:6px;">Params</label>
+            <div class="form-group" style="align-items: flex-start">
+              <label for="params_text" style="margin-top: 6px">Params</label>
               <textarea
                 id="params_text"
                 name="params_text"
@@ -584,80 +610,106 @@
 
           <div class="toolbar">
             <div class="left">
-              <input id="q" class="search" type="text" placeholder="검색: kind, name, param" />
+              <input
+                id="q"
+                class="search"
+                type="text"
+                placeholder="검색: kind, name, param"
+              />
               <select id="kindFilter">
-                <option value="">모든 Kind</option>
+                <option value="">모든 분야</option>
                 {% for k in kinds %}
-                  <option value="{{ k }}">{{ k }}</option>
+                <option value="{{ k }}">{{ k }}</option>
                 {% endfor %}
               </select>
             </div>
 
-            <div class="small" style="margin:0;">총 {{ conferences | length }}개</div>
+            <div class="small" style="margin: 0">
+              총 {{ conferences | length }}개
+            </div>
           </div>
 
           <div id="list">
             {% if not conferences %}
-              <div class="small">등록된 학회가 없습니다.</div>
-            {% endif %}
-
-            {% for c in conferences %}
-              {% set base = c.params[0] %}
-              <div
-                class="conf-item conf-card"
-                data-kind="{{ c.kind }}"
-                data-name="{{ (c.name or '') }}"
-                data-params="{{ (c.params | join(' ')) }}"
-              >
-                <div class="conf-head">
-                  <div>
-                    <div class="conf-name">
-                      <span class="tag">[{{ c.kind }}]</span>
-                      {% if c.name %} {{ c.name }} {% else %}<span class="small">(no name)</span>{% endif %}
-                    </div>
-                    <div class="small" style="margin-top:6px;">
-                      base: <span class="mono">{{ base }}</span> · {{ c.params | length }} params
-                    </div>
+            <div class="small">등록된 학회가 없습니다.</div>
+            {% endif %} {% for c in conferences %} {% set base = c.params[0] %}
+            <div
+              class="conf-item conf-card"
+              data-kind="{{ c.kind }}"
+              data-name="{{ (c.name or '') }}"
+              data-params="{{ (c.params | join(' ')) }}"
+            >
+              <div class="conf-head">
+                <div>
+                  <div class="conf-name">
+                    <span class="tag">[{{ c.kind }}]</span>
+                    {% if c.name %} {{ c.name }} {% else %}<span class="small"
+                      >(no name)</span
+                    >{% endif %}
                   </div>
-
-                  <form method="post" action="/conferences/manage/{{ base }}/delete" style="margin:0;">
-                    <button class="btn btn-danger" type="submit" onclick="return confirm('정말 삭제할까요?');">
-                      삭제
-                    </button>
-                  </form>
+                  <div class="small" style="margin-top: 6px">
+                    base: <span class="mono">{{ base }}</span> · {{ c.params |
+                    length }} params
+                  </div>
                 </div>
 
-                <div class="pillbox">
-                  {% for p in c.params %}
-                    <span class="pill">
-                      <span class="mono">{{ p }}</span>
-                      {% if (c.params | length) > 1 %}
-                        <form method="post" action="/conferences/manage/{{ base }}/params/delete" style="display:inline;">
-                          <input type="hidden" name="param" value="{{ p }}" />
-                          <button class="x" type="submit" title="삭제">×</button>
-                        </form>
-                      {% endif %}
-                    </span>
-                  {% endfor %}
-                </div>
-
-                {% if (c.params | length) <= 1 %}
-                  <div class="small" style="margin-top:8px;">마지막 param은 삭제할 수 없습니다.</div>
-                {% endif %}
-
-                <div style="margin-top: 12px;">
-                  <form method="post" action="/conferences/manage/{{ base }}/params/add" class="row" style="margin:0;">
-                    <input
-                      name="params_text"
-                      type="text"
-                      class="search"
-                      placeholder="param 추가: 콤마/줄바꿈 가능"
-                      style="flex:1; min-width:220px;"
-                    />
-                    <button class="btn btn-secondary" type="submit">추가</button>
-                  </form>
-                </div>
+                <form
+                  method="post"
+                  action="/conferences/manage/{{ base }}/delete"
+                  style="margin: 0"
+                >
+                  <button
+                    class="btn btn-danger"
+                    type="submit"
+                    onclick="return confirm('정말 삭제할까요?');"
+                  >
+                    삭제
+                  </button>
+                </form>
               </div>
+
+              <div class="pillbox">
+                {% for p in c.params %}
+                <span class="pill">
+                  <span class="mono">{{ p }}</span>
+                  {% if (c.params | length) > 1 %}
+                  <form
+                    method="post"
+                    action="/conferences/manage/{{ base }}/params/delete"
+                    style="display: inline"
+                  >
+                    <input type="hidden" name="param" value="{{ p }}" />
+                    <button class="x" type="submit" title="삭제">×</button>
+                  </form>
+                  {% endif %}
+                </span>
+                {% endfor %}
+              </div>
+
+              {% if (c.params | length) <= 1 %}
+              <div class="small" style="margin-top: 8px">
+                마지막 param은 삭제할 수 없습니다.
+              </div>
+              {% endif %}
+
+              <div style="margin-top: 12px">
+                <form
+                  method="post"
+                  action="/conferences/manage/{{ base }}/params/add"
+                  class="row"
+                  style="margin: 0"
+                >
+                  <input
+                    name="params_text"
+                    type="text"
+                    class="search"
+                    placeholder="param 추가: 콤마/줄바꿈 가능"
+                    style="flex: 1; min-width: 220px"
+                  />
+                  <button class="btn btn-secondary" type="submit">추가</button>
+                </form>
+              </div>
+            </div>
             {% endfor %}
           </div>
         </div>
@@ -670,54 +722,56 @@
         const q = document.getElementById("q");
         const kindFilter = document.getElementById("kindFilter");
         const cards = Array.from(document.querySelectorAll(".conf-card"));
-    
-        function norm(s) { return (s || "").toLowerCase(); }
-    
+
+        function norm(s) {
+          return (s || "").toLowerCase();
+        }
+
         function apply() {
           const query = norm(q?.value);
           const kind = kindFilter?.value || "";
-    
-          cards.forEach(card => {
+
+          cards.forEach((card) => {
             const ck = card.getAttribute("data-kind") || "";
             const name = card.getAttribute("data-name") || "";
             const params = card.getAttribute("data-params") || "";
-    
+
             const hay = norm(ck + " " + name + " " + params);
             const okQuery = !query || hay.includes(query);
             const okKind = !kind || ck === kind;
-    
-            card.style.display = (okQuery && okKind) ? "" : "none";
+
+            card.style.display = okQuery && okKind ? "" : "none";
           });
         }
-    
+
         if (q) q.addEventListener("input", apply);
         if (kindFilter) kindFilter.addEventListener("change", apply);
-    
+
         // ===== 새 학회 생성: kind select + input => hidden(kind) =====
         const kindSelect = document.getElementById("kindSelect");
         const kindInput = document.getElementById("kindInput");
         const kindHidden = document.getElementById("kind");
-    
+
         function syncKind() {
           const selected = (kindSelect?.value || "").trim();
           const typed = (kindInput?.value || "").trim();
-    
+
           if (selected) {
             kindHidden.value = selected;
             kindInput.value = selected;
-            kindInput.readOnly = true;     // disabled보다 readOnly가 UX 더 좋음(포커스/스타일 유지)
+            kindInput.readOnly = true; // disabled보다 readOnly가 UX 더 좋음(포커스/스타일 유지)
           } else {
             kindInput.readOnly = false;
             kindHidden.value = typed;
           }
         }
-    
+
         if (kindSelect && kindInput && kindHidden) {
           kindSelect.addEventListener("change", syncKind);
           kindInput.addEventListener("input", syncKind);
           syncKind();
         }
-    
+
         // 폼 제출 직전에 한번 더 보정(안전장치)
         const createForm = kindHidden?.closest("form");
         if (createForm) {
@@ -732,6 +786,5 @@
         }
       })();
     </script>
-    
   </body>
 </html>
