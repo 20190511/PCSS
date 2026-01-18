@@ -238,19 +238,40 @@ async def manage_page(request: Request):
     if not email_norm:
         return RedirectResponse("/subscriptions/login", status_code=302)
 
+    now = _now()
     doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
+
+    # 첫 로그인: 구독 문서가 없으면 기본값으로 생성
+    if not doc:
+        default_doc = {
+            "subscription_id": str(uuid4()),
+            "email": email_norm,
+            "conferences": [],
+            "options": [1],     
+            "threshold": 0.8,
+            "is_enabled": True,
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        subscription_col.update_one(
+            {"email": email_norm},
+            {"$setOnInsert": default_doc, "$set": {"updated_at": now}},
+            upsert=True,
+        )
+
+        doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
 
     return templates.TemplateResponse(
         "manage_subscription.html",
         {
             "request": request,
             "error": None,
+            "success": None,
             "email": email_norm,
-            "subscription": doc,  # doc가 None이면 신규 모드
+            "subscription": doc,
             "conferences": get_conferences_for_ui(),
             "options": _option_labels(),
-            "default_threshold": 0.8,
-            "default_selected_options": [1, 2, 3, 4],
         },
     )
 
