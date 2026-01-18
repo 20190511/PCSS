@@ -192,9 +192,8 @@ async def search_page(request: Request, job_id: str):
         4: "기타 공저자",
     }
 
-    # 2. 저장된 옵션 가져오기 (List[int] 예상)
     # 혹시 모를 구버전 데이터(int) 호환을 위해 타입 체크
-    raw_option = options.get("option", [])
+    raw_option = options.get("options", [])
     if isinstance(raw_option, int):
         raw_option = [raw_option]
 
