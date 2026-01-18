@@ -525,6 +525,12 @@
 
         <div class="select-all-container">
           <button class="select-btn" id="toggle-select-btn">전체 선택</button>
+
+          {% if user %}
+            <a class="select-btn" href="/auth/logout">로그아웃</a>
+          {% else %}
+            <a class="select-btn" href="/auth/login">로그인</a>
+          {% endif %}
         
           <a class="select-btn" id="subscription-manage-btn" href="/subscriptions/manage">
             구독 관리

@@ -12,15 +12,17 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
+    user = request.session.get("user")  # 없으면 None
+
     try:
         ip = get_client_ip(request)
         if ip not in ["127.0.0.1", "::1"]:
             log_col.insert_one({
                 "ts": datetime.now(timezone.utc),
-                "type": "homepage",                 # 원하는 타입명
+                "type": "homepage",
                 "ip": ip,
-                "method": request.method,           # GET
-                "path": request.url.path,           # "/"
+                "method": request.method,
+                "path": request.url.path,
                 "query": dict(request.query_params),
                 "user_agent": request.headers.get("user-agent", ""),
                 "referer": request.headers.get("referer", ""),
@@ -28,4 +30,11 @@ async def homepage(request: Request):
     except Exception:
         print("Failed to log homepage visit event")
 
-    return templates.TemplateResponse("homepage.html", {"request": request})
+    return templates.TemplateResponse(
+        "homepage.html",
+        {
+            "request": request,
+            "user": user,   
+        }
+    )
+
