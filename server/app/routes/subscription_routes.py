@@ -14,6 +14,7 @@ from app.libs.logger import get_client_ip
 from app.db import subscription_col, log_col, subscription_auth_col
 from app.data import get_conferences_for_ui
 from app.core.templates import templates
+from app.libs.auth import require_login
 
 from fastapi import Response
 from fastapi.responses import RedirectResponse
@@ -24,30 +25,7 @@ import os
 
 
 router = APIRouter()
-SESSION_COOKIE = "pcss_sub_session"
 
-def _hash_code(email: str, code: str, secret: str) -> str:
-    raw = f"{email}|{code}|{secret}".encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()
-
-
-def _get_session_email(request: Request):
-    sid = request.cookies.get(SESSION_COOKIE)
-    if not sid:
-        return None
-    now = _now()
-    doc = subscription_auth_col.find_one(
-        {"kind": "session", "session_id": sid, "expires_at": {"$gt": now}},
-        {"_id": 0, "email": 1},
-    )
-    return (doc or {}).get("email")
-
-
-def _require_login(request: Request):
-    email = _get_session_email(request)
-    if not email:
-        return None
-    return email
 
 def _now():
     return datetime.now(timezone.utc)
@@ -99,144 +77,16 @@ def _option_labels():
     ]
 
 
-@router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse("subscription_login.html", {"request": request})
-
-
-@router.post("/login/send", response_class=HTMLResponse)
-async def login_send(request: Request, email: str = Form(...)):
-    ip = get_client_ip(request)
-    now = _now()
-    email_norm = (email or "").strip().lower()
-
-    # 6자리 코드 생성
-    code = f"{secrets.randbelow(1000000):06d}"
-
-    # 서버 시크릿(환경변수) 필요
-    AUTH_SECRET = os.getenv("SUB_AUTH_SECRET", "dev-secret-change-me")
-
-    code_hash = _hash_code(email_norm, code, AUTH_SECRET)
-    expires_at = now + timedelta(minutes=10)
-
-    subscription_auth_col.update_one(
-        {"kind": "otp", "email": email_norm},
-        {"$set": {
-            "kind": "otp",
-            "email": email_norm,
-            "code_hash": code_hash,
-            "expires_at": expires_at,
-            "tries": 0,
-            "created_at": now,
-            "ip": ip,
-        }},
-        upsert=True,
-    )
-
-    send_email(
-        receiver=email_norm,
-        title="[PCSS] 로그인 인증 코드",
-        text=f"PCSS 구독 관리 페이지 로그인 인증 코드입니다: {code}\n"
-    )
-
-    return templates.TemplateResponse(
-        "subscription_login_verify.html",
-        {"request": request, "email": email_norm, "message": "인증 코드를 메일로 보냈습니다."},
-    )
-
-
-@router.post("/login/verify", response_class=HTMLResponse)
-async def login_verify(
-    request: Request,
-    email: str = Form(...),
-    code: str = Form(...),
-):
-    ip = get_client_ip(request)
-    now = _now()
-    email_norm = (email or "").strip().lower()
-    code = (code or "").strip()
-
-    AUTH_SECRET = os.getenv("SUB_AUTH_SECRET", "dev-secret-change-me")
-
-    otp = subscription_auth_col.find_one(
-        {"kind": "otp", "email": email_norm, "expires_at": {"$gt": now}},
-        {"_id": 0},
-    )
-    if not otp:
-        return templates.TemplateResponse(
-            "subscription_login_verify.html",
-            {"request": request, "email": email_norm, "error": "코드가 만료되었거나 없습니다."},
-        )
-
-    # 시도 횟수 제한
-    tries = int(otp.get("tries", 0))
-    if tries >= 5:
-        return templates.TemplateResponse(
-            "subscription_login_verify.html",
-            {"request": request, "email": email_norm, "error": "시도 횟수를 초과했습니다. 다시 요청하세요."},
-        )
-
-    expected = otp.get("code_hash")
-    given = _hash_code(email_norm, code, AUTH_SECRET)
-
-    if not expected or not secrets.compare_digest(expected, given):
-        subscription_auth_col.update_one(
-            {"kind": "otp", "email": email_norm},
-            {"$inc": {"tries": 1}},
-        )
-        return templates.TemplateResponse(
-            "subscription_login_verify.html",
-            {"request": request, "email": email_norm, "error": "인증 코드가 올바르지 않습니다."},
-        )
-
-    # OTP 삭제(또는 만료 처리)
-    subscription_auth_col.delete_one({"kind": "otp", "email": email_norm})
-
-    # 세션 발급
-    session_id = secrets.token_urlsafe(32)
-    sess_expires = now + timedelta(days=14)
-
-    subscription_auth_col.insert_one({
-        "kind": "session",
-        "session_id": session_id,
-        "email": email_norm,
-        "expires_at": sess_expires,
-        "created_at": now,
-        "ip": ip,
-    })
-
-    # 쿠키 설정 (로컬/HTTPS 환경에 맞게 secure 조정)
-    response = RedirectResponse(url="/subscriptions/manage", status_code=302)
-    response.set_cookie(
-        key=SESSION_COOKIE,
-        value=session_id,
-        httponly=True,
-        samesite="lax",
-        secure=False,  # https 배포면 True 권장
-        max_age=14 * 24 * 3600,
-    )
-    return response
-
-
-@router.post("/logout")
-async def logout(request: Request):
-    sid = request.cookies.get(SESSION_COOKIE)
-    if sid:
-        subscription_auth_col.delete_many({"kind": "session", "session_id": sid})
-    resp = RedirectResponse(url="/subscriptions/login", status_code=302)
-    resp.delete_cookie(SESSION_COOKIE)
-    return resp
-
-
 # =========================
 # Pages (HTML)
 # =========================
 
 @router.get("/manage", response_class=HTMLResponse)
 async def manage_page(request: Request):
-    email_norm = _require_login(request)
+    email_norm = require_login(request)
     if not email_norm:
-        return RedirectResponse("/subscriptions/login", status_code=302)
+        return RedirectResponse("/auth/login?next=/subscriptions/manage", status_code=302)
+
 
     now = _now()
     doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
@@ -288,9 +138,10 @@ async def manage_update(
     threshold: float = Form(0.8),
     is_enabled: str = Form("true"),
 ):
-    email_norm = _require_login(request)
+    email_norm = require_login(request)
     if not email_norm:
-        return RedirectResponse("/subscriptions/login", status_code=302)
+        return RedirectResponse("/auth/login?next=/subscriptions/manage", status_code=302)
+
 
     now = _now()
     patch = {
@@ -331,9 +182,10 @@ async def manage_update(
 
 @router.post("/manage/unsubscribe", response_class=HTMLResponse)
 async def manage_unsubscribe(request: Request):
-    email_norm = _require_login(request)
+    email_norm = require_login(request)
     if not email_norm:
-        return RedirectResponse("/subscriptions/login", status_code=302)
+        return RedirectResponse("/auth/login?next=/subscriptions/manage", status_code=302)
+
 
     now = _now()
     subscription_col.update_one(
