@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCSS 게시판</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f9f9f9; color: #333; margin:0; padding:0; }
+        .container { max-width: 1100px; margin: 40px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: #c80150; text-align: center; margin-bottom: 30px; }
+        h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 40px; color: #34495e; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* 버튼 스타일 */
+        .btn { display: inline-block; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; background-color: #34495e; color: #fff; border:none; cursor: pointer; }
+        .btn:hover { opacity: 0.9; }
+        .btn-write { background-color: #c80150; font-size: 14px; padding: 8px 16px; }
+        
+        /* 관리자용 미니 버튼 */
+        .btn-mini { padding: 4px 8px; font-size: 11px; margin-left: 3px; }
+        .btn-edit { background-color: #34495e; }
+        .btn-delete { background-color: #555; }
+        .btn-update { background-color: #27ae60; border: none; color: white; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; }
+
+        /* 테이블 스타일 */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+        th { background-color: #f8f9fa; color: #555; font-weight: bold; }
+        tr:hover { background-color: #f1f1f1; }
+        
+        /* 상태 변경 폼 */
+        .status-form { display: flex; align-items: center; gap: 5px; margin: 0; }
+        .status-select { padding: 4px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc; }
+
+        .title a { text-decoration: none; color: #333; display: block; overflow: hidden; text-overflow: ellipsis; }
+        .title a:hover { color: #c80150; text-decoration: underline; }
+        .no-data { text-align: center; padding: 20px; color: #999; }
+        .home-link { display: block; text-align: center; margin-top: 30px; color: #666; text-decoration: none; }
+
+        /* 다크모드 대응 */
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #181818; color: #e0e0e0; }
+            .container { background-color: #242424; }
+            h1 { color: #ff88a2; }
+            h2 { color: #e0e0e0; border-bottom-color: #444; }
+            th { background-color: #333; color: #ddd; border-bottom-color: #444; }
+            td { border-bottom-color: #444; }
+            tr:hover { background-color: #2c2c2c; }
+            .title a { color: #e0e0e0; }
+            .title a:hover { color: #ff88a2; }
+            .status-select { background-color: #333; color: #eee; border-color: #555; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PCSS 게시판</h1>
+
+        <h2>
+            공지사항
+            {% if is_admin %}
+                <a href="/board/notice/write" class="btn btn-write">공지 작성</a>
+            {% endif %}
+        </h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">제목</th>
+                    <th style="width: 15%;">작성자</th>
+                    <th style="width: 15%;">작성일</th>
+                    <th style="width: 10%;">조회</th>
+                    {% if is_admin %}
+                    <th style="width: 10%;">관리</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% if notices %}
+                    {% for n in notices %}
+                    <tr>
+                        <td class="title">
+                            <a href="/board/notice/{{ n['_id'] }}">{{ n.title }}</a>
+                        </td>
+                        <td>{{ n.author.split('@')[0] if n.author else '관리자' }}</td>
+                        <td style="color: #888; font-size: 0.9em;">{{ n.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ n.get('views', 0) }}</td>
+                        
+                        {% if is_admin %}
+                        <td>
+                            <div style="display: flex;">
+                                <a href="/board/notice/edit/{{ n['_id'] }}" class="btn btn-mini btn-edit">수정</a>
+                                <form action="/board/notice/delete/{{ n['_id'] }}" method="post" onsubmit="return confirm('삭제하시겠습니까?');" style="margin:0;">
+                                    <button type="submit" class="btn btn-mini btn-delete">삭제</button>
+                                </form>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="{% if is_admin %}5{% else %}4{% endif %}" class="no-data">등록된 공지사항이 없습니다.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <h2 style="margin-top: 50px;">
+            버그 제보 / 건의
+            <a href="/board/bug/write" class="btn btn-write">글쓰기</a>
+        </h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">제목</th>
+                    <th style="width: 15%;">작성자</th>
+                    <th style="width: 15%;">작성일</th>
+                    <th style="width: 20%;">상태</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if bugs %}
+                    {% for b in bugs %}
+                    <tr>
+                        <td class="title">
+                            <a href="/board/bug/{{ b['_id'] }}">{{ b.title }}</a>
+                        </td>
+                        <td>{{ b.author.split('@')[0] if b.author else '익명' }}</td>
+                        <td style="color: #888; font-size: 0.9em;">{{ b.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if is_admin %}
+                                <form action="/board/bug/status/{{ b['_id'] }}" method="post" class="status-form">
+                                    <select name="status" class="status-select">
+                                        <option value="제보 완료" {% if b.status == '제보 완료' %}selected{% endif %}>제보 완료</option>
+                                        <option value="작업 중" {% if b.status == '작업 중' %}selected{% endif %}>작업 중</option>
+                                        <option value="수정 완료" {% if b.status == '수정 완료' %}selected{% endif %}>수정 완료</option>
+                                    </select>
+                                    <button type="submit" class="btn-update">변경</button>
+                                </form>
+                            {% else %}
+                                {% if b.status == '작업 중' %}
+                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#f39c12; color:white;">작업 중</span>
+                                {% elif b.status == '수정 완료' %}
+                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#27ae60; color:white;">수정 완료</span>
+                                {% else %}
+                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#95a5a6; color:white;">제보 완료</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="4" class="no-data">등록된 글이 없습니다.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <a href="/" class="home-link">← 메인 페이지로 돌아가기</a>
+    </div>
+</body>
+</html>

@@ -173,6 +173,11 @@
         color: #555;
       }
 
+      /* 강조된 저자 스타일 (필요 시 CSS로 제어 가능하나, 현재는 태그로 처리) */
+      .authors b u {
+        color: #000; /* 강조된 저자는 더 진하게 */
+      }
+
       .conf {
         font-size: 12px;
         color: #666;
@@ -306,6 +311,10 @@
           color: #e0e0e0;
         }
 
+        .authors b u {
+            color: #fff; /* 다크모드에서 강조된 저자 색상 */
+        }
+
         .paper-source-link {
           color: #66ccff;
         }
@@ -426,7 +435,7 @@
             <td>{{ stats[2] }}</td>
           </tr>
           <tr>
-            <td>공동 저자</td>
+            <td>기타 공저자</td>
             <td>{{ stats[3] }}</td>
           </tr>
         </tbody>
@@ -565,8 +574,25 @@
                 paperCard.style.margin = "6px 0";
 
                 const title = p && p.title ? String(p.title) : "Untitled";
-                const authors = (p && Array.isArray(p.authors)) ? p.authors : [];
+                const authorsList = (p && Array.isArray(p.authors)) ? p.authors : [];
                 const source = (p && p.source) ? String(p.source) : "";
+
+                // ====================================================
+                // [수정] 저자 이름 비교 및 하이라이트 (Bold & Underline)
+                // ====================================================
+                const targetNameLower = authorName.toLowerCase();
+                
+                const formattedAuthors = authorsList.map(a => {
+                    const currentAuthorStr = String(a);
+                    // 대소문자 구분 없이 비교
+                    if (currentAuthorStr.toLowerCase() === targetNameLower) {
+                        // 일치하면 굵게(b) + 밑줄(u) 처리
+                        return `<b><u>${escapeHtml(currentAuthorStr)}</u></b>`;
+                    }
+                    // 아니면 그냥 escape만 처리
+                    return escapeHtml(currentAuthorStr);
+                }).join(", ");
+                // ====================================================
 
                 const titleHtml = source
                   ? `<a class="paper-source-link" href="${source}" target="_blank" rel="noopener"
@@ -577,7 +603,7 @@
 
                 paperCard.innerHTML = `
                   <div class="title">${titleHtml}</div>
-                  <div class="authors">${escapeHtml(authors.join(", "))}</div>
+                  <div class="authors">${formattedAuthors}</div>
                   <div class="conf">학회: ${escapeHtml(conf)}</div>
                 `;
 

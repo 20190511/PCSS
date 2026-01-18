@@ -158,7 +158,7 @@ async def admin_requests_page(request: Request):
     if status_or_resp is None:
         # 로그인은 했는데 admin 아님
         return templates.TemplateResponse(
-            "admin/admin_name_requests.html",
+            "admin/access_denied.html",
             {"request": request, "requests": [], "error": "권한이 없습니다. 관리자 계정으로 로그인하세요."},
             status_code=403,
         )

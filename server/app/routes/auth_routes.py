@@ -76,14 +76,14 @@ async def login_verify(
     )
     if not otp:
         return templates.TemplateResponse(
-            "login_verify.html",
+            "auth/login_verify.html",
             {"request": request, "email": email_norm, "next": next, "error": "코드가 만료되었거나 없습니다."},
         )
 
     tries = int(otp.get("tries", 0))
     if tries >= 5:
         return templates.TemplateResponse(
-            "subscription_login_verify.html",
+            "auth/login_verify.html",
             {"request": request, "email": email_norm, "next": next, "error": "시도 횟수를 초과했습니다. 다시 요청하세요."},
         )
 
@@ -95,7 +95,7 @@ async def login_verify(
             {"$inc": {"tries": 1}},
         )
         return templates.TemplateResponse(
-            "subscription_login_verify.html",
+            "auth/login_verify.html",
             {"request": request, "email": email_norm, "next": next, "error": "인증 코드가 올바르지 않습니다."},
         )
 

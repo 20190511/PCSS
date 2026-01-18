@@ -53,7 +53,7 @@ async def conf_manage_page(request: Request):
 
     if status_or_resp is None:
         return templates.TemplateResponse(
-            "admin/admin_conferences.html",
+            "admin/access_denied.html",
             {
                 "request": request,
                 "email": email,
