@@ -369,6 +369,18 @@
       <div class="main-content">
         <h1>PCSS: POSTECH Computer Scientist Search</h1>
 
+        {% if email %}
+        <div style="
+            text-align: center; 
+            margin-top: -30px; 
+            margin-bottom: 30px; 
+            font-size: 13px; 
+            opacity: 0.7; 
+            font-weight: bold;">
+            {{ email }}
+        </div>
+        {% endif %}
+
         <!-- 드롭다운 메뉴와 입력 옵션 -->
         <div class="form-section">
           <form
