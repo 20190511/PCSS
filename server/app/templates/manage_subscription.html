@@ -756,19 +756,25 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
-        function enforceAtLeastOneOption() {
-          const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
-          if (optionInputs.length === 0) return;
-        
-          function refreshDisabled() {
-            const checked = optionInputs.filter((x) => x.checked);
-            // 모두 enable
-            optionInputs.forEach((x) => (x.disabled = false));
-        
-            // 딱 1개만 체크되어 있으면 그 하나는 끌 수 없게 막기
-            if (checked.length === 1) {
-              checked[0].disabled = true;
+          function enforceAtLeastOneOption() {
+            const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
+            if (optionInputs.length === 0) return;
+          
+            function checkedCount() {
+              return optionInputs.filter((x) => x.checked).length;
             }
+          
+            // 마지막 1개 해제를 "클릭 단계"에서 차단 (change가 발생하기 전에 막음)
+            optionInputs.forEach((cb) => {
+              cb.addEventListener("click", (e) => {
+                // 지금 이 체크박스가 체크되어 있고, 전체 체크 수가 1개면
+                // 이걸 끄는 행동이므로 막기
+                if (cb.checked && checkedCount() === 1) {
+                  e.preventDefault(); // toggle 자체를 막음
+                  setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
+                }
+              });
+            });
           }
         
           optionInputs.forEach((cb) => {
