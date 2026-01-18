@@ -250,18 +250,20 @@ async def manage_page(request: Request):
             "options": [1],
             "threshold": 0.8,
             "is_enabled": True,
-            "created_at": now,
-            "updated_at": now,
+            "created_at": now,   # insert 시에만
         }
 
-        # 한 번의 DB 호출로 upsert 후 결과 문서 반환
         doc = subscription_col.find_one_and_update(
             {"email": email_norm},
-            {"$setOnInsert": default_doc, "$set": {"updated_at": now}},
+            {
+                "$setOnInsert": default_doc,
+                "$set": {"updated_at": now},  # insert / update 공통
+            },
             upsert=True,
             return_document=ReturnDocument.AFTER,
             projection={"_id": 0},
         )
+
 
     return templates.TemplateResponse(
         "manage_subscription.html",
