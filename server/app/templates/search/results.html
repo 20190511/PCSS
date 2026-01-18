@@ -570,12 +570,9 @@
                   const authorsList = document.createElement("div");
                   authorsList.className = "authors";
 
-                  // paper.target_author: ["Name (0.87)", ...] 형태일 수 있으니 이름만 뽑아서 Set으로 만들기
-                  const targetSet = new Set(
-                    (paper.target_author || []).map((t) =>
-                      String(t).replace(/\s*\(\d+(?:\.\d+)?\)\s*$/, "").trim()
-                    )
-                  );
+                  // [수정됨] 현재 섹션의 저자 이름만 추출 (점수 제거)
+                  // 상위 스코프의 'author' 변수를 사용합니다.
+                  const currentSectionAuthor = String(author).replace(/\s*\(\d+(?:\.\d+)?\)\s*$/, "").trim();
 
                   paper.author_name.forEach((name, idx) => {
                     const authorEl = document.createElement("span");
@@ -584,9 +581,10 @@
                     authorEl.dataset.author = name;
                     authorEl.dataset.profileUrl = paper.author_url[idx] || "";
 
-                    // 검색 조건 만족 저자면 볼드
-                    if (targetSet.has(String(name).trim())) {
-                      authorEl.style.fontWeight = "700";
+                    // [수정됨] 현재 섹션 저자와 이름이 일치할 경우에만 스타일 적용
+                    if (String(name).trim() === currentSectionAuthor) {
+                      authorEl.style.fontWeight = "700";           // 굵은 글씨
+                      authorEl.style.textDecoration = "underline"; // 밑줄
                     }
 
                     authorsList.appendChild(authorEl);
