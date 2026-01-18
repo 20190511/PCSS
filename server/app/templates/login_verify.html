@@ -161,7 +161,8 @@
 
         <form method="post" action="/auth/login/verify">
           <input type="hidden" name="email" value="{{ email }}" />
-
+          <input type="hidden" name="next" value="{{ next }}" />
+        
           <div class="form-group">
             <label for="code">코드</label>
             <input
@@ -171,23 +172,15 @@
               inputmode="numeric"
               pattern="[0-9]{6}"
               maxlength="6"
-              placeholder="예: 123456"
               required
-              {% if error %}class="error"{% endif %}
-              autofocus
             />
           </div>
-
+        
           <div class="row">
             <button class="btn" type="submit">로그인</button>
-            <a class="btn btn-secondary" href="/auth/login">코드 다시 받기</a>
+            <a class="btn btn-secondary" href="/auth/login?next={{ next }}">코드 다시 받기</a>
           </div>
-
-          <div class="small">
-            이메일: <span class="mono">{{ email }}</span><br />
-            코드는 10분 동안 유효합니다.
-          </div>
-        </form>
+        </form>        
       </div>
     </div>
   </body>

@@ -152,20 +152,17 @@
           <h2>이메일 입력</h2>
 
           <form method="post" action="/auth/login/send">
+            <input type="hidden" name="next" value="{{ next }}" />
+          
             <div class="form-group">
               <label for="email">이메일</label>
               <input id="email" name="email" type="email" placeholder="you@example.com" required />
             </div>
-
+          
             <div class="row">
               <button class="btn" type="submit">인증 코드 보내기</button>
             </div>
-
-            <div class="small">
-              - 인증 코드는 10분 동안 유효합니다.<br />
-              - 메일이 오지 않으면 스팸함을 확인해주세요.
-            </div>
-          </form>
+          </form>          
         </div>
       </div>
     </div>
