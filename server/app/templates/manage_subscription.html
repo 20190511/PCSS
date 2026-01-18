@@ -325,6 +325,37 @@
       .btn-danger:hover {
         background: rgba(179, 38, 38, 0.14);
       }
+
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 18px 0;
+      }
+      
+      .page-header h1 {
+        margin: 0;
+        flex: 1;
+        text-align: center; /* 가운데 유지 */
+        color: var(--accent);
+      }
+      
+      .logout-form {
+        margin: 0;
+        flex: 0 0 auto;
+      }
+      
+      /* 로그아웃(위험) 버튼 */
+      .btn-danger {
+        background: rgba(179, 38, 38, 0.08);
+        border-color: rgba(179, 38, 38, 0.35);
+        color: rgba(179, 38, 38, 1);
+      }
+      .btn-danger:hover {
+        background: rgba(179, 38, 38, 0.14);
+      }
+      
       
 
       @media (prefers-color-scheme: dark) {
@@ -409,13 +440,15 @@
     <div class="container">
       <h1>PCSS 구독 관리</h1>
 
-      <div class="topbar">      
-        <form method="post" action="/subscriptions/logout" style="margin:0;">
-          <button type="submit" class="btn btn-danger" onclick="return confirm('로그아웃하고 다시 로그인할까요?');">
-            로그아웃
-          </button>
-        </form>
-      </div>
+      <form method="post" action="/subscriptions/logout" class="logout-form">
+        <button
+          type="submit"
+          class="btn btn-danger"
+          onclick="return confirm('로그아웃하고 다시 로그인할까요?');"
+        >
+          로그아웃
+        </button>
+      </form>
       
 
       {% if error %}
