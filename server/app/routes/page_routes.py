@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from app.core.templates import templates
 from app.db import log_col
 from app.libs.logger import get_client_ip
+from app.libs.auth import get_session_email
 
 
 router = APIRouter()
@@ -12,7 +13,7 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
-    user = request.session.get("user")  # 없으면 None
+    email = get_session_email(request)  # 없으면 None
 
     try:
         ip = get_client_ip(request)
@@ -34,7 +35,7 @@ async def homepage(request: Request):
         "homepage.html",
         {
             "request": request,
-            "user": user,   
+            "email": email,   
         }
     )
 
