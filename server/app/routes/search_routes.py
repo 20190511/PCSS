@@ -19,7 +19,9 @@ from app.db import log_col
 from datetime import datetime, timezone
 from app.libs.logger import get_client_ip
 
+
 router = APIRouter()
+
 
 @router.get("/conferences")
 async def conferences():

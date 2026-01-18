@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from uuid import uuid4
 from datetime import datetime, timezone
 import secrets
@@ -11,18 +11,10 @@ from app.schemas.subscription import (
     SubscriptionUnsubscribeRequest,
 )
 from app.libs.logger import get_client_ip
-from app.db import subscription_col, log_col, subscription_auth_col
+from app.db import subscription_col, log_col
 from app.data import get_conferences_for_ui
 from app.core.templates import templates
 from app.libs.auth import require_login
-
-from fastapi import Response
-from fastapi.responses import RedirectResponse
-import hashlib
-from datetime import timedelta
-from app.libs.email import send_email
-import os
-
 
 router = APIRouter()
 
@@ -77,10 +69,6 @@ def _option_labels():
     ]
 
 
-# =========================
-# Pages (HTML)
-# =========================
-
 @router.get("/manage", response_class=HTMLResponse)
 async def manage_page(request: Request):
     email_norm = require_login(request)
@@ -127,7 +115,6 @@ async def manage_page(request: Request):
             "options": _option_labels(),
         },
     )
-
 
 
 @router.post("/manage/update", response_class=HTMLResponse)
@@ -197,10 +184,6 @@ async def manage_unsubscribe(request: Request):
         {"request": request, "error": None, "email": email_norm},
     )
 
-
-# =========================
-# JSON API
-# =========================
 
 @router.post("/create")
 async def create_subscription(req: SubscriptionCreateRequest, request: Request):

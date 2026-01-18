@@ -7,34 +7,10 @@ from app.db import name_col, req_korean_col
 from app.data import name_dict
 from app.libs.exceptions import NotFoundException
 from datetime import datetime, timezone
-from app.libs.auth import require_login
-from app.db import admin_col
+from app.libs.auth import _require_admin_or_redirect
+
 
 router = APIRouter()
-
-def _safe_next(next_url: str) -> str:
-    if not next_url or not isinstance(next_url, str):
-        return "/"
-    if not next_url.startswith("/"):
-        return "/"
-    if next_url.startswith("//"):
-        return "/"
-    return next_url
-
-
-def _is_admin(email: str) -> bool:
-    if not email:
-        return False
-    return admin_col.find_one({"email": email.lower(), "is_enabled": True}, {"_id": 1}) is not None
-
-
-def _require_admin_or_redirect(request: Request, next_path: str):
-    email = require_login(request)
-    if not email:
-        return None, RedirectResponse(f"/auth/login?next={_safe_next(next_path)}", status_code=302)
-    if not _is_admin(email):
-        return email, None  # 로그인은 했지만 admin 아님
-    return email, "ok"
 
 
 @router.post("/stats/page", response_class=HTMLResponse)

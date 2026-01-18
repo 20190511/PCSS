@@ -6,7 +6,9 @@ from app.core.templates import templates
 from app.db import log_col
 from app.libs.logger import get_client_ip
 
+
 router = APIRouter()
+
 
 @router.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):

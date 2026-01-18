@@ -1,42 +1,20 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.db import conf_col
-from app.schemas.conf import AddUrlRequest, AddParamsRequest, AddParamRequest, DeleteParamRequest, CreateConferenceRequest
+from app.schemas.conf import AddUrlRequest, AddParamsRequest, DeleteParamRequest, CreateConferenceRequest
 from fastapi import APIRouter, HTTPException, Query, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from datetime import datetime, timezone
-
 from app.core.templates import templates
-from app.libs.auth import require_login
-from app.db import conf_col, admin_col  # admin_col 필요
+from app.db import conf_col
+from app.libs.auth import _require_admin_or_redirect
 
 
 router = APIRouter()
 
+
 def _now():
     return datetime.now(timezone.utc)
 
-def _safe_next(next_url: str) -> str:
-    # 오픈 리다이렉트 방지: 내부 경로만 허용
-    if not next_url or not isinstance(next_url, str):
-        return "/"
-    if not next_url.startswith("/"):
-        return "/"
-    if next_url.startswith("//"):
-        return "/"
-    return next_url
-
-def _is_admin(email: str) -> bool:
-    if not email:
-        return False
-    return admin_col.find_one({"email": email.lower()}, {"_id": 1}) is not None
-
-def _require_admin_or_redirect(request: Request, next_path: str):
-    email = require_login(request)
-    if not email:
-        return None, RedirectResponse(f"/auth/login?next={_safe_next(next_path)}", status_code=302)
-    if not _is_admin(email):
-        return email, None  # 이메일은 있으나 권한 없음
-    return email, "ok"
 
 def _parse_list(text: str) -> list[str]:
     # 줄바꿈/콤마 모두 지원
@@ -47,6 +25,7 @@ def _parse_list(text: str) -> list[str]:
             items.append(t)
     # dedup (순서 유지)
     return list(dict.fromkeys(items))
+
 
 def _normalize_params(doc: dict) -> list[str]:
     """
@@ -66,6 +45,7 @@ def _normalize_params(doc: dict) -> list[str]:
         return [p.strip()]
 
     return []
+
 
 def _find_by_param(param: str) -> dict | None:
     """
@@ -445,7 +425,6 @@ async def add_params_batch(param: str, body: AddParamsRequest):
 
 
 @router.delete("/api/{param}/params")
-@router.delete("/{param}/params")
 async def delete_param(param: str, body: DeleteParamRequest):
     del_param = body.param.strip()
     if not del_param:

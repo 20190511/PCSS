@@ -7,10 +7,12 @@ import secrets
 from app.core.templates import templates
 from app.libs.email import send_email
 from app.libs.logger import get_client_ip
-from app.db import subscription_auth_col
+from app.db import auth_col
 from app.libs.auth import SESSION_COOKIE, now_utc, hash_code
 
+
 router = APIRouter()
+
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, next: str = "/"):
@@ -18,6 +20,7 @@ async def login_page(request: Request, next: str = "/"):
         "request": request,
         "next": next,
     })
+
 
 @router.post("/login/send", response_class=HTMLResponse)
 async def login_send(request: Request, email: str = Form(...), next: str = Form("/")):
@@ -29,7 +32,7 @@ async def login_send(request: Request, email: str = Form(...), next: str = Form(
     code_hash = hash_code(email_norm, code)
     expires_at = now + timedelta(minutes=10)
 
-    subscription_auth_col.update_one(
+    auth_col.update_one(
         {"kind": "otp", "email": email_norm},
         {"$set": {
             "kind": "otp",
@@ -54,6 +57,7 @@ async def login_send(request: Request, email: str = Form(...), next: str = Form(
         {"request": request, "email": email_norm, "next": next, "message": "인증 코드를 메일로 보냈습니다."},
     )
 
+
 @router.post("/login/verify", response_class=HTMLResponse)
 async def login_verify(
     request: Request,
@@ -66,7 +70,7 @@ async def login_verify(
     email_norm = (email or "").strip().lower()
     code = (code or "").strip()
 
-    otp = subscription_auth_col.find_one(
+    otp = auth_col.find_one(
         {"kind": "otp", "email": email_norm, "expires_at": {"$gt": now}},
         {"_id": 0},
     )
@@ -86,7 +90,7 @@ async def login_verify(
     expected = otp.get("code_hash")
     given = hash_code(email_norm, code)
     if not expected or not secrets.compare_digest(expected, given):
-        subscription_auth_col.update_one(
+        auth_col.update_one(
             {"kind": "otp", "email": email_norm},
             {"$inc": {"tries": 1}},
         )
@@ -95,12 +99,12 @@ async def login_verify(
             {"request": request, "email": email_norm, "next": next, "error": "인증 코드가 올바르지 않습니다."},
         )
 
-    subscription_auth_col.delete_one({"kind": "otp", "email": email_norm})
+    auth_col.delete_one({"kind": "otp", "email": email_norm})
 
     session_id = secrets.token_urlsafe(32)
     sess_expires = now + timedelta(days=14)
 
-    subscription_auth_col.insert_one({
+    auth_col.insert_one({
         "kind": "session",
         "session_id": session_id,
         "email": email_norm,
@@ -120,11 +124,12 @@ async def login_verify(
     )
     return resp
 
+
 @router.post("/logout")
 async def logout(request: Request, next: str = "/"):
     sid = request.cookies.get(SESSION_COOKIE)
     if sid:
-        subscription_auth_col.delete_many({"kind": "session", "session_id": sid})
+        auth_col.delete_many({"kind": "session", "session_id": sid})
     resp = RedirectResponse(url=next or "/", status_code=302)
     resp.delete_cookie(SESSION_COOKIE)
     return resp
