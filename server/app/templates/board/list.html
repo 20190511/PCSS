@@ -128,19 +128,19 @@
                             {% if is_admin %}
                                 <form action="/board/bug/status/{{ b['_id'] }}" method="post" class="status-form">
                                     <select name="status" class="status-select">
-                                        <option value="제보 완료" {% if b.status == '제보 완료' %}selected{% endif %}>제보 완료</option>
-                                        <option value="작업 중" {% if b.status == '작업 중' %}selected{% endif %}>작업 중</option>
-                                        <option value="수정 완료" {% if b.status == '수정 완료' %}selected{% endif %}>수정 완료</option>
+                                        <option value="접수됨" {% if b.status == '접수됨' %}selected{% endif %}>접수됨</option>
+                                        <option value="처리 중" {% if b.status == '처리 중' %}selected{% endif %}>처리 중</option>
+                                        <option value="처리 완료" {% if b.status == '처리 완료' %}selected{% endif %}>처리 완료</option>
                                     </select>
                                     <button type="submit" class="btn-update">변경</button>
                                 </form>
                             {% else %}
-                                {% if b.status == '작업 중' %}
-                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#f39c12; color:white;">작업 중</span>
-                                {% elif b.status == '수정 완료' %}
-                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#27ae60; color:white;">수정 완료</span>
+                                {% if b.status == '처리 중' %}
+                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#f39c12; color:white;">처리 중</span>
+                                {% elif b.status == '처리 완료' %}
+                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#27ae60; color:white;">처리 완료</span>
                                 {% else %}
-                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#95a5a6; color:white;">제보 완료</span>
+                                    <span style="font-size:12px; padding:3px 6px; border-radius:4px; background:#95a5a6; color:white;">접수됨</span>
                                 {% endif %}
                             {% endif %}
                         </td>

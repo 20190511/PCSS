@@ -179,7 +179,7 @@ async def bug_create(request: Request, title: str = Form(...), content: str = Fo
         "author": email,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
-        "status": "제보 완료"
+        "status": "접수됨"
     })
     return RedirectResponse(url="/board", status_code=302)
 
