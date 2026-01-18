@@ -756,41 +756,27 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
-          function enforceAtLeastOneOption() {
-            const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
-            if (optionInputs.length === 0) return;
-          
-            function checkedCount() {
-              return optionInputs.filter((x) => x.checked).length;
-            }
-          
-            // 마지막 1개 해제를 "클릭 단계"에서 차단 (change가 발생하기 전에 막음)
-            optionInputs.forEach((cb) => {
-              cb.addEventListener("click", (e) => {
-                // 지금 이 체크박스가 체크되어 있고, 전체 체크 수가 1개면
-                // 이걸 끄는 행동이므로 막기
-                if (cb.checked && checkedCount() === 1) {
-                  e.preventDefault(); // toggle 자체를 막음
-                  setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
-                }
-              });
-            });
+        function enforceAtLeastOneOption() {
+          const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
+          if (optionInputs.length === 0) return;
+        
+          function checkedCount() {
+            return optionInputs.filter((x) => x.checked).length;
           }
         
+          // 마지막 1개 해제를 "클릭 단계"에서 차단 (change가 발생하기 전에 막음)
           optionInputs.forEach((cb) => {
-            cb.addEventListener("change", () => {
-              refreshDisabled();
-              // 사용자 안내(원하면)
-              const checked = optionInputs.filter((x) => x.checked);
-              if (checked.length === 1) {
-                setStatus(null, "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
+            cb.addEventListener("click", (e) => {
+              // 지금 이 체크박스가 체크되어 있고, 전체 체크 수가 1개면
+              // 이걸 끄는 행동이므로 막기
+              if (cb.checked && checkedCount() === 1) {
+                e.preventDefault(); // toggle 자체를 막음
+                setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
               }
             });
           });
-        
-          // 초기 상태 반영
-          refreshDisabled();
         }
+        
         
         enforceAtLeastOneOption();
 
