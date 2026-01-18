@@ -36,7 +36,6 @@ async def _startup():
     await get_mongo_client()
 
 app.include_router(page_router)
-app.include_router(api_router, prefix="/api")
 app.include_router(conf_router, prefix="/conferences")
 app.include_router(author_router, prefix="/author")
 app.include_router(subscription_router, prefix="/subscriptions")
