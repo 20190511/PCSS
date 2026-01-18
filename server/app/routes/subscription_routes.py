@@ -76,7 +76,7 @@ def _validate_options(opts):
             continue
         if xi in allowed and xi not in clean:
             clean.append(xi)
-    return clean or [1, 2, 3, 4]
+    return clean
 
 
 def _parse_bool(s: str, default: bool = True) -> bool:
@@ -284,21 +284,25 @@ async def manage_update(
         upsert=True,
     )
 
-    new_doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
-    return templates.TemplateResponse(
-        "manage_subscription.html",
-        {
-            "request": request,
-            "error": None,
-            "success": "저장되었습니다.",
-            "email": email_norm,
-            "subscription": new_doc,
-            "conferences": get_conferences_for_ui(),
-            "options": _option_labels(),
-            "default_threshold": 0.8,
-            "default_selected_options": [1, 2, 3, 4],
-        },
-    )
+    clean_options = _validate_options(options)
+    if len(clean_options) == 0:
+        # 현재 구독 정보 다시 로드해서 그대로 보여주고 에러만 띄움
+        doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
+        return templates.TemplateResponse(
+            "manage_subscription.html",
+            {
+                "request": request,
+                "error": "옵션은 최소 1개 이상 선택해야 합니다.",
+                "success": None,
+                "email": email_norm,
+                "subscription": doc,
+                "conferences": get_conferences_for_ui(),
+                "options": _option_labels(),
+                "default_threshold": 0.8,
+                "default_selected_options": [1, 2, 3, 4],
+            },
+            status_code=400,
+        )
 
 
 @router.post("/manage/unsubscribe", response_class=HTMLResponse)
@@ -411,7 +415,13 @@ async def update_subscription(req: SubscriptionUpdateRequest, request: Request):
     if req.conferences is not None:
         patch["conferences"] = _dedup_list(req.conferences)
     if req.options is not None:
-        patch["options"] = _validate_options(req.options)
+        clean_options = _validate_options(req.options)
+        if len(clean_options) == 0:
+            return JSONResponse(
+                {"status": "bad_request", "message": "옵션은 최소 1개 이상 선택해야 합니다."},
+                status_code=400,
+            )
+        patch["options"] = clean_options
     if req.threshold is not None:
         patch["threshold"] = float(req.threshold)
     if req.is_enabled is not None:

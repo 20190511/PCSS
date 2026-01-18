@@ -689,6 +689,29 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        function enforceAtLeastOneOption() {
+          const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
+          if (optionInputs.length === 0) return;
+        
+          optionInputs.forEach((cb) => {
+            cb.addEventListener("change", () => {
+              const checked = optionInputs.filter((x) => x.checked);
+              if (checked.length === 0) {
+                // 방금 꺼버린 걸 다시 켜서 최소 1개 유지
+                cb.checked = true;
+        
+                // 저장 로직이 change에 묶여있으면, 사용자에게 알려주기
+                setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
+              }
+            });
+          });
+        }
+        
+        document.addEventListener("DOMContentLoaded", () => {
+          enforceAtLeastOneOption();
+        });
+
+        
         const allBox = document.getElementById("conf-all");
         const search = document.getElementById("conf-search");
         const onlySelected = document.getElementById("only-selected");
