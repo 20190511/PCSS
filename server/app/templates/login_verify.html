@@ -159,7 +159,7 @@
       <div class="card">
         <h2>메일로 받은 6자리 코드를 입력하세요</h2>
 
-        <form method="post" action="/subscriptions/login/verify">
+        <form method="post" action="/auth/login/verify">
           <input type="hidden" name="email" value="{{ email }}" />
 
           <div class="form-group">
@@ -180,7 +180,7 @@
 
           <div class="row">
             <button class="btn" type="submit">로그인</button>
-            <a class="btn btn-secondary" href="/subscriptions/login">코드 다시 받기</a>
+            <a class="btn btn-secondary" href="/auth/login">코드 다시 받기</a>
           </div>
 
           <div class="small">
