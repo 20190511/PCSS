@@ -7,8 +7,35 @@ from app.db import name_col, req_korean_col
 from app.data import name_dict
 from app.libs.exceptions import NotFoundException
 from datetime import datetime, timezone
+from app.libs.auth import require_login
+from app.db import admin_col
 
 router = APIRouter()
+
+def _safe_next(next_url: str) -> str:
+    if not next_url or not isinstance(next_url, str):
+        return "/"
+    if not next_url.startswith("/"):
+        return "/"
+    if next_url.startswith("//"):
+        return "/"
+    return next_url
+
+
+def _is_admin(email: str) -> bool:
+    if not email:
+        return False
+    return admin_col.find_one({"email": email.lower(), "is_enabled": True}, {"_id": 1}) is not None
+
+
+def _require_admin_or_redirect(request: Request, next_path: str):
+    email = require_login(request)
+    if not email:
+        return None, RedirectResponse(f"/auth/login?next={_safe_next(next_path)}", status_code=302)
+    if not _is_admin(email):
+        return email, None  # 로그인은 했지만 admin 아님
+    return email, "ok"
+
 
 @router.post("/stats/page", response_class=HTMLResponse)
 async def author_stats_page(
@@ -30,7 +57,7 @@ async def author_stats_page(
     is_korean = score >= uncertainty
 
     return templates.TemplateResponse(
-        "author_stats.html",
+        "search/author_stats.html",
         {
             "request": request,
             "name": target_author,
@@ -144,8 +171,22 @@ async def request_delete_korean_stat(param: str):
     return {"status": "Requested", "param": param}
 
 
-@router.get("/requests", response_class=HTMLResponse)
+@router.get("/manage", response_class=HTMLResponse)
 async def admin_requests_page(request: Request):
+    next_path = request.url.path  # "/author/requests"
+    email, status_or_resp = _require_admin_or_redirect(request, next_path)
+
+    if isinstance(status_or_resp, RedirectResponse):
+        return status_or_resp
+
+    if status_or_resp is None:
+        # 로그인은 했는데 admin 아님
+        return templates.TemplateResponse(
+            "admin/admin_name_requests.html",
+            {"request": request, "requests": [], "error": "권한이 없습니다. 관리자 계정으로 로그인하세요."},
+            status_code=403,
+        )
+
     reqs = list(req_korean_col.find({}).sort("updated_at", -1))
 
     items = []
@@ -153,13 +194,13 @@ async def admin_requests_page(request: Request):
         items.append({
             "name": r.get("name", ""),
             "score": r.get("score", 0),
-            "type": r.get("type", None),  # 1: add, 0: delete
+            "type": r.get("type", None),
             "updated_at": r.get("updated_at", None).isoformat() if r.get("updated_at", None) else "",
         })
 
     return templates.TemplateResponse(
-        "admin_requests.html",
-        {"request": request, "requests": items},
+        "admin/admin_name_requests.html",
+        {"request": request, "requests": items, "error": None, "email": email},
     )
 
 
@@ -182,7 +223,15 @@ def apply_korean_score(param: str, score: int):
     
 
 @router.post("/requests/approve")
-async def approve_korean_request(name: str = Form(...)):
+async def approve_korean_request(request: Request, name: str = Form(...)):
+    next_path = "/author/requests"
+    email, status_or_resp = _require_admin_or_redirect(request, next_path)
+
+    if isinstance(status_or_resp, RedirectResponse):
+        return status_or_resp
+    if status_or_resp is None:
+        return RedirectResponse(url=next_path, status_code=303)
+
     req_doc = req_korean_col.find_one({"name": name})
     if not req_doc:
         raise NotFoundException("No pending request")
@@ -195,13 +244,21 @@ async def approve_korean_request(name: str = Form(...)):
     apply_korean_score(name, new_score)
 
     req_korean_col.delete_one({"name": name})
-    return RedirectResponse(url="/author/requests", status_code=303)
+    return RedirectResponse(url=next_path, status_code=303)
 
 
 @router.post("/requests/deny")
-async def deny_korean_request(name: str = Form(...)):
+async def deny_korean_request(request: Request, name: str = Form(...)):
+    next_path = "/author/requests"
+    email, status_or_resp = _require_admin_or_redirect(request, next_path)
+
+    if isinstance(status_or_resp, RedirectResponse):
+        return status_or_resp
+    if status_or_resp is None:
+        return RedirectResponse(url=next_path, status_code=303)
+
     result = req_korean_col.delete_one({"name": name})
     if result.deleted_count == 0:
         raise NotFoundException("No pending request to deny")
 
-    return RedirectResponse(url="/author/requests", status_code=303)
+    return RedirectResponse(url=next_path, status_code=303)

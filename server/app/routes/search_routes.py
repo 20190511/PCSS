@@ -193,7 +193,7 @@ async def search_page(request: Request, job_id: str):
 
     if job.status == "running":
         return templates.TemplateResponse(
-            "loading_result.html",
+            "search/loading_result.html",
             {
                 "request": request,
                 "job_id": job_id,
@@ -207,7 +207,7 @@ async def search_page(request: Request, job_id: str):
 
     pythonResult = job.result or {}
     return templates.TemplateResponse(
-        "results.html",
+        "search/results.html",
         {
             "request": request,
             "options": options,

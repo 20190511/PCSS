@@ -116,7 +116,7 @@ async def manage_page(request: Request):
 
 
     return templates.TemplateResponse(
-        "manage_subscription.html",
+        "subscribe/manage_subscription.html",
         {
             "request": request,
             "error": None,
@@ -164,7 +164,7 @@ async def manage_update(
         # 현재 구독 정보 다시 로드해서 그대로 보여주고 에러만 띄움
         doc = subscription_col.find_one({"email": email_norm}, {"_id": 0})
         return templates.TemplateResponse(
-            "manage_subscription.html",
+            "subscribe/manage_subscription.html",
             {
                 "request": request,
                 "error": "옵션은 최소 1개 이상 선택해야 합니다.",
@@ -193,7 +193,7 @@ async def manage_unsubscribe(request: Request):
         {"$set": {"is_enabled": False, "updated_at": now}},
     )
     return templates.TemplateResponse(
-        "unsubscribe_done.html",
+        "subscribe/unsubscribe_done.html",
         {"request": request, "error": None, "email": email_norm},
     )
 

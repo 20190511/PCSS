@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, next: str = "/"):
-    return templates.TemplateResponse("login.html", {
+    return templates.TemplateResponse("auth/login.html", {
         "request": request,
         "next": next,
     })
@@ -50,7 +50,7 @@ async def login_send(request: Request, email: str = Form(...), next: str = Form(
     )
 
     return templates.TemplateResponse(
-        "login_verify.html",
+        "auth/login_verify.html",
         {"request": request, "email": email_norm, "next": next, "message": "인증 코드를 메일로 보냈습니다."},
     )
 

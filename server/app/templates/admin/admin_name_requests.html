@@ -123,6 +123,33 @@
       padding: 18px;
       font-size: 14px;
     }
+
+    .notice-error{
+      background:#fff;
+      border:1px solid #ddd;
+      border-left:4px solid rgba(200,1,80,1);
+      border-radius:10px;
+      padding:12px 14px;
+      margin:0 0 12px 0;
+      box-shadow:0 2px 4px rgba(0,0,0,0.08);
+      line-height:1.5;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin:0 0 14px 0;
+    }
+    .whoami{
+      color:#666;
+      font-size:13px;
+    }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color:#34495e;
+    }
+    
   
     /* 작은 화면 반응형 */
     @media (max-width: 768px) {
@@ -246,12 +273,35 @@
       .empty {
         color: #aaa;
       }
+
+      .notice-error{
+        background:#242424;
+        border:1px solid #444;
+        border-left:4px solid #ff88a2;
+        box-shadow:0 2px 4px rgba(0,0,0,0.8);
+      }
+      .whoami{ color:#aaa; }
+      .mono{ color:#ddd; }
     }
   </style>  
 </head>
 <body>
   <div class="container">
     <h2>요청 리스트</h2>
+
+    {% if error %}
+      <div class="notice-error"><b>오류:</b> {{ error }}</div>
+    {% endif %}
+
+    <div class="topbar">
+      {% if email %}
+        <div class="whoami">로그인: <span class="mono">{{ email }}</span></div>
+        <form method="post" action="/auth/logout" style="margin:0;">
+          <input type="hidden" name="next" value="/author/requests" />
+          <button class="btn btn-deny" type="submit">로그아웃</button>
+        </form>
+      {% endif %}
+    </div>
 
     <div class="card">
       <table>
