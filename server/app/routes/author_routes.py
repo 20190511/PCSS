@@ -200,7 +200,7 @@ def apply_korean_score(param: str, score: int):
 
 @router.post("/requests/approve")
 async def approve_korean_request(request: Request, name: str = Form(...)):
-    next_path = "/author/requests"
+    next_path = "/author/manage"
     email, status_or_resp = _require_admin_or_redirect(request, next_path)
 
     if isinstance(status_or_resp, RedirectResponse):
@@ -225,7 +225,7 @@ async def approve_korean_request(request: Request, name: str = Form(...)):
 
 @router.post("/requests/deny")
 async def deny_korean_request(request: Request, name: str = Form(...)):
-    next_path = "/author/requests"
+    next_path = "/author/manage"
     email, status_or_resp = _require_admin_or_redirect(request, next_path)
 
     if isinstance(status_or_resp, RedirectResponse):
