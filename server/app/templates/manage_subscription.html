@@ -560,12 +560,6 @@
         box.style.display = "flex";
 
         clearTimeout(_statusHideTimer);
-        // 저장 성공/실패는 잠깐 보여주고 숨김 (저장중은 유지)
-        if (mode === "ok" || mode === "fail") {
-          _statusHideTimer = setTimeout(() => {
-            box.style.display = "none";
-          }, 1600);
-        }
       }
 
       function scheduleAutoSave() {
