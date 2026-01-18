@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.db import log_col
 
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
-from app.routes import api_router
 from app.routes.author_routes import router as author_router
 from app.routes.page_routes import router as page_router
 from app.routes.subscription_routes import router as subscription_router
