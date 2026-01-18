@@ -760,26 +760,22 @@
           const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
           if (optionInputs.length === 0) return;
         
-          function checkedCount() {
-            return optionInputs.filter((x) => x.checked).length;
-          }
-        
-          // 마지막 1개 해제를 "클릭 단계"에서 차단 (change가 발생하기 전에 막음)
           optionInputs.forEach((cb) => {
-            cb.addEventListener("click", (e) => {
-              // 지금 이 체크박스가 체크되어 있고, 전체 체크 수가 1개면
-              // 이걸 끄는 행동이므로 막기
-              if (cb.checked && checkedCount() === 1) {
-                e.preventDefault(); // toggle 자체를 막음
+            cb.addEventListener("change", () => {
+              const checked = optionInputs.filter((x) => x.checked);
+              if (checked.length === 0) {
+                // 방금 꺼버린 걸 다시 켜서 최소 1개 유지
+                cb.checked = true;
+        
+                // 저장 로직이 change에 묶여있으면, 사용자에게 알려주기
                 setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
               }
             });
           });
         }
         
-        
         enforceAtLeastOneOption();
-
+        
         const allBox = document.getElementById("conf-all");
         const search = document.getElementById("conf-search");
         const onlySelected = document.getElementById("only-selected");
