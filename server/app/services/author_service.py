@@ -1,4 +1,3 @@
-# app/services/author_stats_mongo.py
 from typing import Any, Dict, List, Optional
 from app.db.mongo import get_papers_col
 

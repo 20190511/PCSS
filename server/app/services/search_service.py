@@ -1,4 +1,3 @@
-# app/services/pcssearch_mongo.py
 import asyncio
 import copy
 import os
@@ -13,7 +12,6 @@ from app.db.mongo import get_papers_col
 
 class PCSSEARCHMongo:
     """
-    기존 PCSSEARCH의 '크롤링' 파트를 제거하고,
     MongoDB 데이터셋에서 논문을 조회하여 동일한 형태로 결과를 만들어 반환.
 
     - option:
@@ -22,7 +20,7 @@ class PCSSEARCHMongo:
         3: 마지막 저자
         4: 기타 공저자(중간 저자)
         else: 저자 중 한 명 이상
-    - threshold: 한국인 판정 임계값 (single_name_llm 결과)
+    - threshold: 한국인 판정 임계값
     - countOption: True면 저자 통계(본 MongoDB 데이터셋 기준)도 붙임
     """
 
@@ -32,7 +30,7 @@ class PCSSEARCHMongo:
         threshold: float,
         startyear: int,
         endyear: int,
-        countOption: bool = True,
+        countOption: bool = False,
         job_id: Optional[str] = None,
         event_queue: Optional[Any] = None,
         cancel_check: Optional[Any] = None,
@@ -77,7 +75,6 @@ class PCSSEARCHMongo:
         self._total_docs: int = 0
         self._processed_docs: int = 0
         self._matched_docs: int = 0  # 필터 통과(결과 포함)된 논문 수
-
 
 
     # ---------------- cancel / emit ----------------
@@ -174,7 +171,6 @@ class PCSSEARCHMongo:
             self._score_cache[name] = 0.0
             name_dict[name] = 0.0
             return 0.0
-
     
     async def checkKorean(self, name: str) -> bool:
         if self._should_cancel():
