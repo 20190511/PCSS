@@ -405,11 +405,6 @@
     </div>
     {% endif %}
 
-    <div class="notice status" id="autosave-status">
-      <div id="autosave-text" style="min-width:0; font-size:14px;"></div>
-      <div class="badge" id="autosave-badge">저장</div>
-    </div>
-
     {% if subscription %}
     <div class="topbar">
       <div class="whoami">로그인: <span class="mono">{{ email }}</span></div>
@@ -422,6 +417,11 @@
           로그아웃
         </button>
       </form>
+    </div>
+
+    <div class="notice status" id="autosave-status">
+      <div id="autosave-text" style="min-width:0; font-size:14px;"></div>
+      <div class="badge" id="autosave-badge">저장</div>
     </div>
 
     <form id="manage-form" method="post" action="/subscriptions/manage/update">

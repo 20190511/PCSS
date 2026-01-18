@@ -293,16 +293,6 @@
       <div class="notice-error"><b>오류:</b> {{ error }}</div>
     {% endif %}
 
-    <div class="topbar">
-      {% if email %}
-        <div class="whoami">로그인: <span class="mono">{{ email }}</span></div>
-        <form method="post" action="/auth/logout" style="margin:0;">
-          <input type="hidden" name="next" value="/author/requests" />
-          <button class="btn btn-deny" type="submit">로그아웃</button>
-        </form>
-      {% endif %}
-    </div>
-
     <div class="card">
       <table>
         <thead>
