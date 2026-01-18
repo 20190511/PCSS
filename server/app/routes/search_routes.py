@@ -184,13 +184,33 @@ async def search_page(request: Request, job_id: str):
 
     options = job.options or {}
 
+    # 1. 옵션 맵 정의
     option_map = {
         1: "1저자",
-        2: "2저자" ,
+        2: "2저자",
         3: "마지막 저자",
         4: "기타 공저자",
     }
-    option_text = option_map.get(int(options.get("option", 0)), "옵션 미선택")
+
+    # 2. 저장된 옵션 가져오기 (List[int] 예상)
+    # 혹시 모를 구버전 데이터(int) 호환을 위해 타입 체크
+    raw_option = options.get("option", [])
+    if isinstance(raw_option, int):
+        raw_option = [raw_option]
+
+    # 3. 리스트 순회하며 텍스트로 변환
+    selected_texts = []
+    if raw_option and isinstance(raw_option, list):
+        for opt in raw_option:
+            txt = option_map.get(int(opt))
+            if txt:
+                selected_texts.append(txt)
+    
+    # 4. 콤마로 연결하여 하나의 문자열로 생성 (예: "1저자, 마지막 저자")
+    if selected_texts:
+        option_text = ", ".join(selected_texts)
+    else:
+        option_text = "옵션 미선택"
 
     if job.status == "running":
         return templates.TemplateResponse(
@@ -217,7 +237,6 @@ async def search_page(request: Request, job_id: str):
             "FASTAPI_BASE": "http://pcss.r-e.kr:8000",
         },
     )
-
 
 @router.post("/cancel/{job_id}")
 async def search_cancel(request: Request, job_id: str):
