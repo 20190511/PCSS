@@ -12,6 +12,7 @@ from app.routes.conf_routes import router as conf_router
 from app.routes.search_routes import router as search_router
 from app.routes.admin_routes import router as admin_router
 from app.routes.board_routes import router as board_router
+from app.routes.log_routes import router as log_router
 from app.db.mongo import get_mongo_client
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -45,3 +46,4 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(search_router, prefix="/api/search")
 app.include_router(admin_router, prefix="/admin")
 app.include_router(board_router, prefix="/board")
+app.include_router(log_router, prefix="/logs")

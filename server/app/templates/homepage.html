@@ -526,8 +526,12 @@
         <div class="select-all-container">
           <button class="select-btn" id="toggle-select-btn">전체 선택</button>
 
-          {% if user %}
-            <a class="select-btn" href="/auth/logout">로그아웃</a>
+          {% if email %}
+            <form action="/auth/logout" method="post" style="display: inline-block;">
+              <button type="submit" class="select-btn" style="font-family: inherit; font-size: 0.9rem; cursor: pointer;">
+                  로그아웃
+              </button>
+            </form>
           {% else %}
             <a class="select-btn" href="/auth/login">로그인</a>
           {% endif %}

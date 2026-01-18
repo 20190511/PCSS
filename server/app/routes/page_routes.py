@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
     email = get_session_email(request)  # 없으면 None
-
+    print("Homepage accessed by:", email)
     try:
         ip = get_client_ip(request)
         if ip not in ["127.0.0.1", "::1"]:
@@ -22,6 +22,7 @@ async def homepage(request: Request):
                 "ts": datetime.now(timezone.utc),
                 "type": "homepage",
                 "ip": ip,
+                "email": email,
                 "method": request.method,
                 "path": request.url.path,
                 "query": dict(request.query_params),

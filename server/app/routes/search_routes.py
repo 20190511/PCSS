@@ -18,6 +18,7 @@ from app.core.templates import templates
 from app.db import log_col
 from datetime import datetime, timezone
 from app.libs.logger import get_client_ip
+from app.libs.auth import get_session_email
 
 
 router = APIRouter()
@@ -40,6 +41,7 @@ async def start_search(req: SearchRequest, request: Request):
                 "ts": datetime.now(timezone.utc),
                 "type": "search_start",
                 "ip": ip,
+                "email": get_session_email(request),    
                 "job_id": job_id,
                 "options": options,
                 "user_agent": request.headers.get("user-agent", ""),
