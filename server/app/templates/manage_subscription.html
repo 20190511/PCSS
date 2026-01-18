@@ -316,15 +316,7 @@
         gap: 12px;
         margin: 0 0 14px 0;
       }
-      
-      .btn-danger {
-        background: rgba(179, 38, 38, 0.08);
-        border-color: rgba(179, 38, 38, 0.35);
-        color: rgba(179, 38, 38, 1);
-      }
-      .btn-danger:hover {
-        background: rgba(179, 38, 38, 0.14);
-      }
+  
 
       .page-header {
         display: flex;
@@ -369,8 +361,15 @@
         }
 
         h1 {
-          color: #ff88a2;
+          color: var(--accent);
         }
+
+        .page-header h1 {
+          margin: 0;
+          flex: 1;
+          text-align: center;
+        }
+        
 
         .card {
           background: #333;
@@ -438,17 +437,19 @@
 
   <body>
     <div class="container">
-      <h1>PCSS 구독 관리</h1>
-
-      <form method="post" action="/subscriptions/logout" class="logout-form">
-        <button
-          type="submit"
-          class="btn btn-danger"
-          onclick="return confirm('로그아웃하고 다시 로그인할까요?');"
-        >
-          로그아웃
-        </button>
-      </form>
+      <div class="page-header">
+        <h1>PCSS 구독 관리</h1>
+      
+        <form method="post" action="/subscriptions/logout" class="logout-form">
+          <button
+            type="submit"
+            class="btn btn-danger"
+            onclick="return confirm('로그아웃하고 다시 로그인할까요?');"
+          >
+            로그아웃
+          </button>
+        </form>
+      </div>
       
 
       {% if error %}
@@ -763,21 +764,32 @@
           const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
           if (optionInputs.length === 0) return;
         
+          function refreshDisabled() {
+            const checked = optionInputs.filter((x) => x.checked);
+            // 모두 enable
+            optionInputs.forEach((x) => (x.disabled = false));
+        
+            // 딱 1개만 체크되어 있으면 그 하나는 끌 수 없게 막기
+            if (checked.length === 1) {
+              checked[0].disabled = true;
+            }
+          }
+        
           optionInputs.forEach((cb) => {
             cb.addEventListener("change", () => {
+              refreshDisabled();
+              // 사용자 안내(원하면)
               const checked = optionInputs.filter((x) => x.checked);
-              if (checked.length === 0) {
-                // 방금 꺼버린 걸 다시 켜서 최소 1개 유지
-                cb.checked = true;
-        
-                // 저장 로직이 change에 묶여있으면, 사용자에게 알려주기
-                setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
+              if (checked.length === 1) {
+                setStatus(null, "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
               }
             });
           });
+        
+          // 초기 상태 반영
+          refreshDisabled();
         }
         
-        enforceAtLeastOneOption();
 
         
         const allBox = document.getElementById("conf-all");
