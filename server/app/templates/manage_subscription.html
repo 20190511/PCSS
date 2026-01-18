@@ -38,8 +38,9 @@
       h1 {
         text-align: center;
         margin: 0 0 18px 0;
-        color: var(--accent);
+        color: rgba(200, 1, 80, 1);
       }
+      
 
       .notice {
         background: var(--card);
@@ -329,9 +330,9 @@
       .page-header h1 {
         margin: 0;
         flex: 1;
-        text-align: center; /* 가운데 유지 */
-        color: var(--accent);
-      }
+        text-align: center;
+        color: rgba(200, 1, 80, 1);
+      }      
       
       .logout-form {
         margin: 0;
@@ -358,7 +359,10 @@
           --shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
-        h1 { color: #ff88a2; }
+        h1,
+        .page-header h1 {
+          color: rgba(200, 1, 80, 1);
+        }
 
         .page-header h1 {
           margin: 0;
