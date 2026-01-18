@@ -1,264 +1,602 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>{{ name }} - 통계</title>
-  <style>
-    /* CSS 부분은 아주 잘 작성하셨습니다. 그대로 둡니다. */
-    :root {
-      --bg-body: #f8f9fa;
-      --bg-card: #ffffff;
-      --bg-th: #f2f2f2;
-      --text-main: #000000;
-      --text-sub: #555555;
-      --text-muted: #888888;
-      --color-accent: #C80150;
-      --border-color: #dddddd;
-      --shadow-color: rgba(0, 0, 0, 0.1);
-    }
-    
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg-body: #121212;
-        --bg-card: #1e1e1e;
-        --bg-th: #2c2c2c;
-        --text-main: #e0e0e0;
-        --text-sub: #b0b0b0;
-        --text-muted: #888888;
-        --color-accent: #ff4d85; 
-        --border-color: #333333;
-        --shadow-color: rgba(0, 0, 0, 0.5);
+  <head>
+    <meta charset="UTF-8" />
+    <title>PCSS {{ name }} - 실적 요약</title>
+    <style>
+      /* =========================
+         기본 라이트 모드 스타일 (검색 결과 페이지와 동일)
+      ========================= */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 10px;
+        background-color: #f8f9fa;
+        color: #333;
+        font-size: 14px;
       }
-    }
-    
-    body {
-      font-family: Arial, sans-serif;
-      background: var(--bg-body);
-      color: var(--text-main);
-      margin: 20px;
-      transition: background 0.3s, color 0.3s;
-    }
-    
-    h1 {
-      color: var(--color-accent);
-      text-align: center;
-    }
-    
-    .profile {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    
-    .profile a {
-      color: var(--color-accent);
-      text-decoration: none;
-    }
-    
-    .profile a:hover {
-      text-decoration: underline;
-    }
-    
-    .stats-table {
-      margin: 0 auto;
-      border-collapse: collapse;
-      font-size: 15px;
-      width: auto;
-    }
-    
-    .stats-table th, 
-    .stats-table td {
-      border: 1px solid var(--border-color);
-      padding: 6px;
-    }
-    
-    .stats-table th {
-      background: var(--bg-th);
-      color: var(--text-main);
-    }
-    
-    .stats-table td {
-      color: var(--text-main);
-    }
-    
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      margin: 8px auto;
-      padding: 12px;
-      max-width: 900px;
-      box-shadow: 0 1px 4px var(--shadow-color);
-    }
-    
-    .title {
-      font-weight: bold;
-      font-size: 15px;
-      margin-bottom: 4px;
-      color: var(--text-main);
-    }
-    
-    .authors {
-      color: var(--text-sub);
-      font-size: 13px;
-    }
-    
-    .conf {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-    
-    .no-data {
-      text-align: center;
-      color: var(--text-muted);
-    }
 
-    .notice {
-      max-width: 900px;
-      margin: 10px auto 16px auto;
-      padding: 10px 12px;
-      border: 1px solid #f5c2c2;
-      background: #fff4f4;
-      color: #8a1d1d;
-      border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.4;
-    }
+      .container {
+        padding: 10px;
+        background: #ffffff;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        overflow-x: auto;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
 
-    .action-link {
-      color: var(--color-accent);
-      text-decoration: underline;
-      cursor: pointer;
-      font-size: 13px;
-      display: inline-block;
-      margin-top: 6px;
-    }
-    .action-link:hover {
-      opacity: 0.9;
-    }
-    
-    
-    @media (prefers-color-scheme: dark) {
+      h1 {
+        text-align: center;
+        font-size: 30px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #c80150;
+      }
+
+      /* =========================
+         author_stats 전용 상단 링크/액션 (검색 결과 톤에 맞춤)
+      ========================= */
+      .profile {
+        text-align: center;
+        margin: 8px 0 10px 0;
+      }
+
+      .profile a {
+        text-decoration: none;
+        color: #c80150; /* 검색 결과의 포인트 컬러 */
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      .profile a:hover {
+        text-decoration: underline;
+      }
+
+      .action-link {
+        text-decoration: none;
+        color: #c80150;
+        font-weight: bold;
+        font-size: 13px;
+        display: inline-block;
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .action-link:hover {
+        text-decoration: underline;
+      }
+
+      /* =========================
+         안내 박스 (검색 결과 hint-box 색배치와 동일)
+      ========================= */
       .notice {
-        border-color: #5a2a2a;
-        background: #2b1b1b;
-        color: #ffb3c2;
+        margin: 10px 0 14px 0;
+        padding: 10px 12px;
+        background-color: #ffffff;
+        color: #333;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.4;
       }
-    }
-    
-  </style>
-</head>
 
-<body>
-
-  <h1>{{ name }} - 통계 정보</h1>
-
-  <div class="profile">
-    <a href="{{ url }}" target="_blank">DBLP 프로필</a>
-  </div>
-
-  <div class="profile">
-    <a href="#" id="korean-action-link" class="action-link"
-       onclick="event.preventDefault(); handleKoreanAction();">
-      {% if is_korean %}
-        요청: 한국인이 아닙니다
-      {% else %}
-        요청: 한국인입니다
-      {% endif %}
-    </a>
-  </div>  
-  
-  <script>
-    const authorName = {{ name | tojson }};
-    const initialIsKorean = {{ is_korean | tojson }};
-  
-    // UI 상태: false=요청(정정 요청 보내기), true=요청취소(취소 요청 보내기)
-    let uiPending = false;
-  
-    function setLinkText() {
-      const link = document.getElementById("korean-action-link");
-      if (!link) return;
-  
-      if (!uiPending) {
-        link.textContent = initialIsKorean
-          ? "요청: 한국인이 아닙니다"
-          : "요청: 한국인입니다";
-      } else {
-        link.textContent = "요청 취소";
+      /* =========================
+         통계 테이블 (검색 옵션 테이블과 동일한 색배치)
+      ========================= */
+      .stats-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 15px;
+        background-color: #ffffff;
+        color: #333;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        overflow: hidden;
       }
-    }
-  
-    async function handleKoreanAction() {
-      // 1) 요청 전 상태 -> add/delete 요청 보내고, UI는 즉시 '요청 취소'로 변경
-      if (!uiPending) {
-        uiPending = true;
-        setLinkText();
-  
-        alert("요청을 전송했습니다."); // 성공 여부 무관, 항상 뜸
-  
-        const endpoint = initialIsKorean
-          ? `/author/delete/korean/${encodeURIComponent(authorName)}`
-          : `/author/add/korean/${encodeURIComponent(authorName)}`;
-  
-        try {
-          await fetch(endpoint, { method: "POST" });
-        } catch (e) {
-          // 네트워크 오류여도 UI는 유지
+
+      .stats-table th,
+      .stats-table td {
+        padding: 8px;
+        border: 1px solid #ddd;
+      }
+
+      .stats-table th {
+        background-color: #f2f2f2;
+        color: #c80150; /* 검색 옵션 th와 동일 */
+        font-size: 16px;
+        text-align: left;
+      }
+
+      .stats-table td:first-child {
+        background-color: #fafafa; /* option-label 톤 */
+        font-weight: bold;
+        width: 50%;
+      }
+
+      /* =========================
+         섹션 스타일 (검색 결과 페이지와 동일)
+      ========================= */
+      .year-section,
+      .conference-section {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background-color: #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 8px;
+        padding: 6px;
+      }
+
+      .year-header,
+      .conference-header {
+        font-size: 13px;
+        color: #333;
+        font-weight: bold;
+        padding: 4px 8px;
+        background-color: #f2f2f2;
+        cursor: pointer;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+      }
+
+      .year-content,
+      .conference-content {
+        padding: 4px 6px;
+        display: block;
+      }
+
+      /* =========================
+         논문 카드 (검색 결과 페이지와 동일)
+      ========================= */
+      .card {
+        margin: 3px 0;
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .card-title {
+        font-size: 13px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 2px;
+      }
+
+      .authors {
+        margin: 2px 0;
+        font-size: 12px;
+        color: #555;
+      }
+
+      .conf {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+      }
+
+      /* source 링크 (검색 결과 페이지와 동일) */
+      .paper-source-link {
+        font-size: 12px;
+        color: #0056b3;
+        text-decoration: none;
+      }
+
+      .paper-source-link:hover {
+        text-decoration: underline;
+      }
+
+      /* 학회 링크: 검색 결과처럼 "검정" */
+      a.conference-link {
+        text-decoration: none;
+        color: #333;
+      }
+      a.conference-link:hover {
+        text-decoration: underline;
+      }
+
+      .no-data {
+        text-align: center;
+        color: #666;
+        margin: 12px 0;
+        font-size: 13px;
+      }
+
+      /* =========================
+         반응형 (검색 결과 페이지와 동일)
+      ========================= */
+      @media (max-width: 768px) {
+        body {
+          font-size: 12px;
         }
-        return;
+        .container {
+          padding: 8px;
+          max-width: 100%;
+        }
+        h1 {
+          font-size: 22px;
+        }
+        .year-header,
+        .conference-header {
+          font-size: 12px;
+          padding: 6px 8px;
+        }
+        .card-title {
+          font-size: 12px;
+        }
+        .authors {
+          font-size: 11px;
+        }
       }
-  
-      // 2) '요청 취소' 상태 -> cancel 라우트로 전송
-      alert("요청 취소를 전송했습니다."); // 항상 뜸
-  
-      const cancelEndpoint = `/author/cancel/korean/${encodeURIComponent(authorName)}`;
-      try {
-        await fetch(cancelEndpoint, { method: "POST" });
-      } catch (e) {
-        // 실패해도 알림은 이미 뜸
+
+      /* =========================
+         다크 모드 (검색 결과 페이지와 동일)
+      ========================= */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #121212;
+          color: #e0e0e0;
+        }
+
+        .container {
+          background-color: #242424;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        h1 {
+          color: #ff88a2;
+        }
+
+        .profile a {
+          color: #ff88a2;
+        }
+
+        .action-link {
+          color: #ff88a2;
+          border-color: #444;
+          background-color: #2c2c2c;
+        }
+
+        .notice {
+          background-color: #2c2c2c;
+          color: #e0e0e0;
+          border: 1px solid #444;
+        }
+
+        .stats-table {
+          background-color: #2c2c2c;
+          color: #e0e0e0;
+          border: 1px solid #444;
+        }
+
+        .stats-table th,
+        .stats-table td {
+          border-color: #444;
+        }
+
+        .stats-table th {
+          background-color: #3a3a3a;
+          color: #ff88a2;
+        }
+
+        .stats-table td:first-child {
+          background-color: #333;
+          color: #e0e0e0;
+        }
+
+        .year-section,
+        .conference-section,
+        .card {
+          background-color: #333;
+          border-color: #444;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        .year-header,
+        .conference-header {
+          background-color: #3a3a3a;
+          color: #e0e0e0;
+        }
+
+        .card-title {
+          color: #e0e0e0;
+        }
+
+        .paper-source-link {
+          color: #66ccff;
+        }
+
+        a.conference-link {
+          color: #e0e0e0;
+        }
       }
-  
-      // 취소 후 UI는 다시 요청 상태로 복귀
-      uiPending = false;
-      setLinkText();
-    }
-  
-    // 초기 텍스트 세팅
-    setLinkText();
-  </script>  
-  
-  <div class="notice">
-    본 통계는 <b>PCSS 목록에 포함된 학회</b> 기준으로만 집계됩니다.
-    (DBLP 전체 실적이 아니라 PCSS에서 사용하는 학회 범위에 한정됩니다.)
-  </div>
+    </style>
+  </head>
 
-  {% if stats and stats|length == 4 %}
-  <table class="stats-table">
-    <thead>
-      <tr><th>구분</th><th>논문 수</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>1저자</td><td>{{ stats[0] }}</td></tr>
-      <tr><td>1 또는 2저자</td><td>{{ stats[1] }}</td></tr>
-      <tr><td>마지막 저자</td><td>{{ stats[2] }}</td></tr>
-      <tr><td>공동 저자</td><td>{{ stats[3] }}</td></tr>
-    </tbody>
-  </table>
-  {% else %}
-  <p class="no-data">통계 데이터가 올바르지 않습니다.</p>
-  {% endif %}
+  <body>
+    <div class="container">
+      <h1>{{ name }} - 실적 요약</h1>
 
-  {% if papers %}
-    {% for p in papers %}
-      <div class="card">
-        <div class="title">{{ p.title }}</div>
-        <div class="authors">{{ p.authors | join(', ') }}</div>
-        <div class="conf">학회: {{ p.conf }}</div>
+      <div class="profile">
+        <a href="{{ url }}" target="_blank">DBLP 프로필</a>
       </div>
-    {% endfor %}
-  {% else %}
-  <p class="no-data">논문 데이터가 없습니다.</p>
-  {% endif %}
 
-</body>
+      <div class="profile">
+        <a
+          href="#"
+          id="korean-action-link"
+          class="action-link"
+          onclick="
+            event.preventDefault();
+            handleKoreanAction();
+          "
+        >
+          {% if is_korean %} 한국인이 아닌 것으로 관리자에게 알리기 {% else %}
+          한국인임을 관리자에게 알리기 {% endif %}
+        </a>
+      </div>
+
+      <script>
+        const authorName = {{ name | tojson }};
+        const initialIsKorean = {{ is_korean | tojson }};
+
+        // UI 상태: false=요청(정정 요청 보내기), true=요청취소(취소 요청 보내기)
+        let uiPending = false;
+
+        function setLinkText() {
+          const link = document.getElementById("korean-action-link");
+          if (!link) return;
+
+          if (!uiPending) {
+            link.textContent = initialIsKorean
+              ? "한국인이 아닌 것으로 관리자에게 알리기"
+              : "한국인임을 관리자에게 알리기";
+          } else {
+            link.textContent = "요청 취소";
+          }
+        }
+
+        async function handleKoreanAction() {
+          // 1) 요청 전 상태 -> add/delete 요청 보내고, UI는 즉시 '요청 취소'로 변경
+          if (!uiPending) {
+            uiPending = true;
+            setLinkText();
+
+            alert("요청을 전송했습니다."); // 성공 여부 무관, 항상 뜸
+
+            const endpoint = initialIsKorean
+              ? `/author/delete/korean/${encodeURIComponent(authorName)}`
+              : `/author/add/korean/${encodeURIComponent(authorName)}`;
+
+            try {
+              await fetch(endpoint, { method: "POST" });
+            } catch (e) {
+              // 네트워크 오류여도 UI는 유지
+            }
+            return;
+          }
+
+          // 2) '요청 취소' 상태 -> cancel 라우트로 전송
+          alert("요청 취소를 전송했습니다."); // 항상 뜸
+
+          const cancelEndpoint = `/author/cancel/korean/${encodeURIComponent(authorName)}`;
+          try {
+            await fetch(cancelEndpoint, { method: "POST" });
+          } catch (e) {
+            // 실패해도 알림은 이미 뜸
+          }
+
+          // 취소 후 UI는 다시 요청 상태로 복귀
+          uiPending = false;
+          setLinkText();
+        }
+
+        // 초기 텍스트 세팅
+        setLinkText();
+      </script>
+
+      <div class="notice">
+        본 통계는 <b>PCSS 목록에 포함된 학회</b> 기준으로만 집계됩니다. (DBLP
+        전체 실적이 아니라 PCSS에서 사용하는 학회 범위에 한정됩니다.)
+      </div>
+
+      {% if stats and stats|length == 4 %}
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>구분</th>
+            <th>검색 대상 학회/저널 논문 수</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1저자</td>
+            <td>{{ stats[0] }}</td>
+          </tr>
+          <tr>
+            <td>1 또는 2저자</td>
+            <td>{{ stats[1] }}</td>
+          </tr>
+          <tr>
+            <td>마지막 저자</td>
+            <td>{{ stats[2] }}</td>
+          </tr>
+          <tr>
+            <td>공동 저자</td>
+            <td>{{ stats[3] }}</td>
+          </tr>
+        </tbody>
+      </table>
+      {% else %}
+      <p class="no-data">통계 데이터가 올바르지 않습니다.</p>
+      {% endif %} {% if papers %}
+      <div id="papers-container"></div>
+
+      <script>
+        function createToggleHeader(text, headerClass) {
+          const header = document.createElement("div");
+          header.className = headerClass;
+          header.innerHTML =
+            text + '<span class="toggle-icon" style="margin-left:auto;">▼</span>';
+          header.addEventListener("click", () => {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector(".toggle-icon");
+            if (!content.style.display || content.style.display === "none") {
+              content.style.display = "block";
+              icon.textContent = "▼";
+            } else {
+              content.style.display = "none";
+              icon.textContent = "▶";
+            }
+          });
+          return header;
+        }
+
+        function escapeHtml(s) {
+          return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+
+        const papers = {{ papers | tojson }};
+        const container = document.getElementById("papers-container");
+
+        if (!papers || papers.length === 0) {
+          container.innerHTML = `<p class="no-data">논문 데이터가 없습니다.</p>`;
+        } else {
+          const grouped = {}; // { [year]: { [conf]: [paper...] } }
+
+          function inferYear(p) {
+            if (p && p.year != null) return String(p.year);
+
+            const conf = (p && p.conference) ? String(p.conference) : "";
+            const m1 = conf.match(/\b(19\d{2}|20\d{2})\b/);
+            if (m1) return m1[1];
+
+            const title = (p && p.title) ? String(p.title) : "";
+            const m2 = title.match(/\b(19\d{2}|20\d{2})\b/);
+            if (m2) return m2[1];
+
+            return "Unknown";
+          }
+
+          for (const p of papers) {
+            const year = inferYear(p);
+            const conf = (p && p.conference) ? String(p.conference) : "Unknown Conference/Journal";
+
+            if (!grouped[year]) grouped[year] = {};
+            if (!grouped[year][conf]) grouped[year][conf] = [];
+            grouped[year][conf].push(p);
+          }
+
+          const years = Object.keys(grouped).sort((a, b) => {
+            if (a === "Unknown") return 1;
+            if (b === "Unknown") return -1;
+            return parseInt(b, 10) - parseInt(a, 10);
+          });
+
+          for (const year of years) {
+            const yearSection = document.createElement("div");
+            yearSection.className = "card";
+
+            const yearHeader = createToggleHeader(escapeHtml(year), "title");
+            yearHeader.style.display = "flex";
+            yearHeader.style.cursor = "pointer";
+            yearSection.appendChild(yearHeader);
+
+            const yearContent = document.createElement("div");
+            yearContent.style.marginTop = "8px";
+            yearContent.style.display = "block";
+
+            const confs = Object.keys(grouped[year]).sort((a, b) => a.localeCompare(b));
+
+            for (const conf of confs) {
+              const confSection = document.createElement("div");
+              confSection.className = "card";
+              confSection.style.boxShadow = "none";
+              confSection.style.margin = "8px 0";
+
+              const firstPaper = grouped[year][conf][0];
+              const confDblpUrl = firstPaper && firstPaper.dblp_url ? String(firstPaper.dblp_url) : "";
+
+              const confHeader = document.createElement("div");
+              confHeader.className = "title";
+              confHeader.style.display = "flex";
+              confHeader.style.cursor = "pointer";
+
+              confHeader.innerHTML = `
+                ${
+                  confDblpUrl
+                    ? `<a href="${confDblpUrl}" target="_blank" rel="noopener"
+                        style="color:inherit; text-decoration:none;"
+                        onclick="event.stopPropagation()">
+                        ${escapeHtml(conf)}
+                      </a>`
+                    : `${escapeHtml(conf)}`
+                }
+                <span class="toggle-icon" style="margin-left:auto;">▼</span>
+              `;
+
+              confHeader.addEventListener("click", () => {
+                const content = confSection.querySelector(".conf-content");
+                const icon = confHeader.querySelector(".toggle-icon");
+                if (!content.style.display || content.style.display === "none") {
+                  content.style.display = "block";
+                  icon.textContent = "▼";
+                } else {
+                  content.style.display = "none";
+                  icon.textContent = "▶";
+                }
+              });
+
+              const confContent = document.createElement("div");
+              confContent.className = "conf-content";
+              confContent.style.marginTop = "8px";
+              confContent.style.display = "block";
+
+              for (const p of grouped[year][conf]) {
+                const paperCard = document.createElement("div");
+                paperCard.className = "card";
+                paperCard.style.margin = "6px 0";
+
+                const title = p && p.title ? String(p.title) : "Untitled";
+                const authors = (p && Array.isArray(p.authors)) ? p.authors : [];
+                const source = (p && p.source) ? String(p.source) : "";
+
+                const titleHtml = source
+                  ? `<a class="paper-source-link" href="${source}" target="_blank" rel="noopener"
+                      style="text-decoration:none;">
+                      ${escapeHtml(title)}
+                    </a>`
+                  : `${escapeHtml(title)}`;
+
+                paperCard.innerHTML = `
+                  <div class="title">${titleHtml}</div>
+                  <div class="authors">${escapeHtml(authors.join(", "))}</div>
+                  <div class="conf">학회: ${escapeHtml(conf)}</div>
+                `;
+
+                confContent.appendChild(paperCard);
+              }
+
+              confSection.appendChild(confHeader);
+              confSection.appendChild(confContent);
+              yearContent.appendChild(confSection);
+            }
+
+            yearSection.appendChild(yearContent);
+            container.appendChild(yearSection);
+          }
+        }
+      </script>
+      {% else %}
+      <p class="no-data">논문 데이터가 없습니다.</p>
+      {% endif %}
+    </div>
+  </body>
 </html>

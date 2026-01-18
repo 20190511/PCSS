@@ -290,11 +290,17 @@ class PCSSEARCHMongo:
 
         if self.option == 4:
             out = []
-            if await self.checkKorean(authors[0]):
-                out.append(await score_tag(authors[0]))
-            if len(authors) > 1 and await self.checkKorean(authors[-1]):
-                out.append(await score_tag(authors[-1]))
+
+            # 공저자는 1저자, 2저자, 마지막 저자를 제외한 경우만: index 2 ~ len(authors)-2
+            if len(authors) < 4:
+                return []
+
+            for a in authors[2:-1]:
+                if await self.checkKorean(a):
+                    out.append(await score_tag(a))
+
             return out
+
 
         # else: 저자 중 한 명 이상
         out = []

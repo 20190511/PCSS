@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PCSS Loading</title>
-  <style>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PCSS Loading</title>
+    <style>
       :root {
-        --primary-color: #C80150;
+        --primary-color: #c80150;
         --bg-color: #f4f6f9;
         --card-bg: #ffffff;
         --text-main: #333333;
@@ -14,7 +14,7 @@
         --border-color: #e0e0e0;
         --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       }
-  
+
       /* 다크 모드 변수 */
       @media (prefers-color-scheme: dark) {
         :root {
@@ -27,11 +27,11 @@
           --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
       }
-  
+
       * {
         box-sizing: border-box;
       }
-  
+
       body {
         margin: 0;
         padding: 0;
@@ -41,9 +41,11 @@
         min-height: 100vh;
         background-color: var(--bg-color);
         color: var(--text-main);
-        transition: background-color 0.3s, color 0.3s;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
       }
-  
+
       h1 {
         text-align: center;
         margin: 40px 0 30px;
@@ -51,14 +53,14 @@
         font-weight: 700;
         letter-spacing: -0.5px;
       }
-  
+
       .main-content-wrapper {
         flex: 1;
         display: flex;
         justify-content: center;
         padding: 0 20px;
       }
-  
+
       .wrapper {
         display: flex;
         gap: 30px;
@@ -66,19 +68,19 @@
         max-width: 1200px;
         align-items: flex-start; /* 높이가 달라도 상단 정렬 */
       }
-  
+
       .left-column {
         flex: 1;
         min-width: 300px;
       }
-  
+
       .right-column {
         flex: 2;
         display: flex;
         flex-direction: column;
         width: 100%;
       }
-  
+
       /* 카드 공통 스타일 */
       .card-box {
         background-color: var(--card-bg);
@@ -87,13 +89,13 @@
         overflow: hidden;
         border: 1px solid var(--border-color);
       }
-  
+
       /* 옵션 테이블 스타일링 */
       .options-table {
         width: 100%;
         border-collapse: collapse;
       }
-  
+
       .options-table th {
         background-color: rgba(200, 1, 80, 0.05); /* 브랜드 컬러의 옅은 배경 */
         color: var(--primary-color);
@@ -102,29 +104,29 @@
         text-align: left;
         border-bottom: 2px solid var(--primary-color);
       }
-  
+
       @media (prefers-color-scheme: dark) {
         .options-table th {
           background-color: rgba(255, 136, 162, 0.1);
         }
       }
-  
+
       .options-table td {
         padding: 12px 15px;
         border-bottom: 1px solid var(--border-color);
         font-size: 0.95rem;
       }
-  
+
       .options-table tr:last-child td {
         border-bottom: none;
       }
-  
+
       .option-label {
         font-weight: 600;
         color: var(--text-sub);
         width: 45%;
       }
-  
+
       /* 통계 뱃지 (Stat Pill) */
       .stat-pill {
         display: inline-block;
@@ -136,7 +138,7 @@
         font-size: 0.9rem;
         border: 1px solid var(--border-color);
       }
-  
+
       /* 중단 버튼 스타일링 */
       #cancelBtn {
         margin-top: 15px;
@@ -155,19 +157,19 @@
         align-items: center;
         gap: 8px;
       }
-  
+
       #cancelBtn:hover:not(:disabled) {
         background-color: var(--primary-color);
         color: #fff;
         box-shadow: 0 4px 10px rgba(200, 1, 80, 0.3);
       }
-  
+
       #cancelBtn:disabled {
         border-color: #ccc;
         color: #ccc;
         cursor: not-allowed;
       }
-  
+
       /* 로딩 영역 */
       #loading {
         text-align: center;
@@ -177,14 +179,14 @@
         justify-content: center;
         gap: 15px;
       }
-  
+
       #loading p {
         font-size: 1.1rem;
         font-weight: 500;
         margin: 0;
         color: var(--text-sub);
       }
-  
+
       .spinner {
         border: 3px solid rgba(0, 0, 0, 0.1);
         border-top: 3px solid var(--primary-color);
@@ -193,16 +195,23 @@
         height: 24px;
         animation: spin 0.8s linear infinite;
       }
-  
+
       @media (prefers-color-scheme: dark) {
-        .spinner { border: 3px solid rgba(255, 255, 255, 0.1); border-top: 3px solid var(--primary-color); }
+        .spinner {
+          border: 3px solid rgba(255, 255, 255, 0.1);
+          border-top: 3px solid var(--primary-color);
+        }
       }
-  
+
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
-  
+
       /* 로그 출력 창 (Terminal 느낌) */
       pre#output {
         margin: 0;
@@ -212,10 +221,10 @@
         overflow: auto;
         white-space: pre-wrap;
         word-wrap: break-word;
-        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
         font-size: 0.9rem;
         line-height: 1.5;
-        
+
         /* Card style applied directly via class usually, but keeping ID styling here */
         background-color: var(--card-bg);
         border-radius: 12px;
@@ -223,7 +232,7 @@
         border: 1px solid var(--border-color);
         color: var(--text-main);
       }
-  
+
       /* 커스텀 스크롤바 */
       pre#output::-webkit-scrollbar {
         width: 8px;
@@ -240,7 +249,7 @@
           background-color: #444;
         }
       }
-  
+
       /* Footer */
       .footer {
         text-align: center;
@@ -251,14 +260,14 @@
         border-top: 1px solid var(--border-color);
         background-color: var(--bg-color); /* Footer bg to match body */
       }
-  
+
       .footer-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 8px;
       }
-  
+
       .footer-container p {
         margin: 0;
         font-weight: 600;
@@ -267,7 +276,7 @@
         font-size: 0.75rem;
         opacity: 0.7;
       }
-  
+
       .user {
         display: flex;
         align-items: center;
@@ -275,18 +284,18 @@
         flex-wrap: wrap;
         justify-content: center;
       }
-  
+
       .user a {
         text-decoration: none;
         color: var(--text-sub);
         transition: color 0.2s;
       }
-      
+
       .user a:hover {
         color: var(--primary-color);
         text-decoration: underline;
       }
-  
+
       /* 반응형 */
       @media (max-width: 900px) {
         .wrapper {
@@ -302,218 +311,236 @@
       .spinner.paused {
         animation: none !important;
         border-top-color: transparent; /* 선택: 회전 멈춘 느낌 */
-        opacity: 0.5;                 /* 선택: 비활성 느낌 */
+        opacity: 0.5; /* 선택: 비활성 느낌 */
       }
-      
-  </style>
-</head>
-<body>
-  <h1>PCSS Searching</h1>
-  <div id="loading">
-    <p id="loadingText">DBLP CRAWLER is working...</p>
-    <div class="spinner" id="spinner"></div>
-  </div>  
-  <div class="main-content-wrapper">
-    <div class="wrapper">
-      <!-- 왼쪽: 옵션 -->
-      <div class="left-column" id="globalData">
-        <table class="options-table">
-          <thead>
-            <tr><th colspan="2">검색 옵션</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="option-label">옵션</td>
-              <td>{{ option_text }} ({{ options["option"] }})</td>
-            </tr>
-            <tr>
-              <td class="option-label">한국인 판단 기준값</td>
-              <td>{{ options["uncertainty"] }}</td>
-            </tr>
-            <tr>
-              <td class="option-label">시작 연도</td>
-              <td>{{ options["startyear"] }}</td>
-            </tr>
-            <tr>
-              <td class="option-label">끝 연도</td>
-              <td>{{ options["endyear"] }}</td>
-            </tr>
-            <tr>
-              <td class="option-label">선택 학회</td>
-              <td>
-                {% if options["selectedConferences"] and options["selectedConferences"]|length > 0 %}
-                  {{ options["selectedConferences"] | join(", ") }}
-                {% else %}
-                  (없음)
-                {% endif %}
-              </td>
-            </tr>
-            
-            <!--
+    </style>
+  </head>
+  <body>
+    <h1>PCSS Searching</h1>
+    <div id="loading">
+      <p id="loadingText">DBLP CRAWLER is working...</p>
+      <div class="spinner" id="spinner"></div>
+    </div>
+    <div class="main-content-wrapper">
+      <div class="wrapper">
+        <!-- 왼쪽: 옵션 -->
+        <div class="left-column" id="globalData">
+          <table class="options-table">
+            <thead>
+              <tr>
+                <th colspan="2">검색 옵션</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="option-label">옵션</td>
+                <td>{{ option_text }} ({{ options["option"] }})</td>
+              </tr>
+              <tr>
+                <td class="option-label">한국인 판단 기준값</td>
+                <td>{{ options["uncertainty"] }}</td>
+              </tr>
+              <tr>
+                <td class="option-label">시작 연도</td>
+                <td>{{ options["startyear"] }}</td>
+              </tr>
+              <tr>
+                <td class="option-label">끝 연도</td>
+                <td>{{ options["endyear"] }}</td>
+              </tr>
+              <tr>
+                <td class="option-label">선택 학회/저널</td>
+                <td>
+                  {% if options["selectedConferences"] and
+                  options["selectedConferences"]|length > 0 %} {{
+                  options["selectedConferences"] | join(", ") }} {% else %}
+                  (없음) {% endif %}
+                </td>
+              </tr>
+
+              <!--
             <tr>
               <td class="option-label">저자별 총 논문 수(countOption)</td>
               <td>{{ "예" if options["countOption"] else "아니오" }}</td>
             </tr> 
             -->
-            
-            <tr>
-              <td class="option-label">Papers</td>
-              <td class="value-cell">
-                <span id="paperCount" class="stat-pill">0</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="option-label">Korean authors</td>
-              <td class="value-cell">
-                <span id="koreanCount" class="stat-pill">0</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>            
-        <div style="margin-top:12px; display:flex; gap:10px;">
-          <button id="cancelBtn" style="
-              padding:10px 14px; border:1px solid #ddd; border-radius:8px;
-              background:#fff; cursor:pointer; font-weight:bold;">
-            중단
-          </button>
-        </div>        
-      </div>
 
-      <!-- 오른쪽: 로딩 + 로그 -->
-      <div class="right-column">
-        <pre id="output"></pre>
-      </div>
-    </div>
-  </div>
+              <tr>
+                <td class="option-label">Papers</td>
+                <td class="value-cell">
+                  <span id="paperCount" class="stat-pill">0</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="option-label">Korean authors</td>
+                <td class="value-cell">
+                  <span id="koreanCount" class="stat-pill">0</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 12px; display: flex; gap: 10px">
+            <button
+              id="cancelBtn"
+              style="
+                padding: 10px 14px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                background: #fff;
+                cursor: pointer;
+                font-weight: bold;
+              "
+            >
+              중단
+            </button>
+          </div>
+        </div>
 
-  <footer class="footer">
-    <div class="footer-container">
-      <p>Created By</p>
-      <div class="user">
-        <a href="https://github.com/yojun313" target="_blank" rel="noopener">Yojun Moon</a>
-        <a href="mailto:yojun313@postech.ac.kr">(yojun313@postech.ac.kr)</a> |
-        <a href="https://www.psal.postech.ac.kr/gkim" target="_blank" rel="noopener">Gwangsun Kim</a>
-        <a href="mailto:g.kim@postech.ac.kr">(g.kim@postech.ac.kr)</a>
+        <!-- 오른쪽: 로딩 + 로그 -->
+        <div class="right-column">
+          <pre id="output"></pre>
+        </div>
       </div>
     </div>
-  </footer>
 
-  <script>
-    const cancelBtn = document.getElementById("cancelBtn");
-    const cancelUrl = "{{ cancel_url }}";
+    <footer class="footer">
+      <div class="footer-container">
+        <p>제작자</p>
+        <div class="user">
+          <a href="https://github.com/yojun313" target="_blank" rel="noopener"
+            >Yojun Moon</a
+          >
+          <a href="mailto:yojun313@postech.ac.kr">(yojun313@postech.ac.kr)</a> |
+          <a
+            href="https://www.psal.postech.ac.kr/gkim"
+            target="_blank"
+            rel="noopener"
+            >Gwangsun Kim</a
+          >
+          <a href="mailto:g.kim@postech.ac.kr">(g.kim@postech.ac.kr)</a>
+        </div>
+      </div>
+    </footer>
 
-    cancelBtn.addEventListener("click", async () => {
-      cancelBtn.disabled = true;
-      setCancelingUI();
-      append("[cancel] 요청 중...");
+    <script>
+      const cancelBtn = document.getElementById("cancelBtn");
+      const cancelUrl = "{{ cancel_url }}";
 
-      try {
-        const res = await fetch(cancelUrl, { method: "POST" });
-        const data = await res.json();
-        append("[cancel] " + JSON.stringify(data));
-        // SSE에서 cancelled 이벤트가 올 것임
-      } catch (e) {
-        append("[cancel] 실패: " + e);
-        cancelBtn.disabled = false;
-      }
-    });
+      cancelBtn.addEventListener("click", async () => {
+        cancelBtn.disabled = true;
+        setCancelingUI();
+        append("[cancel] 요청 중...");
 
-    const loadingTextEl = document.getElementById("loadingText");
-    const spinnerEl = document.getElementById("spinner");
-
-    function setCancelingUI() {
-      if (loadingTextEl) loadingTextEl.textContent = "중단 요청 중...";
-      if (spinnerEl) spinnerEl.classList.add("paused");
-    }
-
-    function setCancelledUI() {
-      if (loadingTextEl) loadingTextEl.textContent = "중단되었습니다.";
-      if (spinnerEl) spinnerEl.classList.add("paused");
-    }
-
-
-    function updateCounters(data) {
-      if (data.paper_count !== undefined) {
-        document.getElementById("paperCount").textContent = `${data.paper_count}`;
-      }
-      if (data.korean_authors !== undefined) {
-        document.getElementById("koreanCount").textContent = `${data.korean_authors}`;
-      }
-    }    
-    
-    function renderStatus(data) {
-      updateCounters(data);
-    
-      const parts = [];
-    
-      if (data.ts) {
-        parts.push(`[${new Date(data.ts).toLocaleTimeString()}]`);
-      }
-      if (data.msg) parts.push(data.msg);
-      if (data.url) parts.push(data.url);
-    
-      append(parts.join(" | "));
-    }
-    
-    
-    const output = document.getElementById("output");
-    const eventsUrl = "{{ events_url }}";
-    const pageUrl = "{{ page_url }}";
-
-    function append(line) {
-      output.textContent += line + "\n";
-      output.scrollTop = output.scrollHeight;
-    }
-
-    append(`Job: {{ job_id }}`);
-    append(`Connecting SSE: ${eventsUrl}`);
-
-    const es = new EventSource(eventsUrl);
-
-    es.addEventListener("message", (evt) => {
-      try {
-        const data = JSON.parse(evt.data);
-    
-        if (data.type === "status") {
-          renderStatus(data);
-        } else {
-          append(JSON.stringify(data));
+        try {
+          const res = await fetch(cancelUrl, { method: "POST" });
+          const data = await res.json();
+          append("[cancel] " + JSON.stringify(data));
+          // SSE에서 cancelled 이벤트가 올 것임
+        } catch (e) {
+          append("[cancel] 실패: " + e);
+          cancelBtn.disabled = false;
         }
-      } catch {
-        append(evt.data);
+      });
+
+      const loadingTextEl = document.getElementById("loadingText");
+      const spinnerEl = document.getElementById("spinner");
+
+      function setCancelingUI() {
+        if (loadingTextEl) loadingTextEl.textContent = "중단 요청 중...";
+        if (spinnerEl) spinnerEl.classList.add("paused");
       }
-    });
-    
 
-    es.addEventListener("event", (evt) => {
-      let data;
-      try { data = JSON.parse(evt.data); } catch { data = { raw: evt.data }; }
+      function setCancelledUI() {
+        if (loadingTextEl) loadingTextEl.textContent = "중단되었습니다.";
+        if (spinnerEl) spinnerEl.classList.add("paused");
+      }
 
-      if (data.event === "started") append("[started]");
-      if (data.event === "error") {
-        append("[error] " + (data.error || "unknown"));
+      function updateCounters(data) {
+        if (data.paper_count !== undefined) {
+          document.getElementById("paperCount").textContent =
+            `${data.paper_count}`;
+        }
+        if (data.korean_authors !== undefined) {
+          document.getElementById("koreanCount").textContent =
+            `${data.korean_authors}`;
+        }
+      }
+
+      function renderStatus(data) {
+        updateCounters(data);
+
+        const parts = [];
+
+        if (data.ts) {
+          parts.push(`[${new Date(data.ts).toLocaleTimeString()}]`);
+        }
+        if (data.msg) parts.push(data.msg);
+        if (data.url) parts.push(data.url);
+
+        append(parts.join(" | "));
+      }
+
+      const output = document.getElementById("output");
+      const eventsUrl = "{{ events_url }}";
+      const pageUrl = "{{ page_url }}";
+
+      function append(line) {
+        output.textContent += line + "\n";
+        output.scrollTop = output.scrollHeight;
+      }
+
+      append(`Job: {{ job_id }}`);
+      append(`Connecting SSE: ${eventsUrl}`);
+
+      const es = new EventSource(eventsUrl);
+
+      es.addEventListener("message", (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
+
+          if (data.type === "status") {
+            renderStatus(data);
+          } else {
+            append(JSON.stringify(data));
+          }
+        } catch {
+          append(evt.data);
+        }
+      });
+
+      es.addEventListener("event", (evt) => {
+        let data;
+        try {
+          data = JSON.parse(evt.data);
+        } catch {
+          data = { raw: evt.data };
+        }
+
+        if (data.event === "started") append("[started]");
+        if (data.event === "error") {
+          append("[error] " + (data.error || "unknown"));
+          es.close();
+        }
+        if (data.event === "done") {
+          append("[done] redirecting...");
+          es.close();
+          window.location.href = pageUrl;
+        }
+        if (data.event === "cancelled") {
+          append("[cancelled] stopped.");
+          setCancelledUI();
+          es.close();
+          // 원하면 홈으로 보내기:
+          // window.location.href = "/";
+        }
+      });
+
+      es.addEventListener("ping", () => {});
+
+      es.onerror = () => {
+        append("[sse error] 연결 오류");
         es.close();
-      }
-      if (data.event === "done") {
-        append("[done] redirecting...");
-        es.close();
-        window.location.href = pageUrl;
-      }
-      if (data.event === "cancelled") {
-        append("[cancelled] stopped.");
-        setCancelledUI();
-        es.close();
-        // 원하면 홈으로 보내기:
-        // window.location.href = "/";
-      }
-    });
-
-    es.addEventListener("ping", () => {});
-
-    es.onerror = () => {
-      append("[sse error] 연결 오류");
-      es.close();
-    };
-  </script>
-</body>
+      };
+    </script>
+  </body>
 </html>

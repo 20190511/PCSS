@@ -30,7 +30,7 @@ async def compute_author_stats_mongo(
         {
             "$group": {
                 "_id": None,
-                "co_author": {"$sum": 1},
+
                 "first_author": {
                     "$sum": {
                         "$cond": [
@@ -40,6 +40,7 @@ async def compute_author_stats_mongo(
                         ]
                     }
                 },
+
                 "first_or_second_author": {
                     "$sum": {
                         "$cond": [
@@ -54,10 +55,42 @@ async def compute_author_stats_mongo(
                         ]
                     }
                 },
+
                 "last_author": {
                     "$sum": {
                         "$cond": [
                             {"$eq": [{"$arrayElemAt": ["$author_name", -1]}, target_author]},
+                            1,
+                            0,
+                        ]
+                    }
+                },
+
+                # co_author = 순수 공저자 (1저자, 2저자, 마지막 제외)
+                "co_author": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {
+                                        "$gt": [
+                                            {"$indexOfArray": ["$author_name", target_author]},
+                                            1,
+                                        ]
+                                    },
+                                    {
+                                        "$lt": [
+                                            {"$indexOfArray": ["$author_name", target_author]},
+                                            {
+                                                "$subtract": [
+                                                    {"$size": "$author_name"},
+                                                    1,
+                                                ]
+                                            },
+                                        ]
+                                    },
+                                ]
+                            },
                             1,
                             0,
                         ]
@@ -112,7 +145,10 @@ async def compute_author_stats_mongo(
                 {
                     "title": title,
                     "authors": authors,
-                    "conf": f"{conf} {year}",
+                    "conference": conf,
+                    "year": year,
+                    "dblp_url": d.get("dblp_url", ""),
+                    "source": d.get("source", ""),
                 }
             )
 

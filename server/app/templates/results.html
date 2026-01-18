@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PCSS Result</title>
+    <title>PCSS 검색 결과</title>
     <style>
       /* 기본 라이트 모드 스타일 */
       body {
@@ -241,7 +241,9 @@
         color: #c80150; /* 기본 글자색: 붉은색 */
         cursor: pointer; /* 손가락 모양 커서 */
         font-weight: normal; /* 필요시 bold 가능 */
-        transition: color 0.2s ease, text-decoration 0.2s ease;
+        transition:
+          color 0.2s ease,
+          text-decoration 0.2s ease;
       }
 
       .paper-author-link:hover {
@@ -252,11 +254,11 @@
       .hint-box {
         margin: 10px 0 14px 0;
         padding: 10px 12px;
-      
+
         background-color: #ffffff;
         color: #333;
         border: 1px solid #ddd;
-      
+
         border-radius: 8px;
         font-size: 13px;
         line-height: 1.4;
@@ -334,7 +336,9 @@
           color: #ff88a2; /* 기본 글자색: 붉은색 */
           cursor: pointer; /* 손가락 모양 커서 */
           font-weight: normal; /* 필요시 bold 가능 */
-          transition: color 0.2s ease, text-decoration 0.2s ease;
+          transition:
+            color 0.2s ease,
+            text-decoration 0.2s ease;
         }
 
         .paper-author-link:hover {
@@ -352,7 +356,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>PCSS Result</h1>
+      <h1>검색 결과</h1>
 
       <div class="main-link">
         <a href="/"> 메인으로 돌아가기 </a>
@@ -379,10 +383,10 @@
             <td>{{ options.uncertainty }}</td>
           </tr>
           <tr>
-            <td class="option-label">선택 학회</td>
+            <td class="option-label">선택 학회/저널</td>
             <td>{{ options.selectedConferences | join(', ') }}</td>
           </tr>
-          
+
           <!--
           <tr>
             <td class="option-label">저자별 총 논문 수</td>
@@ -393,7 +397,8 @@
       </table>
 
       <div class="hint-box">
-        논문 카드에서 <b>저자명</b>을 클릭하면 새 탭에서 <b>실적 요약</b>을 확인할 수 있습니다.
+        논문 카드에서 <b>저자명</b>을 클릭하면 새 탭에서 <b>실적 요약</b>을
+        확인할 수 있습니다.
       </div>
 
       <div id="papers-container"></div>
@@ -565,12 +570,25 @@
                   const authorsList = document.createElement("div");
                   authorsList.className = "authors";
 
+                  // paper.target_author: ["Name (0.87)", ...] 형태일 수 있으니 이름만 뽑아서 Set으로 만들기
+                  const targetSet = new Set(
+                    (paper.target_author || []).map((t) =>
+                      String(t).replace(/\s*\(\d+(?:\.\d+)?\)\s*$/, "").trim()
+                    )
+                  );
+
                   paper.author_name.forEach((name, idx) => {
                     const authorEl = document.createElement("span");
                     authorEl.textContent = name;
                     authorEl.className = "paper-author-link";
                     authorEl.dataset.author = name;
                     authorEl.dataset.profileUrl = paper.author_url[idx] || "";
+
+                    // 검색 조건 만족 저자면 볼드
+                    if (targetSet.has(String(name).trim())) {
+                      authorEl.style.fontWeight = "700";
+                    }
+
                     authorsList.appendChild(authorEl);
                     if (idx < paper.author_name.length - 1) {
                       authorsList.appendChild(document.createTextNode(", "));
@@ -610,7 +628,7 @@
           form.method = "POST";
           form.action = "/author/stats/page"; // HTML 렌더링 라우트
           form.target = "_blank";
-          
+
           const uncertainty = {{ options.uncertainty | tojson }};
 
           // 서버가 필요로 하는 필드만 전달
@@ -661,7 +679,7 @@
     </div>
     <footer class="footer">
       <div class="footer-container">
-        <p>Created By</p>
+        <p>제작자</p>
         <div class="user">
           <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a>
           <a href="mailto:yojun313@postech.ac.kr">(yojun313@postech.ac.kr)</a> |
