@@ -7,6 +7,7 @@ from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes import api_router
 from app.routes.author_routes import router as author_router
 from app.routes.page_routes import router as page_router
+from app.routes.subscription_routes import router as subscription_router
 from app.db.mongo import get_mongo_client
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -35,3 +36,4 @@ async def _startup():
 app.include_router(api_router, prefix="/api")
 app.include_router(page_router)
 app.include_router(author_router, prefix="/author")
+app.include_router(subscription_router, prefix="/subscriptions")

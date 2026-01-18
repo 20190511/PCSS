@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>구독 완료</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f9f9f9;
+        color: #333;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 24px;
+        color: rgba(200, 1, 80, 1);
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 18px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 14px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .pill {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #f2f2f2;
+        border: 1px solid #ddd;
+        font-size: 13px;
+      }
+      .btn {
+        padding: 10px 18px;
+        background-color: rgba(200, 1, 80, 1);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .btn:hover {
+        background-color: rgb(194, 50, 108);
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        word-break: break-all;
+      }
+      .small {
+        font-size: 12px;
+        color: #666;
+        line-height: 1.5;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body { background-color: #181818; color: #e0e0e0; }
+        h1 { color: #ff88a2; }
+        .card { background-color: #2c2c2c; border: 1px solid #444; box-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .pill { background-color: #333; border: 1px solid #444; }
+        .btn { background-color: #b3305c; }
+        .btn:hover { background-color: #a02c52; }
+        .small { color: #aaa; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>구독 완료</h1>
+
+      <div class="card">
+        <div><b>이메일</b>: {{ email }}</div>
+        <div class="small">아래 토큰/관리 링크는 수정/해지에 필요합니다.</div>
+      </div>
+
+      <div class="card">
+        <div class="small"><b>관리 링크</b></div>
+        <div class="mono">{{ manage_path }}</div>
+        <div style="margin-top:10px;">
+          <a class="btn" href="{{ manage_path }}">구독 관리로 이동</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="small"><b>관리 토큰</b> (분실 시 재구독으로 재발급)</div>
+        <div class="mono" id="token">{{ manage_token }}</div>
+        <div style="margin-top:10px;" class="row">
+          <button class="btn" type="button" onclick="copyToken()">토큰 복사</button>
+          <span class="small">메일로도 관리 링크를 보내도록 나중에 추가할 수 있음</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <span class="pill">옵션: {{ subscription.options }}</span>
+          <span class="pill">임계값: {{ subscription.threshold }}</span>
+          <span class="pill">활성: {{ subscription.is_enabled }}</span>
+        </div>
+        <div style="margin-top:10px;" class="small">
+          학회: {{ subscription.conferences }}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function copyToken() {
+        const text = document.getElementById("token").innerText;
+        navigator.clipboard.writeText(text);
+      }
+    </script>
+  </body>
+</html>
