@@ -87,8 +87,11 @@
       .select-all-container {
         display: flex;
         justify-content: flex-start;
-        margin-bottom: 20px;
+        align-items: center;
+        gap: 10px;           /* 버튼 사이 간격 */
+        margin-bottom: 20px;z
       }
+      
 
       .select-btn {
         padding: 8px 15px;
@@ -99,7 +102,11 @@
         cursor: pointer;
         font-size: 0.9rem;
         transition: background-color 0.3s ease;
+        text-decoration: none;      /* 추가: a 밑줄 제거 */
+        display: inline-flex;       /* 추가: a도 버튼처럼 */
+        align-items: center;
       }
+      
 
       .select-btn:hover {
         background-color: #2c3e50;
@@ -518,7 +525,11 @@
 
         <div class="select-all-container">
           <button class="select-btn" id="toggle-select-btn">전체 선택</button>
-        </div>
+        
+          <a class="select-btn" id="subscription-manage-btn" href="/subscriptions/manage">
+            PCSS 구독 관리
+          </a>
+        </div>        
 
         <!-- 학회 체크박스를 동적으로 생성할 영역 -->
         <div class="grid" id="conference-grid"></div>
