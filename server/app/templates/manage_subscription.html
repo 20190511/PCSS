@@ -309,6 +309,24 @@
         }
       }
 
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 14px 0;
+      }
+      
+      .btn-danger {
+        background: rgba(179, 38, 38, 0.08);
+        border-color: rgba(179, 38, 38, 0.35);
+        color: rgba(179, 38, 38, 1);
+      }
+      .btn-danger:hover {
+        background: rgba(179, 38, 38, 0.14);
+      }
+      
+
       @media (prefers-color-scheme: dark) {
         :root {
           --border: #444;
@@ -373,6 +391,16 @@
         .conf-item[data-selected="true"] .conf-code {
           color: #ff88a2;
         }
+
+        .btn-danger {
+          background: rgba(179, 38, 38, 0.18);
+          border-color: rgba(179, 38, 38, 0.45);
+          color: #ffb3b3;
+        }
+        .btn-danger:hover {
+          background: rgba(179, 38, 38, 0.26);
+        }
+        
       }
     </style>
   </head>
@@ -380,6 +408,15 @@
   <body>
     <div class="container">
       <h1>PCSS 구독 관리</h1>
+
+      <div class="topbar">      
+        <form method="post" action="/subscriptions/logout" style="margin:0;">
+          <button type="submit" class="btn btn-danger" onclick="return confirm('로그아웃하고 다시 로그인할까요?');">
+            로그아웃
+          </button>
+        </form>
+      </div>
+      
 
       {% if error %}
       <div class="notice">
