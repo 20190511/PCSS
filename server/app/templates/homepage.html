@@ -527,7 +527,7 @@
           <button class="select-btn" id="toggle-select-btn">전체 선택</button>
 
           {% if email %}
-            <form action="/auth/logout" method="post" style="display: inline-block;">
+            <form action="/auth/logout" method="post" style="display: inline-block;" onsubmit="return confirm('로그아웃 하시겠습니까?');">
               <button type="submit" class="select-btn" style="font-family: inherit; font-size: 0.9rem; cursor: pointer;">
                   로그아웃
               </button>
