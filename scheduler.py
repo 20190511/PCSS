@@ -5,35 +5,21 @@ import traceback
 import platform
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-
-# --- [추가 Import] 전역 변수 및 DB 접근 ---
 from app.data import name_dict
-from app.db import author_col  # author_col이 app.db에 정의되어 있다고 가정
-# 만약 author_col이 없다면 아래 주석을 참고하여 직접 정의하세요:
-# from app.db import client
-# author_col = client.get_database("pcss").get_collection("authors")
-# ----------------------------------------
-
+from app.db import name_col  
 import tool.extract_authors as extract_authors
 import tool.extract_papers as extract_papers
 from app.services.subscription_service import SubscriptionNotifier
 
-# Windows 환경 asyncio 설정
+
 if platform.system() == 'Windows':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 def refresh_name_dict():
-    """
-    [New] DB(author_col)에서 최신 저자 점수 데이터를 가져와
-    전역 변수 name_dict를 메모리 상에서 갱신(Update)합니다.
-    """
     print(f"[{datetime.now()}] name_dict 캐시 갱신 시작 (현재 크기: {len(name_dict)})")
     
     try:
-        # DB에서 이름과 점수(또는 한국인 여부)만 가져옵니다.
-        # 프로젝트 구조에 따라 필드명('name', 'score', 'is_korean' 등) 확인 필요
-        # 여기서는 name과 score를 가져온다고 가정합니다.
-        cursor = author_col.find({}, {"name": 1, "score": 1, "_id": 0})
+        cursor = name_col.find({}, {"name": 1, "score": 1, "_id": 0})
         
         count = 0
         for doc in cursor:
@@ -41,7 +27,6 @@ def refresh_name_dict():
             score = doc.get("score")
             
             if name and score is not None:
-                # 기존에 없거나 점수가 변경되었을 수 있으므로 덮어씌웁니다.
                 name_dict[name] = float(score)
                 count += 1
                 
