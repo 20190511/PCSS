@@ -89,7 +89,7 @@
       /* Autocomplete List Style */
       .autocomplete-items {
         position: absolute;
-        border: 1px solid #d4d4d4;
+        /* border: 1px solid #d4d4d4;  <-- 여기서는 제거 */
         border-bottom: none;
         border-top: none;
         z-index: 99;
@@ -101,15 +101,24 @@
         max-height: 250px;
         overflow-y: auto;
       }
-
+      
+      /* 내용(div)이 있을 때만 테두리를 줍니다 */
       .autocomplete-items div {
         padding: 10px;
         cursor: pointer;
         background-color: #fff;
-        border-bottom: 1px solid #d4d4d4;
+        border-bottom: 1px solid #d4d4d4; /* 밑줄로 구분 */
+        border-left: 1px solid #d4d4d4;   /* 좌우 테두리 추가 */
+        border-right: 1px solid #d4d4d4;
         display: flex;
         justify-content: space-between;
         align-items: center;
+      }
+      
+      /* 마지막 요소는 둥근 모서리 처리 */
+      .autocomplete-items div:last-child {
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
       }
 
       .autocomplete-items div:hover {
@@ -344,13 +353,12 @@
       }
 
       function closeAllLists(elmnt) {
-          const x = document.getElementsByClassName("autocomplete-items");
-          for (let i = 0; i < x.length; i++) {
-              if (elmnt != x[i] && elmnt != inp) {
-                  x[i].parentNode.removeChild(x[i]);
-              }
-          }
-      }
+        // 클릭된 요소가 입력창(inp) 자체가 아니라면 리스트를 비웁니다.
+        // (리스트 항목 클릭 시에는 항목 클릭 이벤트가 먼저 처리되므로 괜찮습니다)
+        if (elmnt != inp) {
+            listContainer.innerHTML = "";
+        }
+    }
 
       // Close list when clicking outside
       document.addEventListener("click", function (e) {
