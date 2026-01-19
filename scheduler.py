@@ -4,8 +4,8 @@ import asyncio
 import traceback
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import extract_authors
-import extract_papers
+import tool.extract_authors as extract_authors
+import tool.extract_papers as extract_papers
 from app.services.subscription_service import SubscriptionNotifier
 
 def run_job():
