@@ -101,6 +101,8 @@ class SubscriptionNotifier:
             "endyear": datetime.now().year,   # 기본값 (에러 방지용)
             "countOption": False
         }
+        
+        print(json.dumps(python_result, indent=2, ensure_ascii=False))  # 디버그 출력
 
         context = {
             "request": MockRequest(),      
