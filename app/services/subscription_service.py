@@ -9,11 +9,10 @@ from app.services.search_service import PCSSEARCHMongo
 from app.db import subscription_col, papers_col
 from app.core.templates import templates  
 
-# [추가] 템플릿 에러 방지를 위한 가짜 Request 객체 정의
+# [템플릿 에러 방지] 가짜 Request 객체 정의
 class MockRequest:
     def __init__(self):
         self.headers = {}
-        # request.state.user 등을 참조할 때 에러가 나지 않도록 처리
         self.state = type("State", (), {"user": None})() 
         self.query_params = {}
         self.url = "https://pcss.r-e.kr"
@@ -22,7 +21,6 @@ class MockRequest:
         self.client = None
 
     def url_for(self, name, **kwargs):
-        # url_for 함수 호출 시 에러 방지
         return f"/{name}"
 
 class SubscriptionProcessor(PCSSEARCHMongo):
@@ -45,6 +43,7 @@ class SubscriptionNotifier:
 
     def _load_mail_config(self):
         try:
+            # 경로 조정
             path = os.path.join(os.path.dirname(__file__), "..", "data", "mail_lock.json")    
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
@@ -77,7 +76,8 @@ class SubscriptionNotifier:
         except Exception as e:
             print(f"[Notifier] Fail {receiver}: {e}")
 
-    def _generate_result_html(self, python_result: dict, options: list, manage_token: str):
+    # [수정] threshold 인자 추가
+    def _generate_result_html(self, python_result: dict, options: list, threshold: float, manage_token: str):
         """
         router.get("/page/{job_id}")의 로직을 그대로 재현
         """
@@ -93,11 +93,19 @@ class SubscriptionNotifier:
         
         option_text = ", ".join(selected_texts) if selected_texts else "옵션 미선택"
         
-        # [수정] context를 더 견고하게 구성
+        # [수정] 템플릿이 요구하는 데이터 구조를 맞춰줌 (uncertainty 등 추가)
+        mock_options_obj = {
+            "options": options,       # [1, 2] 형태의 리스트
+            "uncertainty": threshold, # 템플릿의 options.uncertainty 대응
+            "startyear": datetime.now().year, # 기본값 (에러 방지용)
+            "endyear": datetime.now().year,   # 기본값 (에러 방지용)
+            "countOption": False
+        }
+
         context = {
-            "request": MockRequest(),      # 딕셔너리 대신 MockRequest 클래스 사용
-            "user": None,                  # user 변수가 템플릿에 쓰일 경우 대비
-            "options": {"options": options}, 
+            "request": MockRequest(),      
+            "user": None,                  
+            "options": mock_options_obj,   # [수정] 딕셔너리 교체
             "option_text": option_text,
             "pythonResult": python_result,
             "FASTAPI_BASE": "https://pcss.r-e.kr",
@@ -118,14 +126,12 @@ class SubscriptionNotifier:
             return html_content
         except Exception as e:
             print(f"[Notifier] Template render error: {e}")
-            # 에러 발생 시 로그를 좀 더 자세히 보기 위해 traceback 출력 권장
             import traceback
             traceback.print_exc()
             return "<h1>Result Rendering Error</h1><p>관리자에게 문의해주세요.</p>"
 
     async def run(self):
         print("[Notifier] Start")
-        # 32일 전 데이터부터 조회
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=32)
         
         recent_papers_cursor = papers_col.find(
@@ -160,7 +166,8 @@ class SubscriptionNotifier:
             result_dict = await processor.run(confs)
 
             if result_dict:
-                html_body = self._generate_result_html(result_dict, options, manage_token)
+                # [수정] threshold 인자 전달
+                html_body = self._generate_result_html(result_dict, options, threshold, manage_token)
                 title = f"[New Papers] {len(result_dict)}개의 새로운 관심 논문이 도착했습니다."
                 
                 await asyncio.to_thread(self._send_email_sync, email, title, html_body)
