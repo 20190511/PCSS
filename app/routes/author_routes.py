@@ -67,8 +67,14 @@ async def author_autocomplete(query: str = Query(..., min_length=1)):
         # author_col에서 검색 (이름, PID, 소속 정보 필요)
         # author_col 스키마에 따라 필드명 조정 필요 (여기선 name, pid, affiliation 가정)
         cursor = authors_col.find(
-            {"name": {"$regex": regex_pattern}},
-            {"_id": 0, "name": 1, "pid": 1} # 필요한 필드만 조회
+            {
+                "$or": [
+                    {"name": {"$regex": regex_pattern}},
+                    {"pid": {"$regex": regex_pattern}}
+                ]
+            },
+            # 프론트엔드에서 affiliation을 쓰고 있다면 투영(projection)에 추가하는 것이 좋습니다.
+            {"_id": 0, "name": 1, "pid": 1, "affiliation": 1} 
         ).limit(10)
         
         results = []
