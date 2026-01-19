@@ -225,7 +225,6 @@ class PCSSEARCHMongo:
             "_id": 0,
             "title": 1,
             "author_names": 1,
-            "author_urls": 1,
             "author_pids": 1,
             "conference": 1,
             "year": 1,
@@ -426,22 +425,20 @@ class PCSSEARCHMongo:
                 self.titleList.append(title)
 
                 authors_origin = d.get("author_names") or []
-                authors_urls = d.get("author_urls") or []
-                authors_pids = d.get("author_pids") or []
+                author_pids = d.get("author_pids") or []
+                author_urls = [f"https://dblp.org/pid/{pid}.html" for pid in author_pids]
 
                 if not isinstance(authors_origin, list) or not authors_origin:
                     continue
-                if not isinstance(authors_urls, list) or not authors_urls:
-                    # 기존 코드도 url 없는 경우 skip 성향이 있음
-                    # 다만 데이터셋이 url 없는 케이스가 있을 수 있으니 필요하면 여기서 완화 가능
+                if not isinstance(author_urls, list) or not author_urls:
                     continue
 
-                authors_names = self._clean_authors(authors_origin)
-                if not authors_names:
+                author_names = self._clean_authors(authors_origin)
+                if not author_names:
                     continue
 
                 # option별 target 추출
-                target = await self._targets_for_option(authors_names)
+                target = await self._targets_for_option(author_names)
                 if not target:
                     continue
 
@@ -459,10 +456,10 @@ class PCSSEARCHMongo:
                 self.CrawlData.append(
                     {
                         "title": title,
-                        "author_names": authors_names,       # 아직 stats 붙이기 전
-                        "author_urls": authors_urls,
-                        "author_pids": authors_pids,
-                        "target_author": target,      # score 붙어있음
+                        "author_names": author_names,       
+                        "author_urls": author_urls,
+                        "author_pids": author_pids,
+                        "target_author": target,     
                         "conference": conf,
                         "year": year,
                         "source": src,
