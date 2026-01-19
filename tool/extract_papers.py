@@ -1,5 +1,5 @@
 from lxml import etree
-from app.db import conf_col, papers_col
+from app.db import conf_col, papers_col, authors_col
 import os
 import urllib.parse
 import re
@@ -60,9 +60,8 @@ def _extract_pid_from_homepages_key(key: str) -> str | None:
 def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
     """
     dblp.xml에서 <www> 중 <title>Home Page</title> 레코드만 훑어서
-    author-name -> pid(homepages key 기반) 매핑을 만든다.
-
-    주의: 동명이인/충돌이 (이론상) 있을 수 있어, 같은 name에 pid가 여러 개면 list로 저장.
+    1. author-name -> pid 매핑 (메모리 리턴용)
+    2. authors_col에 저자 정보 저장 (DB 적재용)
     """
     abs_xml_path = os.path.abspath(xml_path)
     xml_dir = os.path.dirname(abs_xml_path)
@@ -76,15 +75,22 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
     original_cwd = os.getcwd()
     os.chdir(xml_dir)
 
-    # name -> pid or [pid, pid, ...]
     name_to_pid: dict[str, str | list[str]] = {}
+    
+    # [DB] 동기화 마커 및 배치 리스트
+    run_ts = datetime.now(timezone.utc)
+    batch_ops = []
+    
+    # [DB] 통계
+    total_upserted = 0
+    total_modified = 0
 
     progress = Progress(
         SpinnerColumn(),
-        TextColumn("[bold blue]PID 인덱스 생성 중(Home Page www)[/bold blue]"),
+        TextColumn("[bold blue]저자 인덱싱 & DB 저장 (Home Page)[/bold blue]"),
         BarColumn(),
-        TextColumn("seen: {task.fields[seen]}"),
-        TextColumn("indexed: {task.fields[indexed]}"),
+        TextColumn("scan: {task.fields[scan]}"),
+        TextColumn("db_saved: {task.fields[saved]}"),
         TimeElapsedColumn(),
         console=console,
         transient=False,
@@ -92,7 +98,6 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
 
     context = None
     try:
-        # DTD 로드 체크 (parse_dblp와 동일한 안정성 확보)
         etree.DTD(file=dtd_path)
 
         context = etree.iterparse(
@@ -104,21 +109,20 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
         )
 
         with progress:
-            task_id = progress.add_task("pid-index", total=None, seen=0, indexed=0)
-
-            seen = 0
-            indexed = 0
+            task_id = progress.add_task("pid-index", total=None, scan=0, saved=0)
+            scan_count = 0
+            saved_count = 0
 
             for _, elem in context:
                 if elem.tag != "www":
                     continue
 
-                seen += 1
-                progress.update(task_id, seen=seen)
+                scan_count += 1
+                if scan_count % 100 == 0:
+                    progress.update(task_id, scan=scan_count)
 
                 title = (elem.findtext("title") or "").strip()
                 if title != "Home Page":
-                    # Home Page 레코드만 사람 프로필로 사용
                     elem.clear()
                     while elem.getprevious() is not None:
                         del elem.getparent()[0]
@@ -132,41 +136,102 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
                         del elem.getparent()[0]
                     continue
 
-                # merged/redirect 케이스: <crossref>homepages/...<crossref>
-                # 이런 경우 primary pid로 매핑해주는 게 안전함.
+                # 1. 저자 이름 목록 추출
+                authors = []
+                for a in elem.findall("author"):
+                    val = (a.text or "").strip()
+                    if val:
+                        authors.append(val)
+                
+                if not authors:
+                    elem.clear()
+                    while elem.getprevious() is not None:
+                        del elem.getparent()[0]
+                    continue
+
+                # 2. 소속(Affiliation) 추출
+                affiliations = []
+                for note in elem.findall("note"):
+                    if note.get("type") == "affiliation":
+                        aff = (note.text or "").strip()
+                        if aff:
+                            affiliations.append(aff)
+
+                # 3. URL
+                url = elem.findtext("url") or ""
+
+                # =================================================
+                # [DB] authors_col 업데이트 (Upsert)
+                # =================================================
+                primary_name = authors[0] # 첫 번째 저자명을 대표 이름으로 사용
+                
+                doc = {
+                    "pid": pid,
+                    "name": primary_name,
+                    "aliases": authors,
+                    "affiliations": affiliations,
+                    "url": url,
+                    "dblp_key": key,
+                    "updated_at": run_ts,
+                    "last_seen_at": run_ts
+                }
+
+                batch_ops.append(
+                    UpdateOne(
+                        {"pid": pid},
+                        {
+                            "$set": doc,
+                            "$setOnInsert": {"created_at": run_ts}
+                        },
+                        upsert=True
+                    )
+                )
+                saved_count += 1
+                progress.update(task_id, saved=saved_count)
+
+                if len(batch_ops) >= BATCH_SIZE:
+                    res = authors_col.bulk_write(batch_ops, ordered=False)
+                    total_upserted += res.upserted_count
+                    total_modified += res.modified_count
+                    batch_ops.clear()
+
+                # =================================================
+                # [Memory] name_to_pid 인덱스 빌드 (기존 로직)
+                # =================================================
+                
+                # Redirect 처리 (crossref가 가리키는 pid가 있으면 매핑은 그쪽으로)
+                mapping_pid = pid
                 crossref = (elem.findtext("crossref") or "").strip()
                 if crossref.startswith("homepages/"):
                     primary_pid = _extract_pid_from_homepages_key(crossref)
                     if primary_pid:
-                        pid = primary_pid
+                        mapping_pid = primary_pid
 
-                # 이 www 레코드 안의 모든 author(별칭 포함)를 pid에 매핑
-                for a in elem.findall("author"):
-                    name = (a.text or "").strip()
-                    if not name:
-                        continue
-
+                for name in authors:
                     existing = name_to_pid.get(name)
                     if existing is None:
-                        name_to_pid[name] = pid
-                        indexed += 1
+                        name_to_pid[name] = mapping_pid
                     else:
-                        # 충돌(이름 동일인데 pid 다름): list로 보관
                         if isinstance(existing, list):
-                            if pid not in existing:
-                                existing.append(pid)
+                            if mapping_pid not in existing:
+                                existing.append(mapping_pid)
                         else:
-                            if existing != pid:
-                                name_to_pid[name] = [existing, pid]
-
-                progress.update(task_id, indexed=indexed)
+                            if existing != mapping_pid:
+                                name_to_pid[name] = [existing, mapping_pid]
 
                 elem.clear()
                 while elem.getprevious() is not None:
                     del elem.getparent()[0]
+            
+            # 남은 배치 처리
+            if batch_ops:
+                res = authors_col.bulk_write(batch_ops, ordered=False)
+                total_upserted += res.upserted_count
+                total_modified += res.modified_count
+                batch_ops.clear()
 
     except Exception:
-        console.print("[bold red]PID 인덱스 생성 중 오류 발생[/bold red]")
+        console.print("[bold red]PID 인덱스/DB 저장 중 오류 발생[/bold red]")
         import traceback
         console.print(traceback.format_exc())
         return {}
@@ -175,9 +240,17 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
         if context:
             del context
 
-    console.print(f"[green]PID 인덱스 생성 완료[/green]: {len(name_to_pid)} names")
-    return name_to_pid
+    console.print(
+        f"[green]PID 인덱스/DB 완료[/green]: 메모리 {len(name_to_pid)}명, "
+        f"DB(New: {total_upserted}, Upd: {total_modified})"
+    )
 
+    # [DB] 동기화 삭제: 이번 실행에 발견되지 않은 저자는 삭제
+    del_res = authors_col.delete_many({"last_seen_at": {"$ne": run_ts}})
+    if del_res.deleted_count > 0:
+        console.print(f"[yellow]삭제된 저자 정리[/yellow]: {del_res.deleted_count}명")
+
+    return name_to_pid
 
 # Params 기반 룰 파싱/로딩
 def _parse_param_to_rule(param: str, conf_name: str) -> dict | None:
@@ -429,7 +502,6 @@ def is_main_track(elem, title, booktitle):
         return False
 
     return True
-
 
 # DBLP 파싱 & DB 적재
 def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
@@ -765,8 +837,6 @@ def main():
 
     # (변경) target_confs 전달
     parse_dblp(xml_path, rules_index, name_to_pid, target_confs)
-
-
 
 if __name__ == "__main__":
     main()

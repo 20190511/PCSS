@@ -1,17 +1,15 @@
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, HTTPException, Query
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi import Form
 from app.core.templates import templates
 from app.services.author_service import compute_author_stats_mongo
-from app.db import name_col, req_korean_col
+from app.db import name_col, req_korean_col, authors_col
 from app.data import name_dict
 from datetime import datetime, timezone
 from app.libs.auth import _require_admin_or_redirect
-
+import re
 
 router = APIRouter()
-
-
 
 @router.post("/stats/page", response_class=HTMLResponse)
 async def author_stats_page(
@@ -47,6 +45,56 @@ async def author_stats_page(
             "is_korean": is_korean,
         },
     )
+
+
+@router.get("/search", response_class=HTMLResponse)
+async def author_search_input_page(request: Request):
+    """
+    저자 이름을 검색하여 통계 페이지로 이동하기 위한 입력 폼 페이지
+    """
+    return templates.TemplateResponse(
+        "search/author_search_input.html",
+        {"request": request}
+    )
+
+
+@router.get("/autocomplete")
+async def author_autocomplete(query: str = Query(..., min_length=1)):
+    """
+    입력된 query로 시작하거나 포함하는 저자 목록(이름, PID, 소속 등)을 반환.
+    성능을 위해 최대 10개만 반환.
+    """
+    try:
+        # 대소문자 구분 없이 부분 일치 검색 (Regex)
+        # 인덱스가 걸려있지 않다면 데이터가 많을 경우 느릴 수 있습니다.
+        # 운영 환경에서는 Atlas Search나 Text Index 사용을 권장합니다.
+        regex_pattern = re.compile(re.escape(query), re.IGNORECASE)
+        
+        # author_col에서 검색 (이름, PID, 소속 정보 필요)
+        # author_col 스키마에 따라 필드명 조정 필요 (여기선 name, pid, affiliation 가정)
+        cursor = authors_col.find(
+            {"name": {"$regex": regex_pattern}},
+            {"_id": 0, "name": 1, "pid": 1, "affiliation": 1} # 필요한 필드만 조회
+        ).limit(10)
+        
+        results = []
+        for doc in cursor:
+            # PID가 없으면 건너뜀 (PID 필수)
+            if not doc.get("pid"):
+                continue
+                
+            results.append({
+                "name": doc.get("name"),
+                "pid": doc.get("pid"),
+                # 소속 정보가 있으면 같이 보여줌
+                "affiliation": doc.get("affiliation", "") 
+            })
+            
+        return JSONResponse(content=results)
+        
+    except Exception as e:
+        print(f"[Autocomplete Error] {e}")
+        return JSONResponse(content=[], status_code=500)
 
 
 @router.get("/request/korean")
