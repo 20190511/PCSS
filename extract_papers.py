@@ -19,7 +19,7 @@ from rich.progress import (
 )
 from rich.console import Console
 from datetime import datetime, timezone
-from pymongo import UpdateOne
+from pymongo import UpdateOne, ASCENDING
 
 # params에 param 추가 시 규칙
 """
@@ -42,12 +42,10 @@ xml_path = os.path.join(BASE_DIR, "dblp.xml")
 BATCH_SIZE = 1000  # MongoDB bulk insert 크기
 console = Console()
 
+DB_WRITE_BATCH_SIZE = 10000 
+console = Console()
+
 def _extract_pid_from_homepages_key(key: str) -> str | None:
-    """
-    homepages/... 형태의 key에서 pid 부분만 뽑는다.
-    예) "homepages/d/StephanDiehl" -> "d/StephanDiehl"
-        "homepages/64/5383"        -> "64/5383"
-    """
     if not key:
         return None
     key = key.strip()
@@ -56,12 +54,24 @@ def _extract_pid_from_homepages_key(key: str) -> str | None:
     pid = key[len("homepages/") :].strip()
     return pid or None
 
+def ensure_indexes():
+    """
+    [성능 최적화] pid 필드에 인덱스가 없으면 UpdateOne 속도가 매우 느려집니다.
+    반드시 인덱스를 생성해야 합니다.
+    """
+    try:
+        # pid 기준 오름차순 인덱스 (unique=True 권장)
+        authors_col.create_index([("pid", ASCENDING)], unique=True)
+        # last_seen_at은 삭제 쿼리용
+        authors_col.create_index([("last_seen_at", ASCENDING)])
+        console.print("[green]DB 인덱스 확인 완료 (pid, last_seen_at)[/green]")
+    except Exception as e:
+        console.print(f"[yellow]인덱스 생성 중 경고 (무시 가능): {e}[/yellow]")
 
 def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
     """
-    dblp.xml에서 <www> 중 <title>Home Page</title> 레코드만 훑어서
-    1. author-name -> pid 매핑 (메모리 리턴용)
-    2. authors_col에 저자 정보 저장 (DB 적재용 - 이름, PID만 저장)
+    1. Parsing Phase: XML을 전부 읽어 메모리에 데이터 구축
+    2. Writing Phase: 모아둔 데이터를 DB에 일괄 저장
     """
     abs_xml_path = os.path.abspath(xml_path)
     xml_dir = os.path.dirname(abs_xml_path)
@@ -72,25 +82,25 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
         console.print(f"[bold red]DTD 파일 없음:[/bold red] {dtd_path}")
         return {}
 
+    # 성능을 위해 인덱스 미리 생성
+    ensure_indexes()
+
     original_cwd = os.getcwd()
     os.chdir(xml_dir)
 
     name_to_pid: dict[str, str | list[str]] = {}
     
-    # [DB] 동기화 마커 및 배치 리스트
+    # ----------------------------------------------------
+    # Phase 1: 메모리에 데이터 추출 (Parsing Only)
+    # ----------------------------------------------------
+    db_docs = [] # DB에 넣을 딕셔너리들을 모아두는 리스트
     run_ts = datetime.now(timezone.utc)
-    batch_ops = []
-    
-    # [DB] 통계
-    total_upserted = 0
-    total_modified = 0
 
     progress = Progress(
         SpinnerColumn(),
-        TextColumn("[bold blue]저자 인덱싱 & DB 저장 (이름/PID)[/bold blue]"),
+        TextColumn("[bold blue]{task.description}[/bold blue]"),
         BarColumn(),
-        TextColumn("scan: {task.fields[scan]}"),
-        TextColumn("db_saved: {task.fields[saved]}"),
+        TextColumn("{task.fields[info]}"),
         TimeElapsedColumn(),
         console=console,
         transient=False,
@@ -99,7 +109,6 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
     context = None
     try:
         etree.DTD(file=dtd_path)
-
         context = etree.iterparse(
             filename_only,
             events=("end",),
@@ -109,17 +118,17 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
         )
 
         with progress:
-            task_id = progress.add_task("pid-index", total=None, scan=0, saved=0)
+            # Task 1: XML Parsing
+            parse_task = progress.add_task("XML Parsing & Memory Build", total=None, info="0 docs")
             scan_count = 0
-            saved_count = 0
-
+            
             for _, elem in context:
                 if elem.tag != "www":
                     continue
 
                 scan_count += 1
-                if scan_count % 100 == 0:
-                    progress.update(task_id, scan=scan_count)
+                if scan_count % 5000 == 0:
+                    progress.update(parse_task, info=f"{scan_count:,} items")
 
                 title = (elem.findtext("title") or "").strip()
                 if title != "Home Page":
@@ -136,7 +145,7 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
                         del elem.getparent()[0]
                     continue
 
-                # 1. 저자 이름 목록 추출
+                # 저자 이름 목록 추출
                 authors = []
                 for a in elem.findall("author"):
                     val = (a.text or "").strip()
@@ -149,43 +158,19 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
                         del elem.getparent()[0]
                     continue
 
-                # =================================================
-                # [DB] authors_col 업데이트 (Upsert)
-                # 요청사항: 이름과 PID만 저장 (시스템 필드 포함)
-                # =================================================
-                primary_name = authors[0] # 첫 번째 저자명을 대표 이름으로 사용
-                
+                # --- [메모리 적재 1] DB 저장용 데이터 ---
+                primary_name = authors[0]
                 doc = {
                     "pid": pid,
                     "name": primary_name,
+                    # "aliases": authors, # 필요하면 주석 해제
+                    # "url": elem.findtext("url") or "", # 필요하면 주석 해제
                     "updated_at": run_ts,
                     "last_seen_at": run_ts
                 }
+                db_docs.append(doc)
 
-                batch_ops.append(
-                    UpdateOne(
-                        {"pid": pid},
-                        {
-                            "$set": doc,
-                            "$setOnInsert": {"created_at": run_ts}
-                        },
-                        upsert=True
-                    )
-                )
-                saved_count += 1
-                progress.update(task_id, saved=saved_count)
-
-                if len(batch_ops) >= BATCH_SIZE:
-                    res = authors_col.bulk_write(batch_ops, ordered=False)
-                    total_upserted += res.upserted_count
-                    total_modified += res.modified_count
-                    batch_ops.clear()
-
-                # =================================================
-                # [Memory] name_to_pid 인덱스 빌드 (기존 로직)
-                # =================================================
-                
-                # Redirect 처리 (crossref가 가리키는 pid가 있으면 매핑은 그쪽으로)
+                # --- [메모리 적재 2] name_to_pid 인덱스 ---
                 mapping_pid = pid
                 crossref = (elem.findtext("crossref") or "").strip()
                 if crossref.startswith("homepages/"):
@@ -209,15 +194,43 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
                 while elem.getprevious() is not None:
                     del elem.getparent()[0]
             
-            # 남은 배치 처리
-            if batch_ops:
-                res = authors_col.bulk_write(batch_ops, ordered=False)
-                total_upserted += res.upserted_count
-                total_modified += res.modified_count
-                batch_ops.clear()
+            progress.update(parse_task, completed=True, info=f"Done. {len(db_docs):,} collected")
+
+            # ----------------------------------------------------
+            # Phase 2: DB Bulk Write (Writing Only)
+            # ----------------------------------------------------
+            total_docs = len(db_docs)
+            write_task = progress.add_task("DB Bulk Update", total=total_docs, info="0%")
+            
+            total_upserted = 0
+            total_modified = 0
+            
+            # 리스트를 BATCH_SIZE 단위로 슬라이싱하여 처리
+            for i in range(0, total_docs, DB_WRITE_BATCH_SIZE):
+                batch = db_docs[i : i + DB_WRITE_BATCH_SIZE]
+                
+                # UpdateOne Operation 생성
+                ops = [
+                    UpdateOne(
+                        {"pid": d["pid"]},
+                        {
+                            "$set": d,
+                            "$setOnInsert": {"created_at": run_ts}
+                        },
+                        upsert=True
+                    )
+                    for d in batch
+                ]
+                
+                if ops:
+                    res = authors_col.bulk_write(ops, ordered=False)
+                    total_upserted += res.upserted_count
+                    total_modified += res.modified_count
+                
+                progress.update(write_task, advance=len(batch), info=f"{int((i+len(batch))/total_docs*100)}%")
 
     except Exception:
-        console.print("[bold red]PID 인덱스/DB 저장 중 오류 발생[/bold red]")
+        console.print("[bold red]오류 발생[/bold red]")
         import traceback
         console.print(traceback.format_exc())
         return {}
@@ -227,14 +240,19 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
             del context
 
     console.print(
-        f"[green]PID 인덱스/DB 완료[/green]: 메모리 {len(name_to_pid)}명, "
-        f"DB(New: {total_upserted}, Upd: {total_modified})"
+        f"[green]처리 완료[/green]:\n"
+        f" - 메모리 인덱스: {len(name_to_pid):,}명\n"
+        f" - DB 저장 대상: {len(db_docs):,}명\n"
+        f" - 결과 (Upsert: {total_upserted}, Update: {total_modified})"
     )
 
-    # [DB] 동기화 삭제: 이번 실행에 발견되지 않은 저자는 삭제
+    # ----------------------------------------------------
+    # Phase 3: 동기화 삭제 (Cleanup)
+    # ----------------------------------------------------
+    console.print("[dim]삭제된 저자 정리 중...[/dim]")
     del_res = authors_col.delete_many({"last_seen_at": {"$ne": run_ts}})
     if del_res.deleted_count > 0:
-        console.print(f"[yellow]삭제된 저자 정리[/yellow]: {del_res.deleted_count}명")
+        console.print(f"[yellow]삭제 완료[/yellow]: {del_res.deleted_count}명")
 
     return name_to_pid
 
