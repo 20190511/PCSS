@@ -681,11 +681,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                         total_upserted += res.upserted_count
                         total_modified += res.modified_count
                         total_matched += res.matched_count
-
-                        console.print(
-                            f"[dim]batch flush[/dim] "
-                            f"upserted={res.upserted_count}, modified={res.modified_count}, matched={res.matched_count}"
-                        )
                         batch_ops.clear()
 
                     elem.clear()
@@ -701,11 +696,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                 total_upserted += res.upserted_count
                 total_modified += res.modified_count
                 total_matched += res.matched_count
-
-                console.print(
-                    f"[dim]final flush[/dim] "
-                    f"upserted={res.upserted_count}, modified={res.modified_count}, matched={res.matched_count}"
-                )
                 batch_ops.clear()
 
         completed = True  # 정상적으로 끝까지 돈 경우에만 True
