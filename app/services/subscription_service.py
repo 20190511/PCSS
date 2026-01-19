@@ -76,8 +76,8 @@ class SubscriptionNotifier:
         except Exception as e:
             print(f"[Notifier] Fail {receiver}: {e}")
 
-    # [수정] threshold 인자 추가
-    def _generate_result_html(self, python_result: dict, options: list, threshold: float, manage_token: str):
+    # [수정] confs 인자 추가 (template에서 사용될 수 있음)
+    def _generate_result_html(self, python_result: dict, options: list, threshold: float, confs: list, manage_token: str):
         """
         router.get("/page/{job_id}")의 로직을 그대로 재현
         """
@@ -93,21 +93,24 @@ class SubscriptionNotifier:
         
         option_text = ", ".join(selected_texts) if selected_texts else "옵션 미선택"
         
-        # [수정] 템플릿이 요구하는 데이터 구조를 맞춰줌 (uncertainty 등 추가)
+        # [수정] 템플릿 데이터 보강
+        # options 객체에 'selectedConferences' 등을 포함시켜야 템플릿이 정상 동작할 가능성이 높음
         mock_options_obj = {
-            "options": options,       # [1, 2] 형태의 리스트
-            "uncertainty": threshold, # 템플릿의 options.uncertainty 대응
-            "startyear": datetime.now().year, # 기본값 (에러 방지용)
-            "endyear": datetime.now().year,   # 기본값 (에러 방지용)
-            "countOption": False
+            "options": options,       
+            "uncertainty": threshold, 
+            "startyear": datetime.now().year, 
+            "endyear": datetime.now().year,
+            "countOption": False,
+            "selectedConferences": confs  # [중요] 누락되었던 필드 추가
         }
         
-        print(json.dumps(python_result, indent=2, ensure_ascii=False))  # 디버그 출력
+        # 디버그: 딕셔너리 크기 확인
+        print(f"[Notifier] Generating HTML for {len(python_result)} papers.")
 
         context = {
             "request": MockRequest(),      
             "user": None,                  
-            "options": mock_options_obj,   # [수정] 딕셔너리 교체
+            "options": mock_options_obj,   
             "option_text": option_text,
             "pythonResult": python_result,
             "FASTAPI_BASE": "https://pcss.r-e.kr",
@@ -168,8 +171,8 @@ class SubscriptionNotifier:
             result_dict = await processor.run(confs)
 
             if result_dict:
-                # [수정] threshold 인자 전달
-                html_body = self._generate_result_html(result_dict, options, threshold, manage_token)
+                # [수정] confs 인자 전달
+                html_body = self._generate_result_html(result_dict, options, threshold, confs, manage_token)
                 title = f"[New Papers] {len(result_dict)}개의 새로운 관심 논문이 도착했습니다."
                 
                 await asyncio.to_thread(self._send_email_sync, email, title, html_body)
