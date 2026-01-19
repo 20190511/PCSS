@@ -12,13 +12,6 @@ from app.libs.auth import _require_admin_or_redirect
 
 router = APIRouter()
 
-@router.get("/stats/page", response_class=HTMLResponse)
-async def author_stats_page(
-    request: Request,
-):
-    return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Author not found"}, status_code=404)
-    
-
 
 @router.post("/stats/page", response_class=HTMLResponse)
 async def author_stats_page(

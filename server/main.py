@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import log_col
@@ -14,6 +14,8 @@ from app.routes.admin_routes import router as admin_router
 from app.routes.board_routes import router as board_router
 from app.routes.log_routes import router as log_router
 from app.db.mongo import get_mongo_client
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from app.core.templates import templates # 템플릿 객체 가져오기
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
@@ -47,3 +49,14 @@ app.include_router(search_router, prefix="/api/search")
 app.include_router(admin_router, prefix="/admin")
 app.include_router(board_router, prefix="/board")
 app.include_router(log_router, prefix="/logs")
+
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+    return templates.TemplateResponse(
+        "errors/404.html",  # 미리 만들어둔 404 템플릿 경로
+        {
+            "request": request,
+            "error_message": "죄송합니다. 요청하신 페이지를 찾을 수 없습니다." 
+        },
+        status_code=404
+    )
