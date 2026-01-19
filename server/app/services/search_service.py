@@ -226,6 +226,7 @@ class PCSSEARCHMongo:
             "title": 1,
             "author_names": 1,
             "author_urls": 1,
+            "author_pids": 1,
             "conference": 1,
             "year": 1,
             "source": 1,
@@ -425,21 +426,22 @@ class PCSSEARCHMongo:
                 self.titleList.append(title)
 
                 authors_origin = d.get("author_names") or []
-                authors_url = d.get("author_urls") or []
+                authors_urls = d.get("author_urls") or []
+                authors_pids = d.get("author_pids") or []
 
                 if not isinstance(authors_origin, list) or not authors_origin:
                     continue
-                if not isinstance(authors_url, list) or not authors_url:
+                if not isinstance(authors_urls, list) or not authors_urls:
                     # 기존 코드도 url 없는 경우 skip 성향이 있음
                     # 다만 데이터셋이 url 없는 케이스가 있을 수 있으니 필요하면 여기서 완화 가능
                     continue
 
-                authors = self._clean_authors(authors_origin)
-                if not authors:
+                authors_names = self._clean_authors(authors_origin)
+                if not authors_names:
                     continue
 
                 # option별 target 추출
-                target = await self._targets_for_option(authors)
+                target = await self._targets_for_option(authors_names)
                 if not target:
                     continue
 
@@ -457,8 +459,9 @@ class PCSSEARCHMongo:
                 self.CrawlData.append(
                     {
                         "title": title,
-                        "author_names": authors,       # 아직 stats 붙이기 전
-                        "author_urls": authors_url,
+                        "author_names": authors_names,       # 아직 stats 붙이기 전
+                        "author_urls": authors_urls,
+                        "author_pids": authors_pids,
                         "target_author": target,      # score 붙어있음
                         "conference": conf,
                         "year": year,
