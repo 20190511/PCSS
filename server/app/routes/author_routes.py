@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import Form
 from app.core.templates import templates
 from app.services.author_service import compute_author_stats_mongo
 from app.db import name_col, req_korean_col
 from app.data import name_dict
-from app.libs.exceptions import NotFoundException
 from datetime import datetime, timezone
 from app.libs.auth import _require_admin_or_redirect
 
@@ -66,7 +65,7 @@ async def get_korean_requests():
 @router.post("/korean/{param}")
 async def add_korean_stat(param: str):
     if param not in name_dict:
-        raise NotFoundException("Name not found")
+        raise HTTPException(404, "Name not found")
 
     name_dict[param] = 1
 
@@ -77,7 +76,7 @@ async def add_korean_stat(param: str):
 
     if result.matched_count == 0:
         # dict에는 있는데 DB에는 없는 상태 -> 데이터 불일치
-        raise NotFoundException("Name not found in DB")
+        raise HTTPException(404, "Name not found in DB")
 
     return {"status": "Updated", "param": param}
 
@@ -85,7 +84,7 @@ async def add_korean_stat(param: str):
 @router.delete("/korean/{param}")
 async def delete_korean_stat(param: str):
     if param not in name_dict:
-        raise NotFoundException("Name not found")
+        raise HTTPException(404, "Name not found")
 
     name_dict[param] = 0
 
@@ -95,7 +94,7 @@ async def delete_korean_stat(param: str):
     )
 
     if result.matched_count == 0:
-        raise NotFoundException("Name not found in DB")
+        raise HTTPException(404, "Name not found in DB")
 
     return {"status": "Deleted", "param": param}
 
@@ -103,7 +102,7 @@ async def delete_korean_stat(param: str):
 @router.post("/add/korean/{param}")
 async def request_add_korean_stat(param: str):
     if param not in name_dict:
-        raise NotFoundException("Name not found")
+        raise HTTPException(404, "Name not found")
 
     req_korean_col.update_one(
         {"name": param},
@@ -121,13 +120,13 @@ async def request_add_korean_stat(param: str):
 @router.post("/cancel/korean/{param}")
 async def cancel_korean_request(param: str):
     if param not in name_dict:
-        raise NotFoundException("Name not found")
+        raise HTTPException(404, "Name not found")
 
     result = req_korean_col.delete_one({"name": param})
 
     if result.deleted_count == 0:
         # 취소할 요청이 없을 때
-        raise NotFoundException("No pending request to cancel")
+        raise HTTPException(404, "No pending request to cancel")
 
     return {"status": "Canceled", "param": param}
 
@@ -135,7 +134,7 @@ async def cancel_korean_request(param: str):
 @router.post("/delete/korean/{param}")
 async def request_delete_korean_stat(param: str):
     if param not in name_dict:
-        raise NotFoundException("Name not found")
+        raise HTTPException(404, "Name not found")
 
     req_korean_col.update_one(
         {"name": param},
@@ -189,14 +188,14 @@ def apply_korean_score(param: str, score: int):
     (권장: DB 성공 후 dict 반영)
     """
     if param not in name_dict:
-        raise NotFoundException("Name not found")
+        raise HTTPException(404, "Name not found")
 
     result = name_col.update_one(
         {"name": param},
         {"$set": {"score": score, "updated_at": datetime.now(timezone.utc)}},
     )
     if result.matched_count == 0:
-        raise NotFoundException("Name not found in DB")
+        raise HTTPException(404, "Name not found in DB")
 
     name_dict[param] = score
     
@@ -213,11 +212,11 @@ async def approve_korean_request(request: Request, name: str = Form(...)):
 
     req_doc = req_korean_col.find_one({"name": name})
     if not req_doc:
-        raise NotFoundException("No pending request")
+        raise HTTPException(404, "No pending request")
 
     req_type = req_doc.get("type", None)
     if req_type not in (0, 1):
-        raise NotFoundException("Invalid request type")
+        raise HTTPException(404, "Invalid request type")
 
     new_score = 1 if req_type == 1 else 0
     apply_korean_score(name, new_score)
@@ -238,6 +237,6 @@ async def deny_korean_request(request: Request, name: str = Form(...)):
 
     result = req_korean_col.delete_one({"name": name})
     if result.deleted_count == 0:
-        raise NotFoundException("No pending request to deny")
+        raise HTTPException(404, "No pending request to deny")
 
     return RedirectResponse(url=next_path, status_code=303)

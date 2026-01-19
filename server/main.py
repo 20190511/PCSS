@@ -56,7 +56,7 @@ async def custom_404_handler(request: Request, exc: StarletteHTTPException):
         "errors/404.html",  # 미리 만들어둔 404 템플릿 경로
         {
             "request": request,
-            "error_message": "죄송합니다. 요청하신 페이지를 찾을 수 없습니다." 
+            "error_message": "" 
         },
         status_code=404
     )

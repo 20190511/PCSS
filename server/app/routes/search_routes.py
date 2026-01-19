@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from uuid import uuid4
 import asyncio
 import json
-from app.libs.exceptions import InternalServerErrorException
 from app.schemas.search import SearchRequest
 from app.services.search_service import PCSSEARCHMongo
 from app.core.job_store import (
@@ -19,7 +18,7 @@ from app.db import log_col
 from datetime import datetime, timezone
 from app.libs.logger import get_client_ip
 from app.libs.auth import get_session_email
-from app.libs.exceptions import NotFoundException
+
 
 router = APIRouter()
 
@@ -113,7 +112,7 @@ async def start_search(req: SearchRequest, request: Request):
 async def search_events(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("Job not found")
+        raise HTTPException(404, "Job not found")
 
     async def event_generator():
         # 초기 연결 이벤트
@@ -161,7 +160,7 @@ def _sse(event_name: str, data: dict) -> str:
 async def search_result(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("Job not found")
+        raise HTTPException(404, "Job not found")
 
     if job.status == "cancelled":
         return JSONResponse({"status": "cancelled"}, status_code=200)
@@ -170,7 +169,7 @@ async def search_result(request: Request, job_id: str):
         return JSONResponse({"status": "running"}, status_code=202)
 
     if job.status == "error":
-        raise InternalServerErrorException(job.error)
+        raise HTTPException(500, job.error)
 
     return {"status": "done", "result": job.result}
 
@@ -179,10 +178,10 @@ async def search_result(request: Request, job_id: str):
 async def search_page(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("Job not found")
+        raise HTTPException(404, "Job not found")
 
     if job.status == "error":
-        raise InternalServerErrorException(job.error or "unknown error")
+        raise HTTPException(500, job.error or "unknown error")
 
     options = job.options or {}
 
@@ -244,7 +243,7 @@ async def search_page(request: Request, job_id: str):
 async def search_cancel(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("Job not found")
+        raise HTTPException(404, "Job not found")
 
     ok = cancel_job(job_id)
     if ok:

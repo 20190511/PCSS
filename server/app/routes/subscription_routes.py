@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
 from uuid import uuid4
 from datetime import datetime, timezone
 import secrets
 from pymongo import ReturnDocument
-from app.libs.exceptions import NotFoundException
+
 from app.schemas.subscription import (
     SubscriptionCreateRequest,
     SubscriptionUpdateRequest,
@@ -252,7 +252,7 @@ async def get_subscription(email: str):
         {"_id": 0, "manage_token": 0},
     )
     if not doc:
-        raise NotFoundException("subscription not found")
+        raise HTTPException(404, "subscription not found")
     return JSONResponse(doc)
 
 
@@ -264,7 +264,7 @@ async def update_subscription(req: SubscriptionUpdateRequest, request: Request):
 
     existing = subscription_col.find_one({"email": email}, {"_id": 0})
     if not existing:
-        raise NotFoundException("subscription not found")
+        raise HTTPException(404, "subscription not found")
 
     if existing.get("manage_token") != req.manage_token:
         return JSONResponse({"status": "forbidden"}, status_code=403)
@@ -314,7 +314,7 @@ async def unsubscribe(req: SubscriptionUnsubscribeRequest, request: Request):
 
     existing = subscription_col.find_one({"email": email}, {"_id": 0})
     if not existing:
-        raise NotFoundException("subscription not found")
+        raise HTTPException(404, "subscription not found")
 
     if existing.get("manage_token") != req.manage_token:
         return JSONResponse({"status": "forbidden"}, status_code=403)
