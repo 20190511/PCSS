@@ -224,8 +224,8 @@ class PCSSEARCHMongo:
         proj = {
             "_id": 0,
             "title": 1,
-            "author_name": 1,
-            "author_url": 1,
+            "author_names": 1,
+            "author_urls": 1,
             "conference": 1,
             "year": 1,
             "source": 1,
@@ -328,7 +328,7 @@ class PCSSEARCHMongo:
         self.printStatus(f"{target_author} Paper Counting", url=target_author)
 
         pipeline = [
-            {"$match": {"author_name": target_author}},
+            {"$match": {"author_names": target_author}},
             {
                 "$group": {
                     "_id": None,
@@ -424,8 +424,8 @@ class PCSSEARCHMongo:
                 self._titleSet.add(title)
                 self.titleList.append(title)
 
-                authors_origin = d.get("author_name") or []
-                authors_url = d.get("author_url") or []
+                authors_origin = d.get("author_names") or []
+                authors_url = d.get("author_urls") or []
 
                 if not isinstance(authors_origin, list) or not authors_origin:
                     continue
@@ -457,8 +457,8 @@ class PCSSEARCHMongo:
                 self.CrawlData.append(
                     {
                         "title": title,
-                        "author_name": authors,       # 아직 stats 붙이기 전
-                        "author_url": authors_url,
+                        "author_names": authors,       # 아직 stats 붙이기 전
+                        "author_urls": authors_url,
                         "target_author": target,      # score 붙어있음
                         "conference": conf,
                         "year": year,
@@ -496,7 +496,7 @@ class PCSSEARCHMongo:
             new_authors: List[str] = []
             totals_by_author: Dict[str, int] = {}
 
-            for author in data_copy.get("author_name", []):
+            for author in data_copy.get("author_names", []):
                 if await self.checkKorean(author):
                     stats = await self.authorNumCheckerMongo(author)
                     new_authors.append(author + stats["stats"])
@@ -504,7 +504,7 @@ class PCSSEARCHMongo:
                 else:
                     new_authors.append(author)
 
-            data_copy["author_name"] = new_authors
+            data_copy["author_names"] = new_authors
 
             # target_author 기준 total_papers 정렬 유지
             target_names = [self._strip_score_suffix(t) for t in data_copy.get("target_author", [])]

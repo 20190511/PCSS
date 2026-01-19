@@ -13,7 +13,7 @@ async def compute_author_stats_mongo(
 
     col = await get_papers_col()
 
-    match: Dict[str, Any] = {"author_name": target_author}  # 배열에 target_author 포함이면 매치됨
+    match: Dict[str, Any] = {"author_names": target_author}  # 배열에 target_author 포함이면 매치됨
 
     if conf_list:
         match["conference"] = {"$in": conf_list}
@@ -124,7 +124,7 @@ async def compute_author_stats_mongo(
         proj = {
             "_id": 0,
             "title": 1,
-            "author_name": 1,
+            "author_names": 1,
             "conference": 1,
             "year": 1,
             "dblp_url": 1,
@@ -135,7 +135,7 @@ async def compute_author_stats_mongo(
         papers = []
         async for d in cursor:
             title = (d.get("title") or "").strip()
-            authors = d.get("author_name") or []
+            authors = d.get("author_names") or []
             conf = d.get("conference") or ""
             year = d.get("year")
 

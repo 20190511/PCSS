@@ -329,7 +329,7 @@ class AutoSender:
 
                     # 저자 이름과 URL을 매칭하여 추가 (하이퍼링크 포함)
                     p = row_cells[2].paragraphs[0]
-                    for name, url in zip(entry["author_name"], entry["author_url"]):
+                    for name, url in zip(entry["author_names"], entry["author_urls"]):
                         self.add_hyperlink(p, name, url)
                         p.add_run("\n")
 

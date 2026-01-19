@@ -558,8 +558,9 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
 
                     record = {
                         "title": title,
-                        "author_name": authors,
-                        "author_url": author_urls,
+                        "author_names": authors,
+                        "author_urls": author_urls,
+                        "author_pids": author_pids,
                         "conference": official_conf_name,
                         "year": int(year) if year and year.isdigit() else year,
                         "source": source,
