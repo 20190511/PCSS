@@ -1,6 +1,16 @@
 from typing import Any, Dict, List, Optional
 from app.db.mongo import get_papers_col
+import re
 
+def _clean_authors(authors: List[str]) -> List[str]:
+    # 기존 코드처럼 숫자 제거 + strip
+    cleaned = []
+    for a in authors:
+        a2 = re.sub(r"\d+", "", (a or "")).strip()
+        if a2:
+            cleaned.append(a2)
+    return cleaned
+    
 async def compute_author_stats_mongo(
     target_pid: str,          # [변경] 검색 기준이 PID가 됨
     target_name: str = "",    # 보조용(필요 시 사용)
@@ -141,14 +151,14 @@ async def compute_author_stats_mongo(
         papers = []
         async for d in cursor:
             title = (d.get("title") or "").strip()
-            authors = d.get("author_names") or d.get("author_name") or []
+            authors_names = d.get("author_names") or d.get("author_name") or []
             conf = d.get("conference") or ""
             year = d.get("year")
 
             papers.append(
                 {
                     "title": title,
-                    "authors": authors,
+                    "authors": _clean_authors(authors_names),
                     "conference": conf,
                     "year": year,
                     "dblp_url": d.get("dblp_url", ""),
