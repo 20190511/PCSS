@@ -2,18 +2,62 @@ import os
 import time
 import asyncio
 import traceback
+import platform
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
+# --- [추가 Import] 전역 변수 및 DB 접근 ---
+from app.data import name_dict
+from app.db import author_col  # author_col이 app.db에 정의되어 있다고 가정
+# 만약 author_col이 없다면 아래 주석을 참고하여 직접 정의하세요:
+# from app.db import client
+# author_col = client.get_database("pcss").get_collection("authors")
+# ----------------------------------------
+
 import tool.extract_authors as extract_authors
 import tool.extract_papers as extract_papers
 from app.services.subscription_service import SubscriptionNotifier
+
+# Windows 환경 asyncio 설정
+if platform.system() == 'Windows':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+def refresh_name_dict():
+    """
+    [New] DB(author_col)에서 최신 저자 점수 데이터를 가져와
+    전역 변수 name_dict를 메모리 상에서 갱신(Update)합니다.
+    """
+    print(f"[{datetime.now()}] name_dict 캐시 갱신 시작 (현재 크기: {len(name_dict)})")
+    
+    try:
+        # DB에서 이름과 점수(또는 한국인 여부)만 가져옵니다.
+        # 프로젝트 구조에 따라 필드명('name', 'score', 'is_korean' 등) 확인 필요
+        # 여기서는 name과 score를 가져온다고 가정합니다.
+        cursor = author_col.find({}, {"name": 1, "score": 1, "_id": 0})
+        
+        count = 0
+        for doc in cursor:
+            name = doc.get("name")
+            score = doc.get("score")
+            
+            if name and score is not None:
+                # 기존에 없거나 점수가 변경되었을 수 있으므로 덮어씌웁니다.
+                name_dict[name] = float(score)
+                count += 1
+                
+        print(f"[{datetime.now()}] name_dict 갱신 완료 (최신 크기: {len(name_dict)}, 처리된 항목: {count})")
+        
+    except Exception as e:
+        print(f"!!! name_dict 갱신 중 에러 발생: {e}")
+        traceback.print_exc()
 
 def run_job():
     """
     1. DBLP XML 파일 정리
     2. 논문 추출 (DB 적재)
     3. 저자 추출 (DB 적재)
-    4. [New] 구독자 이메일 알림 발송
+    4. [New] 전역 name_dict 캐시 갱신
+    5. 구독자 이메일 알림 발송
     """
     xml_path = os.path.join(os.path.dirname(__file__), "dblp.xml")
     
@@ -25,6 +69,8 @@ def run_job():
     ]
 
     print(f"\n[{datetime.now()}] === 월간 업데이트 작업 시작 ===")
+    
+    data_update_success = True
 
     for name, func in steps:
         print(f"[{datetime.now()}] {name} 시작...")
@@ -34,17 +80,24 @@ def run_job():
         except Exception as e:
             print(f"!!! {name} 중 에러 발생: {e}")
             traceback.print_exc()
+            data_update_success = False
+            # break 
 
-    # 4단계: 구독 알림 발송 (비동기 함수를 동기로 실행)
-    print(f"[{datetime.now()}] 구독 알림 발송 서비스 시작...")
-    try:
-        notifier = SubscriptionNotifier()
-        # 여기서 asyncio.run()을 호출하여 비동기인 notifier.run()을 실행
-        asyncio.run(notifier.run())
-        print(f"[{datetime.now()}] 구독 알림 발송 완료.")
-    except Exception as e:
-        print(f"!!! 구독 알림 발송 중 에러 발생: {e}")
-        traceback.print_exc()
+    if data_update_success:
+        print(f"[{datetime.now()}] 최신 저자 정보 메모리 로드 시작...")
+        refresh_name_dict()
+
+        # 5단계: 구독 알림 발송
+        print(f"[{datetime.now()}] 구독 알림 발송 서비스 시작...")
+        try:
+            notifier = SubscriptionNotifier()
+            asyncio.run(notifier.run())
+            print(f"[{datetime.now()}] 구독 알림 발송 완료.")
+        except Exception as e:
+            print(f"!!! 구독 알림 발송 중 에러 발생: {e}")
+            traceback.print_exc()
+    else:
+        print(f"[{datetime.now()}] 데이터 갱신 실패로 알림 발송을 건너뜁니다.")
 
     print(f"[{datetime.now()}] === 모든 작업 종료 ===\n")
 
