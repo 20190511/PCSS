@@ -45,14 +45,7 @@ class SubscriptionNotifier:
 
     def _load_mail_config(self):
         try:
-            # 경로 조정: 현재 파일 위치 기준
-            # app/services/subscription_service.py -> ../../data/mail_lock.json
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            path = os.path.join(base_dir, 'data', "mail_lock.json")
-            if not os.path.exists(path):
-                # fallback
-                path = os.path.join("data", "mail_lock.json")
-            
+            path = os.path.join(os.path.dirname(__file__), "..", "data", "mail_lock.json")    
             with open(path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
