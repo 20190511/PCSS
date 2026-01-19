@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>PCSS 구독 알림</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #333;">
+    
+    <div style="max-width: 800px; margin: 0 auto; background: #ffffff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden;">
+        
+        <div style="background-color: #c80150; padding: 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">PCSS 새로운 논문 알림</h1>
+        </div>
+
+        <div style="padding: 15px; border-bottom: 1px solid #eee; background-color: #fafafa; font-size: 13px;">
+            <p style="margin: 5px 0;"><strong>기준:</strong> {{ option_text }} / <strong>한국인 확률:</strong> {{ options.uncertainty }}</p>
+            <p style="margin: 5px 0;"><strong>학회:</strong> {{ options.selectedConferences | join(', ') }}</p>
+        </div>
+
+        <div style="padding: 20px;">
+            {% if not grouped_papers %}
+                <p style="text-align: center; color: #666;">조건에 맞는 새로운 논문이 없습니다.</p>
+            {% else %}
+                
+                {# 1. 저자 루프 #}
+                {% for author, years in grouped_papers.items() %}
+                    <div style="margin-bottom: 30px; border: 1px solid #e0e0e0; border-radius: 6px;">
+                        <div style="background-color: #f1f1f1; padding: 10px 15px; font-weight: bold; font-size: 16px; border-bottom: 1px solid #ddd; color: #c80150;">
+                            {{ author }}
+                        </div>
+
+                        <div style="padding: 10px;">
+                            {# 2. 연도 루프 (내림차순 정렬) #}
+                            {% for year in years|sort(reverse=True) %}
+                                {% set conferences = years[year] %}
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; border-bottom: 2px solid #eee; padding-bottom: 3px;">
+                                        {{ year }}년
+                                    </div>
+
+                                    {# 3. 학회 루프 #}
+                                    {% for conf_name, paper_list in conferences.items() %}
+                                        <div style="margin-left: 10px; margin-bottom: 10px;">
+                                            <div style="font-size: 13px; font-weight: bold; color: #000; margin-bottom: 5px;">
+                                                - {{ conf_name }}
+                                            </div>
+
+                                            {# 4. 논문 카드 루프 #}
+                                            {% for paper in paper_list %}
+                                                <div style="background-color: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-bottom: 8px; margin-left: 10px;">
+                                                    
+                                                    <a href="{{ paper.source or paper.dblp_url or '#' }}" target="_blank" style="text-decoration: none; font-weight: bold; color: #0056b3; font-size: 14px; display: block; margin-bottom: 5px;">
+                                                        {{ paper.title }}
+                                                    </a>
+
+                                                    <div style="font-size: 12px; color: #444; line-height: 1.4;">
+                                                        {% for name in paper.author_names %}
+                                                            {% if name == author or (name in paper.target_author) %}
+                                                                <span style="color: #c80150; font-weight: bold; text-decoration: underline;">{{ name }}</span>
+                                                            {% else %}
+                                                                {{ name }}
+                                                            {% endif %}
+                                                            {% if not loop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %} </div>
+                                    {% endfor %} </div>
+                            {% endfor %} </div>
+                    </div>
+                {% endfor %} {% endif %}
+        </div>
+        
+    </div>
+</body>
+</html>
