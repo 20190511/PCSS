@@ -530,7 +530,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                         dblp_url = f"https://dblp.org/rec/{key}.html" if key else ""
 
                     authors = []
-                    author_urls = []
                     author_pids = []
 
                     for author in elem.findall("author"):
@@ -544,22 +543,18 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
 
                         if isinstance(pid, list):
                             enc = urllib.parse.quote_plus(name)
-                            author_urls.append(f"https://dblp.org/search/author?q={enc}")
                             author_pids.append(None)
                             continue
 
                         if pid:
-                            author_urls.append(f"https://dblp.org/pid/{pid}.html")
                             author_pids.append(pid)
                         else:
                             enc = urllib.parse.quote_plus(name)
-                            author_urls.append(f"https://dblp.org/search/author?q={enc}")
                             author_pids.append(None)
 
                     record = {
                         "title": title,
                         "author_names": authors,
-                        "author_urls": author_urls,
                         "author_pids": author_pids,
                         "conference": official_conf_name,
                         "year": int(year) if year and year.isdigit() else year,
