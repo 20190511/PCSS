@@ -570,34 +570,40 @@
                   const authorsList = document.createElement("div");
                   authorsList.className = "authors";
 
-                  // [수정됨] 현재 섹션의 저자 이름만 추출 (점수 제거)
-                  // 상위 스코프의 'author' 변수를 사용합니다.
                   const currentSectionAuthor = String(author).replace(/\s*\(\d+(?:\.\d+)?\)\s*$/, "").trim();
+                  const authorNames = paper.author_names || []; 
+                  const authorUrls = paper.author_urls || [];
 
-                  paper.author_name.forEach((name, idx) => {
+                  authorNames.forEach((name, idx) => {
                     const authorEl = document.createElement("span");
                     authorEl.textContent = name;
                     authorEl.className = "paper-author-link";
                     
                     // 데이터셋 바인딩
                     authorEl.dataset.author = name;
-                    // [중요] PID 바인딩 (paper.author_pids가 있다고 가정)
-                    // 데이터가 없을 경우를 대비해 안전하게 처리
+                    
+                    // PID 바인딩 (paper.author_pids가 있다고 가정)
                     const pid = (paper.author_pids && paper.author_pids[idx]) ? paper.author_pids[idx] : "";
                     authorEl.dataset.pid = pid; 
                     
-                    authorEl.dataset.profileUrl = paper.author_url[idx] || "";
-                
+                    authorEl.dataset.profileUrl = authorUrls[idx] || "";
+
                     if (String(name).trim() === currentSectionAuthor) {
                       authorEl.style.fontWeight = "700";           
                       authorEl.style.textDecoration = "underline"; 
                     }
-                
+
                     authorsList.appendChild(authorEl);
-                    if (idx < paper.author_name.length - 1) {
+                    
+                    if (idx < authorNames.length - 1) {
                       authorsList.appendChild(document.createTextNode(", "));
                     }
                   });
+
+                  card.appendChild(authorsList);
+                  conferenceContent.appendChild(card);
+
+                  // ... (이후 코드 동일)
 
                   card.appendChild(authorsList);
                   conferenceContent.appendChild(card);

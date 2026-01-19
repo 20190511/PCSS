@@ -21,7 +21,7 @@ class PCSSEARCHMongo:
         4: 기타 공저자(중간 저자)
         else: 저자 중 한 명 이상
     - threshold: 한국인 판정 임계값
-    - countOption: True면 저자 통계(본 MongoDB 데이터셋 기준)도 붙임
+    - countOption: True면 저자 통계(본 MongoDB 데이터셋 기준)도 붙임_bu
     """
 
     def __init__(
