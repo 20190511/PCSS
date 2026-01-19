@@ -12,6 +12,7 @@ from app.libs.auth import _require_admin_or_redirect
 router = APIRouter()
 
 
+
 @router.post("/stats/page", response_class=HTMLResponse)
 async def author_stats_page(
     request: Request,
