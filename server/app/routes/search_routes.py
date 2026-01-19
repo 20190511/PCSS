@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from uuid import uuid4
 import asyncio
 import json
-from app.libs.exceptions import NotFoundException, InternalServerErrorException
+from app.libs.exceptions import InternalServerErrorException
 from app.schemas.search import SearchRequest
 from app.services.search_service import PCSSEARCHMongo
 from app.core.job_store import (
@@ -110,10 +110,10 @@ async def start_search(req: SearchRequest, request: Request):
 
 
 @router.get("/events/{job_id}")
-async def search_events(job_id: str):
+async def search_events(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("job not found")
+        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
 
     async def event_generator():
         # 초기 연결 이벤트
@@ -158,10 +158,10 @@ def _sse(event_name: str, data: dict) -> str:
 
 
 @router.get("/result/{job_id}")
-async def search_result(job_id: str):
+async def search_result(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("job not found")
+        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
 
     if job.status == "cancelled":
         return JSONResponse({"status": "cancelled"}, status_code=200)
@@ -179,7 +179,7 @@ async def search_result(job_id: str):
 async def search_page(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("job not found")
+        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
 
     if job.status == "error":
         raise InternalServerErrorException(job.error or "unknown error")
@@ -244,7 +244,7 @@ async def search_page(request: Request, job_id: str):
 async def search_cancel(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        raise NotFoundException("job not found")
+        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
 
     ok = cancel_job(job_id)
     if ok:
