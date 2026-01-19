@@ -41,9 +41,13 @@
 
                                     {# 3. 학회 루프 #}
                                     {% for conf_name, paper_list in conferences.items() %}
+                                        
+                                        {# [수정됨] 해당 그룹의 첫 번째 논문에서 DBLP URL 가져오기 #}
+                                        {% set conf_url = paper_list[0].dblp_url if paper_list and paper_list[0].dblp_url else '#' %}
+                                        
                                         <div style="margin-left: 10px; margin-bottom: 10px;">
                                             <div style="font-size: 13px; font-weight: bold; color: #000; margin-bottom: 5px;">
-                                                - {{ conf_name }}
+                                                - <a href="{{ conf_url }}" target="_blank" style="text-decoration: none; color: #000;">{{ conf_name }}</a>
                                             </div>
 
                                             {# 4. 논문 카드 루프 #}
@@ -65,11 +69,15 @@
                                                         {% endfor %}
                                                     </div>
                                                 </div>
-                                            {% endfor %} </div>
-                                    {% endfor %} </div>
-                            {% endfor %} </div>
+                                            {% endfor %} 
+                                        </div>
+                                    {% endfor %} 
+                                </div>
+                            {% endfor %} 
+                        </div>
                     </div>
-                {% endfor %} {% endif %}
+                {% endfor %} 
+            {% endif %}
         </div>
         
     </div>
