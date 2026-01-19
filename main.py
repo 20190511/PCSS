@@ -1,8 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from app.db import log_col
-
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes.author_routes import router as author_router
 from app.routes.home_routes import router as home_router
@@ -14,8 +12,12 @@ from app.routes.admin_routes import router as admin_router
 from app.routes.board_routes import router as board_router
 from app.routes.log_routes import router as log_router
 from app.db.mongo import get_mongo_client
+from app.db import errors_col
+from app.libs.logger import get_client_ip
+from datetime import datetime, timezone
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from app.core.templates import templates # 템플릿 객체 가져오기
+from app.core.templates import templates 
+import traceback
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
@@ -59,4 +61,35 @@ async def custom_404_handler(request: Request, exc: StarletteHTTPException):
             "error_message": "" 
         },
         status_code=404
+    )
+    
+@app.exception_handler(500)
+async def custom_500_handler(request: Request, exc: Exception):
+    try:
+        ip = get_client_ip(request)
+    
+        error_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+
+        # DB에 에러 로그 저장
+        errors_col.insert_one({
+            "ts": datetime.now(timezone.utc),
+            "type": "server_error",
+            "ip": ip,
+            "method": request.method,
+            "path": request.url.path,
+            "query_params": dict(request.query_params),
+            "error_message": str(exc),
+            "traceback": error_trace, # 디버깅용 상세 정보
+            "user_agent": request.headers.get("user-agent", ""),
+        })
+    except Exception as log_error:
+        print(f"Failed to log 500 error to DB: {log_error}")
+
+    return templates.TemplateResponse(
+        "errors/500.html",
+        {
+            "request": request,
+            "error_message": "서버 내부에서 오류가 발생했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요."
+        },
+        status_code=500
     )
