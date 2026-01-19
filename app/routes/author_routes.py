@@ -68,7 +68,7 @@ async def author_autocomplete(query: str = Query(..., min_length=1)):
         # author_col 스키마에 따라 필드명 조정 필요 (여기선 name, pid, affiliation 가정)
         cursor = authors_col.find(
             {"name": {"$regex": regex_pattern}},
-            {"_id": 0, "name": 1, "pid": 1, "affiliation": 1} # 필요한 필드만 조회
+            {"_id": 0, "name": 1, "pid": 1} # 필요한 필드만 조회
         ).limit(10)
         
         results = []
@@ -80,8 +80,6 @@ async def author_autocomplete(query: str = Query(..., min_length=1)):
             results.append({
                 "name": doc.get("name"),
                 "pid": doc.get("pid"),
-                # 소속 정보가 있으면 같이 보여줌
-                "affiliation": doc.get("affiliation", "") 
             })
             
         return JSONResponse(content=results)
