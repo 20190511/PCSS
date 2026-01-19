@@ -578,15 +578,21 @@
                     const authorEl = document.createElement("span");
                     authorEl.textContent = name;
                     authorEl.className = "paper-author-link";
+                    
+                    // 데이터셋 바인딩
                     authorEl.dataset.author = name;
+                    // [중요] PID 바인딩 (paper.author_pids가 있다고 가정)
+                    // 데이터가 없을 경우를 대비해 안전하게 처리
+                    const pid = (paper.author_pids && paper.author_pids[idx]) ? paper.author_pids[idx] : "";
+                    authorEl.dataset.pid = pid; 
+                    
                     authorEl.dataset.profileUrl = paper.author_url[idx] || "";
-
-                    // [수정됨] 현재 섹션 저자와 이름이 일치할 경우에만 스타일 적용
+                
                     if (String(name).trim() === currentSectionAuthor) {
-                      authorEl.style.fontWeight = "700";           // 굵은 글씨
-                      authorEl.style.textDecoration = "underline"; // 밑줄
+                      authorEl.style.fontWeight = "700";           
+                      authorEl.style.textDecoration = "underline"; 
                     }
-
+                
                     authorsList.appendChild(authorEl);
                     if (idx < paper.author_name.length - 1) {
                       authorsList.appendChild(document.createTextNode(", "));
@@ -620,23 +626,24 @@
         }
 
         function openAuthorStatsInNewTab(payload) {
-          // payload: { name, url }
-
+          // payload: { name, pid, url }
+      
           const form = document.createElement("form");
           form.method = "POST";
-          form.action = "/author/stats/page"; // HTML 렌더링 라우트
+          form.action = "/author/stats/page"; 
           form.target = "_blank";
-
+      
           const uncertainty = {{ options.uncertainty | tojson }};
-
-          // 서버가 필요로 하는 필드만 전달
+      
+          // [수정] target_pid 필드 추가
           const fields = {
-            target_author: payload.name,
+            target_author: payload.name, // 이름은 화면 표시용
+            target_pid: payload.pid,     // [중요] 검색은 PID로 수행
             url: payload.url,
             include_papers: "true",
             uncertainty: String(uncertainty),
           };
-
+      
           Object.entries(fields).forEach(([k, v]) => {
             const input = document.createElement("input");
             input.type = "hidden";
@@ -644,7 +651,7 @@
             input.value = v;
             form.appendChild(input);
           });
-
+      
           document.body.appendChild(form);
           form.submit();
           form.remove();
@@ -654,22 +661,23 @@
         container.addEventListener("click", e => {
           const authorEl = e.target.closest(".paper-author-link");
           if (!authorEl) return;
-
-          const target_author =
-            authorEl.dataset.author?.trim() || authorEl.textContent.trim();
+      
+          const target_author = authorEl.dataset.author?.trim() || authorEl.textContent.trim();
+          const target_pid = authorEl.dataset.pid?.trim() || ""; // PID 추출
           const profileUrl = authorEl.dataset.profileUrl || "";
-
+      
           if (!target_author) {
             alert("저자 이름이 없습니다.");
             return;
           }
-          if (!profileUrl) {
-            alert("프로필 URL이 없습니다.");
-            return;
+          // PID가 없으면 경고 혹은 이름으로 검색하도록 분기 가능하지만, 여기선 알림
+          if (!target_pid) {
+            console.warn("PID가 없어 정확한 검색이 어려울 수 있습니다.");
           }
-
+      
           openAuthorStatsInNewTab({
             name: target_author,
+            pid: target_pid, // PID 전달
             url: profileUrl
           });
         });
