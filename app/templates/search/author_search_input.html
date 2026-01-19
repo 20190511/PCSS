@@ -1,232 +1,248 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PCSS - Author Search</title>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCSS 저자 실적 검색</title>
     <style>
-      /* --- Existing styles inherited from index.html --- */
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f9f9f9;
-        color: #333;
-      }
+        /* --- Base Styles (from Board Design) --- */
+        body { font-family: Arial, sans-serif; background-color: #f9f9f9; color: #333; margin:0; padding:0; }
+        
+        /* 컨테이너: 게시판과 동일한 카드 스타일 */
+        .container { 
+            max-width: 800px; /* 검색창이므로 게시판(1100px)보다는 약간 좁게 설정 */
+            margin: 60px auto; 
+            padding: 40px; 
+            background: #fff; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-      .container {
-        display: flex;
-        flex-direction: column;
-        max-width: 800px; 
-        margin: auto;
-        padding: 40px 20px;
-        min-height: 80vh; 
-      }
+        h1 { color: #c80150; text-align: center; margin-bottom: 40px; }
+        
+        /* --- Search Form Styles --- */
+        .search-wrapper {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
 
-      h1 {
-        text-align: center;
-        margin-bottom: 30px;
-        color: rgba(200, 1, 80, 1);
-      }
+        .form-group {
+            position: relative; /* Anchor for autocomplete */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
-      .form-section {
-        background-color: #ffffff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 30px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
+        .form-label {
+            font-weight: bold;
+            color: #34495e;
+            font-size: 16px;
+        }
 
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        position: relative; /* Anchor for autocomplete list */
-      }
+        /* 입력창 스타일 */
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #c80150;
+            box-shadow: 0 0 0 3px rgba(200, 1, 80, 0.1);
+        }
 
-      .form-group label {
-        font-weight: bold;
-        color: #34495e;
-      }
+        /* 검색 버튼 스타일 (게시판의 '글쓰기' 버튼 스타일 응용) */
+        .btn-search {
+            width: 100%;
+            padding: 14px;
+            background-color: #c80150;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
 
-      /* Input Field Style */
-      .form-input {
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 16px;
-        width: 100%;
-        box-sizing: border-box; 
-      }
-      
-      .form-input:focus {
-        outline: none;
-        border-color: rgba(200, 1, 80, 0.5);
-        box-shadow: 0 0 5px rgba(200, 1, 80, 0.2);
-      }
+        .btn-search:hover {
+            background-color: #a00140;
+        }
 
-      /* Search Button Style */
-      #submit-btn {
-        padding: 12px 20px;
-        background-color: rgba(200, 1, 80, 1);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        font-size: 16px;
-        transition: background-color 0.2s;
-        margin-top: 10px;
-      }
+        /* --- Autocomplete List Style (Fixed) --- */
+        .autocomplete-items {
+            position: absolute;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 250px;
+            overflow-y: auto;
+        }
 
-      #submit-btn:hover {
-        background-color: rgb(194, 50, 108);
-      }
+        .autocomplete-items div {
+            padding: 12px;
+            cursor: pointer;
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            border-left: 1px solid #eee;
+            border-right: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
 
-      /* Autocomplete List Style */
-      .autocomplete-items {
-        position: absolute;
-        /* border: 1px solid #d4d4d4;  <-- 여기서는 제거 */
-        border-bottom: none;
-        border-top: none;
-        z-index: 99;
-        top: 100%;
-        left: 0;
-        right: 0;
-        border-radius: 0 0 4px 4px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        max-height: 250px;
-        overflow-y: auto;
-      }
-      
-      /* 내용(div)이 있을 때만 테두리를 줍니다 */
-      .autocomplete-items div {
-        padding: 10px;
-        cursor: pointer;
-        background-color: #fff;
-        border-bottom: 1px solid #d4d4d4; /* 밑줄로 구분 */
-        border-left: 1px solid #d4d4d4;   /* 좌우 테두리 추가 */
-        border-right: 1px solid #d4d4d4;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      /* 마지막 요소는 둥근 모서리 처리 */
-      .autocomplete-items div:last-child {
-        border-bottom-left-radius: 4px;
-        border-bottom-right-radius: 4px;
-      }
+        .autocomplete-items div:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
 
-      .autocomplete-items div:hover {
-        background-color: #e9e9e9;
-      }
+        .autocomplete-items div:hover {
+            background-color: #f1f1f1;
+        }
 
-      .autocomplete-active {
-        background-color: DodgerBlue !important;
-        color: #ffffff;
-      }
-      
-      .pid-hint {
-        font-size: 12px;
-        color: #888;
-      }
+        .autocomplete-active {
+            background-color: #34495e !important; /* 게시판 버튼색 활용 */
+            color: #ffffff;
+        }
 
-      .main-link {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      
-      .main-link a {
-        text-decoration: none;
-        color: #555;
-        font-size: 14px;
-      }
-      .main-link a:hover {
-        text-decoration: underline;
-        color: rgba(200, 1, 80, 1);
-      }
+        .pid-hint {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        /* --- Helper Text & Footer --- */
+        .helper-text {
+            font-size: 13px;
+            color: #777;
+            line-height: 1.6;
+            margin-top: 10px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
 
-      /* Footer */
-      .footer {
-        text-align: center;
-        font-size: 12px;
-        margin-top: 40px;
-        color: #666;
-      }
-      .footer a {
-        color: #007bff;
-        text-decoration: none;
-      }
-      .footer a:hover { text-decoration: underline; }
+        .footer-credits {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            margin-top: 30px;
+        }
+        .footer-credits a { color: #777; text-decoration: none; }
+        .footer-credits a:hover { text-decoration: underline; color: #c80150; }
 
+        .home-link { 
+            display: block; 
+            text-align: center; 
+            margin-top: 20px; 
+            color: #666; 
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .home-link:hover { color: #c80150; text-decoration: underline; }
 
-      /* Dark Mode */
-      @media (prefers-color-scheme: dark) {
-        body { background-color: #181818; color: #e0e0e0; }
-        .form-section { background-color: #2c2c2c; border: 1px solid #444; }
-        .form-group label { color: #ccc; }
-        .form-input { background-color: #3a3a3a; border: 1px solid #555; color: #eee; }
-        #submit-btn { background-color: #b3305c; }
-        .autocomplete-items div { background-color: #3a3a3a; border-color: #555; }
-        .autocomplete-items div:hover { background-color: #555; }
-        .main-link a { color: #bbb; }
-        .footer { color: #aaa; }
-        .footer a { color: #4da6ff; }
-      }
+        /* --- Dark Mode Support --- */
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #181818; color: #e0e0e0; }
+            .container { background-color: #242424; box-shadow: none; border: 1px solid #333; }
+            h1 { color: #ff88a2; }
+            .form-label { color: #ccc; }
+            
+            .form-input { 
+                background-color: #333; 
+                border: 1px solid #555; 
+                color: #eee; 
+            }
+            .form-input:focus { border-color: #ff88a2; }
+            
+            .btn-search { background-color: #b3305c; }
+            .btn-search:hover { background-color: #d63a6e; }
+
+            .autocomplete-items div { 
+                background-color: #333; 
+                border-color: #444; 
+                color: #eee;
+            }
+            .autocomplete-items div:hover { background-color: #444; }
+            .autocomplete-active { background-color: #555 !important; }
+            
+            .helper-text { background-color: #2c2c2c; border-color: #444; color: #aaa; }
+            .home-link { color: #bbb; }
+            .home-link:hover { color: #ff88a2; }
+            .footer-credits { color: #666; }
+            .footer-credits a { color: #888; }
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
 
     <div class="container">
-      <div class="main-link">
-        <a href="/">← PCSS 메인으로 돌아가기</a>
-      </div>
-
-      <h1>저자 통계 검색</h1>
-
-      <div class="form-section">
-        <form id="author-search-form" action="/author/stats/page" method="POST" autocomplete="off">
-          
-          <div class="form-group">
-            <label for="author-input">저자 이름 검색</label>
-            <div style="position: relative;">
-                <input 
-                  type="text" 
-                  id="author-input" 
-                  name="target_author" 
-                  class="form-input" 
-                  placeholder="이름을 입력하세요 (예: Hanbin Hong)" 
-                  required
-                >
-                <div id="autocomplete-list" class="autocomplete-items"></div>
-            </div>
-            <input type="hidden" id="pid-input" name="target_pid">
-            <input type="hidden" name="url" value=""> 
-            <input type="hidden" name="uncertainty" value="0.8"> 
-          </div>
-
-          <button type="submit" id="submit-btn">통계 확인</button>
-        </form>
-
-        <p style="font-size: 13px; color: #777; line-height: 1.5;">
-            * <strong>자동완성 목록</strong>에서 저자를 선택해야 정확한 검색이 가능합니다.<br>
-            * 목록에 없는 경우, DB에 해당 저자 정보가 아직 수집되지 않았을 수 있습니다.
-        </p>
-      </div>
-
-      <footer class="footer">
         <div>
-          <p>제작자</p>
-          <div style="display:flex; justify-content:center; gap:5px;">
-            <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a> |
-            <a href="https://www.psal.postech.ac.kr/gkim" target="_blank">Gwangsun Kim</a>
-          </div>
+            <h1>PCSS 저자 실적 검색</h1>
+
+            <div class="search-wrapper">
+                <form id="author-search-form" action="/author/stats/page" method="POST" autocomplete="off">
+                
+                    <div class="form-group">
+                        <label for="author-input" class="form-label">저자 이름</label>
+                        <div style="position: relative;">
+                            <input 
+                            type="text" 
+                            id="author-input" 
+                            name="target_author" 
+                            class="form-input" 
+                            placeholder="이름을 입력하세요 (예: Hanbin Hong)" 
+                            required
+                            >
+                            <div id="autocomplete-list" class="autocomplete-items"></div>
+                        </div>
+                        
+                        <input type="hidden" id="pid-input" name="target_pid">
+                        <input type="hidden" name="url" value=""> 
+                        <input type="hidden" name="uncertainty" value="0.8"> 
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn-search">실적 통계 확인</button>
+                </form>
+
+                <div class="helper-text">
+                    * <strong>자동완성 목록</strong>에서 저자를 선택해야 정확한 검색이 가능합니다.<br>
+                    * 목록에 없는 경우, DB에 해당 저자 정보가 아직 수집되지 않았을 수 있습니다.
+                </div>
+            </div>
         </div>
-      </footer>
+
+        <div>
+            <div class="footer-credits">
+                <p>제작자</p>
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a>
+                    <span>|</span>
+                    <a href="https://www.psal.postech.ac.kr/gkim" target="_blank">Gwangsun Kim</a>
+                </div>
+            </div>
+            <a href="/" class="home-link">← 메인 페이지로 돌아가기</a>
+        </div>
     </div>
 
     <script>
@@ -238,11 +254,11 @@
       let currentFocus = -1;
       let debounceTimer;
 
-      // 1. INPUT EVENT: Reset PID when user types (prevents mismatch)
+      // 1. INPUT EVENT
       inp.addEventListener("input", function(e) {
           const val = this.value;
           
-          // CRITICAL: Clear PID when typing starts to force selection
+          // PID 초기화 (사용자가 타이핑을 시작하면 기존 선택 무효화)
           pidInp.value = ""; 
           
           closeAllLists();
@@ -250,17 +266,17 @@
           
           currentFocus = -1;
           
-          // Debounce: Wait 300ms before calling API
+          // Debounce 적용 (300ms)
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
               fetchSuggestions(val);
           }, 300);
       });
 
-      // 2. FORM SUBMIT EVENT: Validate PID presence
+      // 2. FORM SUBMIT EVENT
       form.addEventListener("submit", function(e) {
           if (!pidInp.value) {
-              e.preventDefault(); // Stop submission
+              e.preventDefault();
               alert("정확한 검색을 위해 자동완성 목록에서 저자를 선택해주세요.");
               inp.focus();
           }
@@ -281,12 +297,14 @@
           if (!arr || arr.length === 0) return;
 
           currentFocus = -1;
+          
+          // 기존 목록 초기화 (DOM 삭제가 아닌 내용 비우기)
           listContainer.innerHTML = ""; 
 
           arr.forEach(item => {
               const div = document.createElement("div");
               
-              // Visual part
+              // 화면 표시 내용
               let displayText = `<span>${item.name}</span>`;
               if (item.affiliation) {
                   displayText += `<span class='pid-hint'> (${item.affiliation})</span>`;
@@ -295,17 +313,17 @@
               }
               div.innerHTML = displayText;
               
-              // Data binding using hidden inputs inside the div for easy access
+              // 데이터 바인딩
               div.innerHTML += `<input type='hidden' value='${item.name}'>`;
               div.innerHTML += `<input type='hidden' value='${item.pid}'>`;
               
-              // Mouse Click Event
+              // 클릭 이벤트
               div.addEventListener("click", function(e) {
                   const nameVal = this.getElementsByTagName("input")[0].value;
                   const pidVal = this.getElementsByTagName("input")[1].value;
                   
                   inp.value = nameVal;
-                  pidInp.value = pidVal; // Inject PID
+                  pidInp.value = pidVal; // PID 주입
                   
                   closeAllLists();
               });
@@ -324,12 +342,10 @@
               currentFocus--;
               addActive(x);
           } else if (e.keyCode == 13) { // Enter
-              e.preventDefault(); // Prevent form submit initially
+              e.preventDefault(); 
               if (currentFocus > -1) {
-                  // If item highlighted, simulate click
                   if (x) x[currentFocus].click();
               } else if (x && x.length === 1) {
-                  // Optional: if only 1 item, select it on Enter
                   x[0].click();
               }
           }
@@ -341,8 +357,6 @@
           if (currentFocus >= x.length) currentFocus = 0;
           if (currentFocus < 0) currentFocus = (x.length - 1);
           x[currentFocus].classList.add("autocomplete-active");
-          
-          // Scroll into view
           x[currentFocus].scrollIntoView({block: "nearest"});
       }
 
@@ -352,18 +366,17 @@
           }
       }
 
+      // [중요] 수정된 리스트 닫기 함수: 요소를 삭제하지 않고 내용만 비움
       function closeAllLists(elmnt) {
-        // 클릭된 요소가 입력창(inp) 자체가 아니라면 리스트를 비웁니다.
-        // (리스트 항목 클릭 시에는 항목 클릭 이벤트가 먼저 처리되므로 괜찮습니다)
-        if (elmnt != inp) {
-            listContainer.innerHTML = "";
-        }
-    }
+          if (elmnt != inp) {
+              listContainer.innerHTML = "";
+          }
+      }
 
-      // Close list when clicking outside
+      // 외부 클릭 시 닫기
       document.addEventListener("click", function (e) {
           closeAllLists(e.target);
       });
     </script>
-  </body>
+</body>
 </html>
