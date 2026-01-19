@@ -13,15 +13,13 @@ def _clean_authors(authors: List[str]) -> List[str]:
     
 async def compute_author_stats_mongo(
     target_pid: str,          # [변경] 검색 기준이 PID가 됨
-    target_name: str = "",    # 보조용(필요 시 사용)
-    include_papers: bool = False,
     conf_list: Optional[List[str]] = None,
     startyear: Optional[int] = None,
     endyear: Optional[int] = None,
 ) -> Dict[str, Any]:
     
     if not target_pid:
-        return {"stats": (0, 0, 0, 0), "total": 0, "papers": [] if include_papers else None}
+        return {"stats": (0, 0, 0, 0), "total": 0, "papers": []}
 
     col = await get_papers_col()
 
@@ -119,9 +117,7 @@ async def compute_author_stats_mongo(
         break
 
     if not row:
-        result = {"stats": (0, 0, 0, 0), "total": 0}
-        if include_papers:
-            result["papers"] = []
+        result = {"stats": (0, 0, 0, 0), "total": 0, "papers": []}
         return result
 
     fa = int(row.get("first_author", 0))
@@ -134,38 +130,37 @@ async def compute_author_stats_mongo(
         "total": co, 
     }
 
-    if include_papers:
-        # [주의] 저자 목록을 화면에 보여줄 때는 여전히 이름이 필요하므로 author_names(또는 author_name) 가져옴
-        proj = {
-            "_id": 0,
-            "title": 1,
-            "author_names": 1, # DB 필드명 확인 필요 (보통 표시용 이름 배열)
-            "author_pids": 1,  # 검증용으로 가져올 수 있음
-            "conference": 1,
-            "year": 1,
-            "dblp_url": 1,
-            "source": 1,
-        }
+    # [주의] 저자 목록을 화면에 보여줄 때는 여전히 이름이 필요하므로 author_names(또는 author_name) 가져옴
+    proj = {
+        "_id": 0,
+        "title": 1,
+        "author_names": 1, # DB 필드명 확인 필요 (보통 표시용 이름 배열)
+        "author_pids": 1,  # 검증용으로 가져올 수 있음
+        "conference": 1,
+        "year": 1,
+        "dblp_url": 1,
+        "source": 1,
+    }
 
-        cursor = col.find(match, proj)
-        papers = []
-        async for d in cursor:
-            title = (d.get("title") or "").strip()
-            authors_names = d.get("author_names") or d.get("author_name") or []
-            conf = d.get("conference") or ""
-            year = d.get("year")
+    cursor = col.find(match, proj)
+    papers = []
+    async for d in cursor:
+        title = (d.get("title") or "").strip()
+        authors_names = d.get("author_names") or d.get("author_name") or []
+        conf = d.get("conference") or ""
+        year = d.get("year")
 
-            papers.append(
-                {
-                    "title": title,
-                    "authors": _clean_authors(authors_names),
-                    "conference": conf,
-                    "year": year,
-                    "dblp_url": d.get("dblp_url", ""),
-                    "source": d.get("source", ""),
-                }
-            )
+        papers.append(
+            {
+                "title": title,
+                "authors": _clean_authors(authors_names),
+                "conference": conf,
+                "year": year,
+                "dblp_url": d.get("dblp_url", ""),
+                "source": d.get("source", ""),
+            }
+        )
 
-        result["papers"] = papers
+    result["papers"] = papers
 
     return result

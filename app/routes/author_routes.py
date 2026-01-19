@@ -17,17 +17,11 @@ async def author_stats_page(
     target_author: str = Form(...), # 화면 표시용 이름
     target_pid: str = Form(...),    # [추가] DB 검색용 PID
     url: str = Form(""),               
-    include_papers: bool = Form(True),
-    uncertainty: float = Form(0.5),
+    uncertainty: float = Form(0.8),
 ):
     result = await compute_author_stats_mongo(
         target_pid=target_pid, 
-        target_name=target_author, # 이름은 include_papers 필터링 보조 혹은 로깅용
-        include_papers=include_papers,
     )
-
-    if not include_papers:
-        result.pop("papers", None)
     
     # 한국인 판단 로직 (이름 기준 유지)
     score = name_dict.get(target_author, 0)

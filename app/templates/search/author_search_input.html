@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PCSS - 저자 검색</title>
+    <title>PCSS - Author Search</title>
     <style>
-      /* --- 기존 index.html 스타일 상속 --- */
+      /* --- Existing styles inherited from index.html --- */
       body {
         font-family: Arial, sans-serif;
         margin: 0;
@@ -17,10 +17,10 @@
       .container {
         display: flex;
         flex-direction: column;
-        max-width: 800px; /* 검색창이므로 폭을 좀 좁게 */
+        max-width: 800px; 
         margin: auto;
         padding: 40px 20px;
-        min-height: 80vh; /* 화면 중앙 배치 느낌 */
+        min-height: 80vh; 
       }
 
       h1 {
@@ -44,7 +44,7 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
-        position: relative; /* 자동완성 리스트 위치 기준 */
+        position: relative; /* Anchor for autocomplete list */
       }
 
       .form-group label {
@@ -52,14 +52,14 @@
         color: #34495e;
       }
 
-      /* 입력창 스타일 */
+      /* Input Field Style */
       .form-input {
         padding: 12px;
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 16px;
         width: 100%;
-        box-sizing: border-box; /* padding 포함 너비 계산 */
+        box-sizing: border-box; 
       }
       
       .form-input:focus {
@@ -68,7 +68,7 @@
         box-shadow: 0 0 5px rgba(200, 1, 80, 0.2);
       }
 
-      /* 검색 버튼 스타일 */
+      /* Search Button Style */
       #submit-btn {
         padding: 12px 20px;
         background-color: rgba(200, 1, 80, 1);
@@ -86,7 +86,7 @@
         background-color: rgb(194, 50, 108);
       }
 
-      /* 자동완성 리스트 스타일 */
+      /* Autocomplete List Style */
       .autocomplete-items {
         position: absolute;
         border: 1px solid #d4d4d4;
@@ -155,7 +155,7 @@
       .footer a:hover { text-decoration: underline; }
 
 
-      /* 다크 모드 */
+      /* Dark Mode */
       @media (prefers-color-scheme: dark) {
         body { background-color: #181818; color: #e0e0e0; }
         .form-section { background-color: #2c2c2c; border: 1px solid #444; }
@@ -196,7 +196,9 @@
                 <div id="autocomplete-list" class="autocomplete-items"></div>
             </div>
             <input type="hidden" id="pid-input" name="target_pid">
-            <input type="hidden" name="url" value=""> <input type="hidden" name="uncertainty" value="0.0"> </div>
+            <input type="hidden" name="url" value=""> 
+            <input type="hidden" name="uncertainty" value="0.0"> 
+          </div>
 
           <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px; margin-top: 5px;">
              <input type="checkbox" id="include-papers" name="include_papers" value="true" checked>
@@ -224,26 +226,42 @@
     </div>
 
     <script>
+      const form = document.getElementById("author-search-form");
       const inp = document.getElementById("author-input");
       const pidInp = document.getElementById("pid-input");
       const listContainer = document.getElementById("autocomplete-list");
+      
       let currentFocus = -1;
       let debounceTimer;
 
-      // 입력 이벤트 리스너 (Debounce 적용)
+      // 1. INPUT EVENT: Reset PID when user types (prevents mismatch)
       inp.addEventListener("input", function(e) {
           const val = this.value;
+          
+          // CRITICAL: Clear PID when typing starts to force selection
+          pidInp.value = ""; 
+          
           closeAllLists();
           if (!val) return false;
           
-          // Debounce: 300ms 동안 입력이 없으면 API 호출
+          currentFocus = -1;
+          
+          // Debounce: Wait 300ms before calling API
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
               fetchSuggestions(val);
           }, 300);
       });
 
-      // API 호출 및 리스트 렌더링
+      // 2. FORM SUBMIT EVENT: Validate PID presence
+      form.addEventListener("submit", function(e) {
+          if (!pidInp.value) {
+              e.preventDefault(); // Stop submission
+              alert("정확한 검색을 위해 자동완성 목록에서 저자를 선택해주세요.");
+              inp.focus();
+          }
+      });
+
       async function fetchSuggestions(query) {
           try {
               const res = await fetch(`/author/autocomplete?query=${encodeURIComponent(query)}`);
@@ -259,20 +277,90 @@
           if (!arr || arr.length === 0) return;
 
           currentFocus = -1;
-          listContainer.innerHTML = ""; // 초기화
+          listContainer.innerHTML = ""; 
 
           arr.forEach(item => {
-              // 아이템 생성
               const div = document.createElement("div");
-              // 이름 강조 (옵션)
-              div.innerHTML = `<span>${item.name}</span>`;
-              if (item.affiliation) {
-                  div.innerHTML += `<span class='pid-hint'>(${item.affiliation})</span>`;
-              } else {
-                  div.innerHTML += `<span class='pid-hint'>(PID: ${item.pid})</span>`;
-              }
               
-              // 클릭 시 동작
+              // Visual part
+              let displayText = `<span>${item.name}</span>`;
+              if (item.affiliation) {
+                  displayText += `<span class='pid-hint'> (${item.affiliation})</span>`;
+              } else {
+                  displayText += `<span class='pid-hint'> (PID: ${item.pid})</span>`;
+              }
+              div.innerHTML = displayText;
+              
+              // Data binding using hidden inputs inside the div for easy access
+              div.innerHTML += `<input type='hidden' value='${item.name}'>`;
+              div.innerHTML += `<input type='hidden' value='${item.pid}'>`;
+              
+              // Mouse Click Event
               div.addEventListener("click", function(e) {
-                  inp.value = item.name;     // 보여지는 이름 설정
-                  pidInp.value = item.pid;   // hidden
+                  const nameVal = this.getElementsByTagName("input")[0].value;
+                  const pidVal = this.getElementsByTagName("input")[1].value;
+                  
+                  inp.value = nameVal;
+                  pidInp.value = pidVal; // Inject PID
+                  
+                  closeAllLists();
+              });
+              
+              listContainer.appendChild(div);
+          });
+      }
+
+      // 3. KEYBOARD NAVIGATION
+      inp.addEventListener("keydown", function(e) {
+          let x = listContainer.getElementsByTagName("div");
+          if (e.keyCode == 40) { // Down
+              currentFocus++;
+              addActive(x);
+          } else if (e.keyCode == 38) { // Up
+              currentFocus--;
+              addActive(x);
+          } else if (e.keyCode == 13) { // Enter
+              e.preventDefault(); // Prevent form submit initially
+              if (currentFocus > -1) {
+                  // If item highlighted, simulate click
+                  if (x) x[currentFocus].click();
+              } else if (x && x.length === 1) {
+                  // Optional: if only 1 item, select it on Enter
+                  x[0].click();
+              }
+          }
+      });
+
+      function addActive(x) {
+          if (!x) return false;
+          removeActive(x);
+          if (currentFocus >= x.length) currentFocus = 0;
+          if (currentFocus < 0) currentFocus = (x.length - 1);
+          x[currentFocus].classList.add("autocomplete-active");
+          
+          // Scroll into view
+          x[currentFocus].scrollIntoView({block: "nearest"});
+      }
+
+      function removeActive(x) {
+          for (let i = 0; i < x.length; i++) {
+              x[i].classList.remove("autocomplete-active");
+          }
+      }
+
+      function closeAllLists(elmnt) {
+          const x = document.getElementsByClassName("autocomplete-items");
+          for (let i = 0; i < x.length; i++) {
+              if (elmnt != x[i] && elmnt != inp) {
+                  x[i].parentNode.removeChild(x[i]);
+              }
+          }
+      }
+
+      // Close list when clicking outside
+      document.addEventListener("click", function (e) {
+          closeAllLists(e.target);
+      });
+    </script>
+  </body>
+</html>

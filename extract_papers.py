@@ -61,7 +61,7 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
     """
     dblp.xml에서 <www> 중 <title>Home Page</title> 레코드만 훑어서
     1. author-name -> pid 매핑 (메모리 리턴용)
-    2. authors_col에 저자 정보 저장 (DB 적재용)
+    2. authors_col에 저자 정보 저장 (DB 적재용 - 이름, PID만 저장)
     """
     abs_xml_path = os.path.abspath(xml_path)
     xml_dir = os.path.dirname(abs_xml_path)
@@ -87,7 +87,7 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
 
     progress = Progress(
         SpinnerColumn(),
-        TextColumn("[bold blue]저자 인덱싱 & DB 저장 (Home Page)[/bold blue]"),
+        TextColumn("[bold blue]저자 인덱싱 & DB 저장 (이름/PID)[/bold blue]"),
         BarColumn(),
         TextColumn("scan: {task.fields[scan]}"),
         TextColumn("db_saved: {task.fields[saved]}"),
@@ -149,29 +149,15 @@ def build_name_to_pid_index(xml_path: str) -> dict[str, str | list[str]]:
                         del elem.getparent()[0]
                     continue
 
-                # 2. 소속(Affiliation) 추출
-                affiliations = []
-                for note in elem.findall("note"):
-                    if note.get("type") == "affiliation":
-                        aff = (note.text or "").strip()
-                        if aff:
-                            affiliations.append(aff)
-
-                # 3. URL
-                url = elem.findtext("url") or ""
-
                 # =================================================
                 # [DB] authors_col 업데이트 (Upsert)
+                # 요청사항: 이름과 PID만 저장 (시스템 필드 포함)
                 # =================================================
                 primary_name = authors[0] # 첫 번째 저자명을 대표 이름으로 사용
                 
                 doc = {
                     "pid": pid,
                     "name": primary_name,
-                    "aliases": authors,
-                    "affiliations": affiliations,
-                    "url": url,
-                    "dblp_key": key,
                     "updated_at": run_ts,
                     "last_seen_at": run_ts
                 }
