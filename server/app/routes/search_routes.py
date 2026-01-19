@@ -19,7 +19,7 @@ from app.db import log_col
 from datetime import datetime, timezone
 from app.libs.logger import get_client_ip
 from app.libs.auth import get_session_email
-
+from app.libs.exceptions import NotFoundException
 
 router = APIRouter()
 
@@ -113,7 +113,7 @@ async def start_search(req: SearchRequest, request: Request):
 async def search_events(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
+        raise NotFoundException("Job not found")
 
     async def event_generator():
         # 초기 연결 이벤트
@@ -161,7 +161,7 @@ def _sse(event_name: str, data: dict) -> str:
 async def search_result(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
+        raise NotFoundException("Job not found")
 
     if job.status == "cancelled":
         return JSONResponse({"status": "cancelled"}, status_code=200)
@@ -179,7 +179,7 @@ async def search_result(request: Request, job_id: str):
 async def search_page(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
+        raise NotFoundException("Job not found")
 
     if job.status == "error":
         raise InternalServerErrorException(job.error or "unknown error")
@@ -244,7 +244,7 @@ async def search_page(request: Request, job_id: str):
 async def search_cancel(request: Request, job_id: str):
     job = get_job(job_id)
     if not job:
-        return templates.TemplateResponse("errors/404.html", {"request": request, "error_message": "Job not found"}, status_code=404)
+        raise NotFoundException("Job not found")
 
     ok = cancel_job(job_id)
     if ok:
