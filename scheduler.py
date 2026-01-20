@@ -5,10 +5,10 @@ import traceback
 import platform
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from app.data import name_dict
-from app.db import name_col  
-import tool.extract_authors as extract_authors
-import tool.extract_papers as extract_papers
+from app.data import name_dict, author_list
+from app.db import name_col, authors_col
+import extract_authors as extract_authors
+import extract_papers as extract_papers
 from app.services.subscription_service import SubscriptionNotifier
 
 
@@ -34,6 +34,21 @@ def refresh_name_dict():
         
     except Exception as e:
         print(f"!!! name_dict 갱신 중 에러 발생: {e}")
+        traceback.print_exc()
+        
+def refresh_author_list():
+    print(f"[{datetime.now()}] author_list 캐시 갱신 시작 (현재 크기: {len(author_list)})")
+    try:
+        cursor = authors_col.find({}, {"_id": 0, "name": 1, "pid": 1})
+        
+        new_authors = list(cursor)
+        author_list.clear()
+        author_list.extend(new_authors)
+        
+        print(f"[{datetime.now()}] author_list 갱신 완료 (최신 크기: {len(author_list)})")
+        
+    except Exception as e:
+        print(f"!!! author_list 갱신 중 에러 발생: {e}")
         traceback.print_exc()
 
 def run_job():
@@ -71,7 +86,7 @@ def run_job():
     if data_update_success:
         print(f"[{datetime.now()}] 최신 저자 정보 메모리 로드 시작...")
         refresh_name_dict()
-
+        refresh_author_list()
         # 5단계: 구독 알림 발송
         print(f"[{datetime.now()}] 구독 알림 발송 서비스 시작...")
         try:

@@ -4,7 +4,7 @@ from fastapi import Form
 from app.core.templates import templates
 from app.services.author_service import compute_author_stats_mongo
 from app.db import name_col, req_korean_col, authors_col
-from app.data import name_dict
+from app.data import name_dict, author_list
 from datetime import datetime, timezone
 from app.libs.auth import _require_admin_or_redirect
 import re
@@ -58,52 +58,56 @@ async def author_search_input_page(request: Request):
 @router.get("/autocomplete")
 async def author_autocomplete(query: str = Query(..., min_length=1)):
     try:
-        # 1. 입력값을 공백 기준으로 쪼갬 (예: "wonhwa kim" -> ["wonhwa", "kim"])
+        # 1. 검색어 전처리: 공백 기준 분리
         keywords = query.strip().split()
         
         if not keywords:
             return JSONResponse(content=[])
 
-        and_conditions = []
+        # 2. 정규식 패턴 미리 컴파일 (반복문 성능 최적화)
+        patterns = []
         for word in keywords:
-            # 2. 핵심 변경 사항: 글자 사이사이에 공백 허용 패턴(\s*) 삽입
-            # 입력: "wonhwa" 
-            # 변환: "w\s*o\s*n\s*h\s*w\s*a"
-            # 의미: w 다음에 공백이 있든 없든 o, 그 뒤에 공백이 있든 없든 n ... -> "Won Hwa" 매칭 성공
+            # "wonhwa" -> r"w\s*o\s*n\s*h\s*w\s*a" 변환
             char_pattern = r"\s*".join([re.escape(c) for c in word])
-            regex_pattern = re.compile(char_pattern, re.IGNORECASE)
+            patterns.append(re.compile(char_pattern, re.IGNORECASE))
 
-            and_conditions.append({
-                "$or": [
-                    {"name": {"$regex": regex_pattern}},
-                    {"pid": {"$regex": regex_pattern}}
-                ]
-            })
-
-        # 모든 단어 조건이 만족해야 함 ($and)
-        mongo_query = {"$and": and_conditions}
-
-        cursor = authors_col.find(
-            mongo_query,
-            {"_id": 0, "name": 1, "pid": 1}
-        ).limit(10)
-        
         results = []
-        for doc in cursor:
-            if not doc.get("pid"):
+        count = 0
+
+        global_authors = author_list if 'author_list' in globals() else []
+
+        for author in global_authors:
+            name = author.get("name", "")
+            pid = author.get("pid", "")
+
+            if not pid:
                 continue
-                
-            results.append({
-                "name": doc.get("name"),
-                "pid": doc.get("pid"),
-            })
+
+            is_match = True
+            for pattern in patterns:
+                # search는 문자열 중간 매칭도 허용합니다.
+                if not (pattern.search(name) or pattern.search(pid)):
+                    is_match = False
+                    break  # 하나라도 매칭 안 되면 즉시 중단 (Pruning)
+            
+            if is_match:
+                results.append({
+                    "name": name,
+                    "pid": pid,
+                })
+                count += 1
+
+            # 최대 10개만 찾고 종료
+            if count >= 10:
+                break
             
         return JSONResponse(content=results)
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"[Autocomplete Error] {e}")
         return JSONResponse(content=[], status_code=500)
-
+    
+    
 @router.get("/request/korean")
 async def get_korean_requests():
     requests = list(req_korean_col.find({}))
