@@ -57,44 +57,43 @@ async def author_search_input_page(request: Request):
 
 @router.get("/autocomplete")
 async def author_autocomplete(query: str = Query(..., min_length=1)):
-    """
-    입력된 query로 시작하거나 포함하는 저자 목록(이름, PID, 소속 등)을 반환.
-    성능을 위해 최대 10개만 반환.
-    """
     try:
-        # 대소문자 구분 없이 부분 일치 검색 (Regex)
-        # 인덱스가 걸려있지 않다면 데이터가 많을 경우 느릴 수 있습니다.
-        # 운영 환경에서는 Atlas Search나 Text Index 사용을 권장합니다.
-        regex_pattern = re.compile(re.escape(query), re.IGNORECASE)
+        keywords = query.strip().split()
         
-        # author_col에서 검색 (이름, PID, 소속 정보 필요)
-        # author_col 스키마에 따라 필드명 조정 필요 (여기선 name, pid, affiliation 가정)
-        cursor = authors_col.find(
-            {
+        if not keywords:
+            return JSONResponse(content=[])
+
+        and_conditions = []
+        for word in keywords:
+            pattern = re.compile(re.escape(word), re.IGNORECASE)
+            and_conditions.append({
                 "$or": [
-                    {"name": {"$regex": regex_pattern}},
-                    {"pid": {"$regex": regex_pattern}}
+                    {"name": {"$regex": pattern}},
+                    {"pid": {"$regex": pattern}}
                 ]
-            },
-            # 프론트엔드에서 affiliation을 쓰고 있다면 투영(projection)에 추가하는 것이 좋습니다.
-            {"_id": 0, "name": 1, "pid": 1, "affiliation": 1} 
+            })
+
+        mongo_query = {"$and": and_conditions}
+
+        cursor = authors_col.find(
+            mongo_query,
+            {"_id": 0, "name": 1, "pid": 1, "affiliation": 1}
         ).limit(10)
         
         results = []
         for doc in cursor:
-            # PID가 없으면 건너뜀 (PID 필수)
             if not doc.get("pid"):
                 continue
                 
             results.append({
                 "name": doc.get("name"),
                 "pid": doc.get("pid"),
+                "affiliation": doc.get("affiliation", "")
             })
             
         return JSONResponse(content=results)
         
-    except Exception as e:
-        print(f"[Autocomplete Error] {e}")
+    except Exception:
         return JSONResponse(content=[], status_code=500)
 
 
