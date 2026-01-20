@@ -23,6 +23,9 @@ async def author_stats_page(
         target_pid=target_pid, 
     )
     
+    if not url and target_pid:
+        url = f"https://dblp.org/pid/{target_pid}"
+    
     # 한국인 판단 로직 (이름 기준 유지)
     score = name_dict.get(target_author, 0)
     is_korean = score >= uncertainty
