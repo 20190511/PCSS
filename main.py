@@ -56,7 +56,7 @@ class AccessControlMiddleware(BaseHTTPMiddleware):
 
         # 2. IP 검사
         ip = get_client_ip(request)
-        # 로컬호스트 또는 포스텍 IP(141.223.*) 인지 확인
+        # 로컬호스트 또는 POSTECH IP(141.223.*) 인지 확인
         is_internal = ip.startswith("141.223.") or ip in ["127.0.0.1", "::1"]
 
         if is_internal:

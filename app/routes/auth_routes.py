@@ -34,7 +34,7 @@ async def login_send(request: Request, email: str = Form(...), next: str = Form(
             {
                 "request": request, 
                 "next": next, 
-                "error": "포스텍 이메일(@postech.ac.kr)만 사용 가능합니다."
+                "error": "POSTECH 이메일(@postech.ac.kr)만 사용 가능합니다."
             }
         )
 
