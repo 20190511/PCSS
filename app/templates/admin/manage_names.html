@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCSS 이름 관리</title>
+    <style>
+      /* --- 공통 스타일 (이전 디자인 유지) --- */
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f9f9f9;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 20px;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: rgba(200, 1, 80, 1);
+      }
+
+      /* 상단 Admin 정보 및 링크 바 */
+      .admin-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 10px 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border: 1px solid #ddd;
+      }
+
+      .admin-info {
+        font-weight: bold;
+        color: #555;
+      }
+
+      .nav-btn {
+        padding: 8px 15px;
+        background-color: #34495e;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: background-color 0.2s;
+      }
+
+      .nav-btn:hover {
+        background-color: #2c3e50;
+      }
+
+      /* 검색 폼 섹션 */
+      .form-section {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .search-input {
+        flex: 1;
+        max-width: 400px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+
+      .action-btn {
+        padding: 10px 20px;
+        background-color: rgba(200, 1, 80, 1);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+      }
+
+      .action-btn:hover {
+        background-color: rgb(194, 50, 108);
+      }
+
+      .action-btn.secondary {
+        background-color: #6c757d;
+      }
+      .action-btn.secondary:hover {
+        background-color: #5a6268;
+      }
+
+      /* 알림 메시지 */
+      .info-alert {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #666;
+        font-size: 0.95rem;
+      }
+
+      /* 테이블 스타일 (카드 형태) */
+      .table-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden; /* 모서리 둥글게 */
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      th, td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      th {
+        background-color: #f1f1f1;
+        color: #34495e;
+        font-weight: bold;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      tr:hover {
+        background-color: #fafafa;
+      }
+
+      /* 셀렉트 박스 스타일 */
+      .status-select {
+        padding: 6px 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      /* 페이지네이션 */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        list-style: none;
+        padding: 0;
+        margin-top: 30px;
+        gap: 5px;
+      }
+
+      .pagination li {
+        display: inline;
+      }
+
+      .pagination a, .pagination span {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #333;
+        background: #fff;
+        transition: all 0.2s;
+      }
+
+      .pagination a:hover {
+        background-color: #f1f1f1;
+      }
+
+      .pagination .active span {
+        background-color: rgba(200, 1, 80, 1);
+        color: white;
+        border-color: rgba(200, 1, 80, 1);
+      }
+
+      .pagination .disabled a {
+        color: #ccc;
+        pointer-events: none;
+      }
+
+      /* Footer */
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        margin-top: 40px;
+        padding: 20px 0;
+        color: #666;
+      }
+
+      /* 다크 모드 */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #181818;
+          color: #e0e0e0;
+        }
+        .container {
+           /* 배경 없음 */
+        }
+        .admin-bar, .form-section, .table-card {
+          background-color: #242424;
+          border-color: #444;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .admin-info {
+            color: #ccc;
+        }
+        h1 {
+          color: #ff88a2;
+        }
+        .search-input {
+          background-color: #3a3a3a;
+          border-color: #555;
+          color: #fff;
+        }
+        table th {
+            background-color: #333;
+            color: #ff88a2;
+            border-bottom-color: #555;
+        }
+        table td {
+            border-bottom-color: #444;
+        }
+        tr:hover {
+            background-color: #2c2c2c;
+        }
+        .status-select {
+            background-color: #3a3a3a; /* 기본값 */
+            color: #eee;
+            border-color: #555;
+        }
+        .pagination a, .pagination span {
+            background-color: #333;
+            border-color: #555;
+            color: #eee;
+        }
+        .pagination a:hover {
+            background-color: #444;
+        }
+        .info-alert {
+            color: #aaa;
+        }
+      }
+
+      /* 모바일 반응형 */
+      @media (max-width: 768px) {
+        .admin-bar {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+        .form-section {
+            flex-direction: column;
+        }
+        .search-input {
+            width: 100%;
+        }
+        .action-btn {
+            width: 100%;
+        }
+        th, td {
+            padding: 10px 5px;
+            font-size: 0.9rem;
+        }
+      }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>PCSS 이름 관리</h1>
+
+    <div class="admin-bar">
+        <span class="admin-info">Admin: {{ email }}</span>
+        <a href="/author/manage" class="nav-btn">← Back to Requests</a>
+    </div>
+
+    <form method="get" action="/author/manage/names" class="form-section">
+        <input type="text" name="q" class="search-input" placeholder="Search by name..." value="{{ q }}">
+        <button class="action-btn" type="submit">Search</button>
+        {% if q %}
+            <a href="/author/manage/names" class="action-btn secondary">Reset</a>
+        {% endif %}
+    </form>
+
+    <div class="info-alert">
+        Total <strong>{{ total_count }}</strong> names found. (Page: {{ page }} / {{ total_pages }})
+    </div>
+
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Current Score</th>
+                    <th>Update Status</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for author in authors %}
+                <tr>
+                    <td><strong>{{ author.name }}</strong></td>
+                    <td class="score-cell">{{ author.score }}</td>
+                    <td>
+                        <select class="status-select" 
+                                onchange="updateStatus(this, '{{ author.name }}')"
+                                style="width: 160px; {% if author.score >= 0.8 %}background-color: #e8f5e9; color: #1b5e20;{% else %}background-color: #fff; color: #333;{% endif %}">
+                            <option value="1" {% if author.score >= 0.8 %}selected{% endif %}>Korean (1.0)</option>
+                            <option value="0" {% if author.score < 0.8 %}selected{% endif %}>Others (0.0)</option>
+                        </select>
+                    </td>
+                    <td style="color: #888; font-size: 0.85rem;">
+                        {{ author.updated_at.strftime('%Y-%m-%d %H:%M') if author.updated_at else '-' }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <ul class="pagination">
+        <li class="{% if page <= 1 %}disabled{% endif %}">
+            <a href="/author/manage/names?page={{ page - 1 }}&q={{ q }}">Previous</a>
+        </li>
+        
+        <li class="active">
+            <span>{{ page }}</span>
+        </li>
+
+        <li class="{% if page >= total_pages %}disabled{% endif %}">
+            <a href="/author/manage/names?page={{ page + 1 }}&q={{ q }}">Next</a>
+        </li>
+    </ul>
+
+    <div class="footer">
+        Author Stats System &copy; 2025
+    </div>
+</div>
+
+<script>
+    async function updateStatus(selectElement, name) {
+        const isKorean = selectElement.value === "1";
+        const originalBg = selectElement.style.backgroundColor;
+        const originalColor = selectElement.style.color;
+        
+        // 로딩 표시 (노란빛 배경)
+        selectElement.style.backgroundColor = "#fff3cd"; 
+        selectElement.style.color = "#856404";
+        selectElement.disabled = true;
+
+        let url = "";
+        let method = "";
+
+        // API 호출 경로 설정
+        if (isKorean) {
+            url = `/author/korean/${encodeURIComponent(name)}`;
+            method = "POST";
+        } else {
+            url = `/author/korean/${encodeURIComponent(name)}`;
+            method = "DELETE";
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                // 성공 시 스타일 업데이트 (한국인: 연녹색 배경 / 그외: 흰색 배경)
+                if (isKorean) {
+                    selectElement.style.backgroundColor = "#e8f5e9";
+                    selectElement.style.color = "#1b5e20";
+                } else {
+                    selectElement.style.backgroundColor = "#ffffff";
+                    selectElement.style.color = "#333333";
+                }
+
+                // 점수 텍스트 업데이트 (DOM 탐색: select의 부모(td)의 이전 형제(td.score-cell))
+                const td = selectElement.parentElement;
+                const scoreCell = td.previousElementSibling; 
+                // HTML 구조상 Name -> Score -> Status 순서이므로 바로 앞 형제가 Score
+                if (scoreCell) {
+                    scoreCell.textContent = isKorean ? "1" : "0";
+                }
+            } else {
+                const errText = await response.text();
+                alert("Update failed: " + errText);
+                // 실패 시 복구
+                selectElement.value = isKorean ? "0" : "1";
+                selectElement.style.backgroundColor = originalBg;
+                selectElement.style.color = originalColor;
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Network error occurred.");
+            selectElement.value = isKorean ? "0" : "1";
+            selectElement.style.backgroundColor = originalBg;
+            selectElement.style.color = originalColor;
+        } finally {
+            selectElement.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

@@ -17,9 +17,8 @@ else:
         doc["name"]: doc["score"]
         for doc in name_col.find({}, {"_id": 0, "name": 1, "score": 1})
     }
-    author_list = list(authors_col.find({}, {"_id": 0, "name": 1, "pid": 1}))
     print(f"Loaded {len(name_dict)} LLM names from DB")
-    
+author_list = list(authors_col.find({}, {"_id": 0, "name": 1, "pid": 1}))
 
 print("Loading conferences from DB")
 

@@ -8,6 +8,7 @@ from app.data import name_dict, author_list
 from datetime import datetime, timezone
 from app.libs.auth import _require_admin_or_redirect
 import re
+import math
 
 router = APIRouter()
 
@@ -106,8 +107,60 @@ async def author_autocomplete(query: str = Query(..., min_length=1)):
     except Exception as e:
         print(f"[Autocomplete Error] {e}")
         return JSONResponse(content=[], status_code=500)
+
+
+@router.get("/manage/names", response_class=HTMLResponse)
+async def manage_all_names(
+    request: Request, 
+    page: int = Query(1, gt=0), 
+    q: str = Query("", description="검색할 이름")
+):
+    # 1. 관리자 권한 체크
+    next_path = str(request.url)
+    email, status_or_resp = _require_admin_or_redirect(request, next_path)
+
+    if isinstance(status_or_resp, RedirectResponse):
+        return status_or_resp
     
+    if status_or_resp is None:
+        return templates.TemplateResponse(
+            "admin/access_denied.html",
+            {"request": request, "error": "관리자 권한이 필요합니다."},
+            status_code=403,
+        )
+
+    # 2. 검색 및 페이징 설정
+    limit = 100
+    skip = (page - 1) * limit
     
+    mongo_query = {}
+    if q.strip():
+        # 대소문자 구분 없는 부분 일치 검색 (Regex)
+        mongo_query["name"] = {"$regex": re.escape(q.strip()), "$options": "i"}
+
+    # 3. 데이터 조회 (PyMongo 동기 호출)
+    # 전체 개수 계산 (페이지 계산용)
+    total_count = name_col.count_documents(mongo_query)
+    total_pages = math.ceil(total_count / limit)
+
+    # 데이터 가져오기 (이름 순 정렬)
+    cursor = name_col.find(mongo_query).sort("name", 1).skip(skip).limit(limit)
+    authors_data = list(cursor)
+
+    return templates.TemplateResponse(
+        "admin/manage_names.html",
+        {
+            "request": request,
+            "authors": authors_data,
+            "page": page,
+            "total_pages": total_pages,
+            "total_count": total_count,
+            "q": q,
+            "email": email
+        },
+    )
+
+
 @router.get("/request/korean")
 async def get_korean_requests():
     requests = list(req_korean_col.find({}))
