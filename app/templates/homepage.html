@@ -35,64 +35,42 @@
       }
 
       .form-section {
-        padding: 15px 20px; /* 내부 여백 조정 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 10px;
         background-color: #ffffff;
         border: 1px solid #ddd;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         margin-bottom: 30px;
-      }
-
-      /* 폼 내부 레이아웃 */
-      #filter-form {
-        display: flex;
-        flex-direction: column; /* 상단(입력+버튼)과 하단(텍스트)을 세로 배치 */
-        width: 100%;
-      }
-
-      /* 상단 행: 입력 필드들과 검색 버튼 */
-      .filter-top-row {
-        display: flex;
-        justify-content: space-between; /* 양쪽 끝으로 배치 */
-        align-items: center;            /* 수직 중앙 정렬 */
-        width: 100%;
-        gap: 20px;
-        flex-wrap: wrap; /* 화면 작으면 줄바꿈 */
-      }
-
-      /* 왼쪽 입력 필드 그룹 */
-      .filter-inputs {
-        display: flex;
-        align-items: center;
-        gap: 20px;
+        /* 모바일에서 줄바꿈을 위해 추가 */
         flex-wrap: wrap;
-      }
-
-      /* 하단 행: 설명 텍스트 */
-      .filter-bottom-row {
-        text-align: right; /* 우측 정렬 */
-        font-size: 12px;
-        color: #666;
-        margin-top: 8px;   /* 위쪽 요소와 간격 */
       }
 
       .form-group {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin: 0; /* 기존 마진 제거 (flex gap 사용) */
       }
 
       .form-group label {
         font-weight: bold;
         color: #34495e;
-        white-space: nowrap; /* 라벨 줄바꿈 방지 */
       }
 
-      /* 검색 버튼 스타일 */
+      .form-group input,
+      .form-group select {
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+        color: #333;
+      }
+
       #submit-btn {
-        padding: 6px 20px; /* 높이를 input들과 비슷하게 맞춤 */
-        height: 32px;      /* 강제 높이 설정으로 정렬 보정 */
+        padding: 10px 20px;
         background-color: rgba(200, 1, 80, 1);
         color: white;
         border: none;
@@ -100,7 +78,6 @@
         cursor: pointer;
         font-weight: bold;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        white-space: nowrap;
       }
 
       #submit-btn:hover {
@@ -353,26 +330,6 @@
         .kind-toggle-btn:hover {
           background-color: #444;
         }
-        .filter-top-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
-        .filter-inputs {
-          flex-direction: column;
-          align-items: flex-start;
-          width: 100%;
-        }
-        .form-group {
-          width: 100%;
-          justify-content: space-between;
-        }
-        #submit-btn {
-          width: 100%; /* 모바일에서는 꽉 찬 버튼 */
-          margin-top: 10px;
-        }
-        .filter-bottom-row {
-            text-align: left; /* 모바일에선 왼쪽 정렬이 더 보기 좋음 */
-        }
       }
 
       /* 반응형 디자인 */
@@ -426,86 +383,126 @@
 
         <!-- 드롭다운 메뉴와 입력 옵션 -->
         <div class="form-section">
-          <form id="filter-form">
-            
-            <div class="filter-top-row">
-              
-              <div class="filter-inputs">
-                <div class="form-group author-role">
-                  <label>한국인 필터링 기준(OR)</label>
-                  <div class="author-role-group">
-                    <label><input type="checkbox" name="option" value="1" checked /> 1저자</label>
-                    <label><input type="checkbox" name="option" value="2" /> 2저자</label>
-                    <label><input type="checkbox" name="option" value="3" /> 마지막 저자</label>
-                    <label><input type="checkbox" name="option" value="4" /> 기타 공저자</label>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="startyear">시작 연도:</label>
-                  <select id="startyear" name="startyear">
-                    <script>
-                      const startSelect = document.getElementById("startyear");
-                      for (let i = 2010; i <= 2026; i++) {
-                        let option = document.createElement("option");
-                        option.value = i;
-                        option.textContent = i;
-                        if (i === 2025) option.selected = true;
-                        startSelect.appendChild(option);
-                      }
-                    </script>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="endyear">끝 연도:</label>
-                  <select id="endyear" name="endyear">
-                    <script>
-                      const endSelect = document.getElementById("endyear");
-                      function updateEndYearOptions(startValue) {
-                        const prev = endSelect.value ? parseInt(endSelect.value, 10) : null;
-                        endSelect.innerHTML = "";
-                        for (let i = startValue; i <= 2026; i++) {
-                          const opt = document.createElement("option");
-                          opt.value = i;
-                          opt.textContent = i;
-                          endSelect.appendChild(opt);
-                        }
-                        if (prev !== null && prev >= startValue && prev <= 2026) {
-                          endSelect.value = String(prev);
-                        } else {
-                          endSelect.value = String(startValue);
-                        }
-                      }
-                      updateEndYearOptions(2025);
-                      startSelect.addEventListener("change", function () {
-                        updateEndYearOptions(parseInt(this.value, 10));
-                      });
-                    </script>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="uncertainty">저자명 한국인 판단 기준값(0.1~1.0)*:</label>
-                  <select id="uncertainty" name="uncertainty">
-                    <script>
-                      const select = document.getElementById("uncertainty");
-                      for (let i = 0.1; i <= 1.0; i += 0.1) {
-                        let option = document.createElement("option");
-                        option.value = i.toFixed(1);
-                        option.textContent = i.toFixed(1);
-                        if (i === 0.5) option.selected = true;
-                        select.appendChild(option);
-                      }
-                    </script>
-                  </select>
-                </div>
-              </div> <button type="button" id="submit-btn">검색</button>
-            </div> <div class="filter-bottom-row">
-              *Llama3.3 모델을 사용하여 각 저자가 한국인일 확률을 얻고 기준값보다 크거나 같은 것만 한국인으로 판단합니다.
+          <form
+            id="filter-form"
+            style="
+              display: flex;
+              gap: 20px;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <!-- 드롭다운 메뉴 -->
+            <div class="form-group author-role">
+              <label>한국인 필터링 기준(OR)</label>
+              <div class="author-role-group">
+                <label>
+                  <input type="checkbox" name="option" value="1" checked />
+                  1저자
+                </label>
+                <label>
+                  <input type="checkbox" name="option" value="2" />
+                  2저자
+                </label>
+                <label>
+                  <input type="checkbox" name="option" value="3" />
+                  마지막 저자
+                </label>
+                <label>
+                  <input type="checkbox" name="option" value="4" />
+                  기타 공저자
+                </label>
+              </div>
+            </div>
+            <!-- 시작 연도 선택 -->
+            <div class="form-group">
+              <label for="startyear">시작 연도:</label>
+              <select id="startyear" name="startyear">
+                <script>
+                  const startSelect = document.getElementById("startyear");
+                  for (let i = 2010; i <= 2026; i++) {
+                    let option = document.createElement("option");
+                    option.value = i;
+                    option.textContent = i;
+                    if (i === 2025) {
+                      option.selected = true; // 기본값 설정
+                    }
+                    startSelect.appendChild(option);
+                  }
+                </script>
+              </select>
             </div>
 
+            <!-- 끝 연도 선택 -->
+            <div class="form-group">
+              <label for="endyear">끝 연도:</label>
+              <select id="endyear" name="endyear">
+                <script>
+                  const endSelect = document.getElementById("endyear");
+
+                  function updateEndYearOptions(startValue) {
+                    // 1) 현재 선택된 끝 연도 값 저장
+                    const prev = endSelect.value
+                      ? parseInt(endSelect.value, 10)
+                      : null;
+
+                    // 2) 옵션 재생성
+                    endSelect.innerHTML = "";
+                    for (let i = startValue; i <= 2026; i++) {
+                      const opt = document.createElement("option");
+                      opt.value = i;
+                      opt.textContent = i;
+                      endSelect.appendChild(opt);
+                    }
+
+                    // 3) 이전 선택이 여전히 유효하면 유지, 아니면 시작 연도로 설정
+                    if (prev !== null && prev >= startValue && prev <= 2026) {
+                      endSelect.value = String(prev);
+                    } else {
+                      endSelect.value = String(startValue);
+                    }
+                  }
+
+                  // 기본값: 시작 연도(초기 기본 2024)에 맞춰 렌더링
+                  updateEndYearOptions(2025);
+
+                  // 시작 연도 변경 시: 끝 연도 옵션 갱신하되, 기존 선택 유지 가능하면 유지
+                  startSelect.addEventListener("change", function () {
+                    const s = parseInt(this.value, 10);
+                    updateEndYearOptions(s);
+                  });
+                </script>
+              </select>
+            </div>
+
+            <!-- 라디오 버튼 -->
+            <div class="form-group">
+              <label for="uncertainty"
+                >저자명 한국인 판단 기준값(0.1~1.0)*:</label
+              >
+              <select id="uncertainty" name="uncertainty">
+                <!-- 옵션 자동 생성 -->
+                <script>
+                  const select = document.getElementById("uncertainty");
+                  for (let i = 0.1; i <= 1.0; i += 0.1) {
+                    let option = document.createElement("option");
+                    option.value = i.toFixed(1);
+                    option.textContent = i.toFixed(1);
+                    if (i === 0.5) {
+                      option.selected = true; // 기본값 0.5 선택
+                    }
+                    select.appendChild(option);
+                  }
+                </script>
+              </select>
+            </div>
+
+            <!-- 제출 버튼 -->
+            <button type="button" id="submit-btn">검색</button>
           </form>
+          <div style="text-align: right; font-size: 11px; color: #888; width: 94%;">
+            *Llama3.3 모델을 사용하여 각 저자가 한국인일 확률을 얻고 기준값보다 크거나 같은 것만 한국인으로 판단합니다.
+          </div>
         </div>
         <details class="pcss-notice" style="margin: 16px 0" open>
           <div class="notice-body">
@@ -556,7 +553,7 @@
       <div class="footer-container">
         <p style="margin-bottom: 15px; font-size: 12px; opacity: 0.8; word-break: keep-all; padding: 0 10px;">
           본 서비스는 POSTECH 구성원 대상으로 제공하며, 요청 처리 및 서버 관리 목적에 한해 개인정보를 수집·이용합니다.
-        </p>
+       </p>
         <p>제작자</p>
         <div class="user">
           <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a>
