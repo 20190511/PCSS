@@ -58,6 +58,7 @@ async def author_search_input_page(request: Request):
 @router.get("/autocomplete")
 async def author_autocomplete(query: str = Query(..., min_length=1)):
     try:
+        # 1. 입력값을 공백 기준으로 쪼갬 (예: "wonhwa kim" -> ["wonhwa", "kim"])
         keywords = query.strip().split()
         
         if not keywords:
@@ -65,19 +66,26 @@ async def author_autocomplete(query: str = Query(..., min_length=1)):
 
         and_conditions = []
         for word in keywords:
-            pattern = re.compile(re.escape(word), re.IGNORECASE)
+            # 2. 핵심 변경 사항: 글자 사이사이에 공백 허용 패턴(\s*) 삽입
+            # 입력: "wonhwa" 
+            # 변환: "w\s*o\s*n\s*h\s*w\s*a"
+            # 의미: w 다음에 공백이 있든 없든 o, 그 뒤에 공백이 있든 없든 n ... -> "Won Hwa" 매칭 성공
+            char_pattern = r"\s*".join([re.escape(c) for c in word])
+            regex_pattern = re.compile(char_pattern, re.IGNORECASE)
+
             and_conditions.append({
                 "$or": [
-                    {"name": {"$regex": pattern}},
-                    {"pid": {"$regex": pattern}}
+                    {"name": {"$regex": regex_pattern}},
+                    {"pid": {"$regex": regex_pattern}}
                 ]
             })
 
+        # 모든 단어 조건이 만족해야 함 ($and)
         mongo_query = {"$and": and_conditions}
 
         cursor = authors_col.find(
             mongo_query,
-            {"_id": 0, "name": 1, "pid": 1, "affiliation": 1}
+            {"_id": 0, "name": 1, "pid": 1}
         ).limit(10)
         
         results = []
@@ -88,14 +96,13 @@ async def author_autocomplete(query: str = Query(..., min_length=1)):
             results.append({
                 "name": doc.get("name"),
                 "pid": doc.get("pid"),
-                "affiliation": doc.get("affiliation", "")
             })
             
         return JSONResponse(content=results)
         
-    except Exception:
+    except Exception as e:
+        print(f"Error: {e}")
         return JSONResponse(content=[], status_code=500)
-
 
 @router.get("/request/korean")
 async def get_korean_requests():
