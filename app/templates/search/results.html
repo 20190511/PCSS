@@ -383,7 +383,7 @@
             <td>{{ options.uncertainty }}</td>
           </tr>
           <tr>
-            <td class="option-label">선택 학회/저널</td>
+            <td class="option-label">선택 학회/학술지</td>
             <td>{{ options.selectedConferences | join(', ') }}</td>
           </tr>
 
@@ -571,30 +571,30 @@
                   authorsList.className = "authors";
 
                   const currentSectionAuthor = String(author).replace(/\s*\(\d+(?:\.\d+)?\)\s*$/, "").trim();
-                  const authorNames = paper.author_names || []; 
+                  const authorNames = paper.author_names || [];
                   const authorUrls = paper.author_urls || [];
 
                   authorNames.forEach((name, idx) => {
                     const authorEl = document.createElement("span");
                     authorEl.textContent = name;
                     authorEl.className = "paper-author-link";
-                    
+
                     // 데이터셋 바인딩
                     authorEl.dataset.author = name;
-                    
+
                     // PID 바인딩 (paper.author_pids가 있다고 가정)
                     const pid = (paper.author_pids && paper.author_pids[idx]) ? paper.author_pids[idx] : "";
-                    authorEl.dataset.pid = pid; 
-                    
+                    authorEl.dataset.pid = pid;
+
                     authorEl.dataset.profileUrl = authorUrls[idx] || "";
 
                     if (String(name).trim() === currentSectionAuthor) {
-                      authorEl.style.fontWeight = "700";           
-                      authorEl.style.textDecoration = "underline"; 
+                      authorEl.style.fontWeight = "700";
+                      authorEl.style.textDecoration = "underline";
                     }
 
                     authorsList.appendChild(authorEl);
-                    
+
                     if (idx < authorNames.length - 1) {
                       authorsList.appendChild(document.createTextNode(", "));
                     }
@@ -633,14 +633,14 @@
 
         function openAuthorStatsInNewTab(payload) {
           // payload: { name, pid, url }
-      
+
           const form = document.createElement("form");
           form.method = "POST";
-          form.action = "/author/stats/page"; 
+          form.action = "/author/stats/page";
           form.target = "_blank";
-      
+
           const uncertainty = {{ options.uncertainty | tojson }};
-      
+
           // [수정] target_pid 필드 추가
           const fields = {
             target_author: payload.name, // 이름은 화면 표시용
@@ -648,7 +648,7 @@
             url: payload.url,
             uncertainty: String(uncertainty),
           };
-      
+
           Object.entries(fields).forEach(([k, v]) => {
             const input = document.createElement("input");
             input.type = "hidden";
@@ -656,7 +656,7 @@
             input.value = v;
             form.appendChild(input);
           });
-      
+
           document.body.appendChild(form);
           form.submit();
           form.remove();
@@ -666,11 +666,11 @@
         container.addEventListener("click", e => {
           const authorEl = e.target.closest(".paper-author-link");
           if (!authorEl) return;
-      
+
           const target_author = authorEl.dataset.author?.trim() || authorEl.textContent.trim();
           const target_pid = authorEl.dataset.pid?.trim() || ""; // PID 추출
           const profileUrl = authorEl.dataset.profileUrl || "";
-      
+
           if (!target_author) {
             alert("저자 이름이 없습니다.");
             return;
@@ -679,7 +679,7 @@
           if (!target_pid) {
             console.warn("PID가 없어 정확한 검색이 어려울 수 있습니다.");
           }
-      
+
           openAuthorStatsInNewTab({
             name: target_author,
             pid: target_pid, // PID 전달

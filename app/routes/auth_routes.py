@@ -28,6 +28,17 @@ async def login_send(request: Request, email: str = Form(...), next: str = Form(
     now = now_utc()
     email_norm = (email or "").strip().lower()
 
+    if not email_norm.endswith("@postech.ac.kr"):
+        return templates.TemplateResponse(
+            "auth/login.html",
+            {
+                "request": request, 
+                "next": next, 
+                "error": "포스텍 이메일(@postech.ac.kr)만 사용 가능합니다."
+            }
+        )
+
+    # (이하 기존 로직 그대로)
     code = f"{secrets.randbelow(1000000):06d}"
     code_hash = hash_code(email_norm, code)
     expires_at = now + timedelta(minutes=10)

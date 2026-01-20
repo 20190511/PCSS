@@ -478,7 +478,7 @@
             <!-- 라디오 버튼 -->
             <div class="form-group">
               <label for="uncertainty"
-                >저자명 한국인 판단 기준값(0.1~1.0):</label
+                >저자명 한국인 판단 기준값(0.1~1.0)*:</label
               >
               <select id="uncertainty" name="uncertainty">
                 <!-- 옵션 자동 생성 -->
@@ -496,29 +496,15 @@
                 </script>
               </select>
             </div>
-            <!-- 예 / 아니오 선택 -->
-            <!-- <div class="form-group">
-            <label>저자별 총 논문 수:</label>
-            <div style="display:flex;gap:10px;align-items:center;">
-              <input type="radio" id="count-yes" name="CountOption" value="yes">
-              <label for="count-yes">예</label>
-
-              <input type="radio" id="count-no" name="CountOption" value="no" checked>
-              <label for="count-no">아니오</label>
+            <div style="font-size: 12px; color: #666; margin-left: 2px;">
+              *Llama3.3 모델을 사용하여 각 저자가 한국인일 확률을 얻고 기준값보다 크거나 같은 것만 한국인으로 판단합니다.
             </div>
-          </div> -->
             <!-- 제출 버튼 -->
             <button type="button" id="submit-btn">검색</button>
           </form>
         </div>
         <details class="pcss-notice" style="margin: 16px 0" open>
           <div class="notice-body">
-            <!-- <p><strong>저자별 총 논문 수</strong>를 <strong>예</strong>로 설정하면,
-            각 저자에 대해 DBLP 조회가 추가로 발생하여 <u>요청 수가 크게 늘어날 수 있습니다</u>.
-            <strong>넓은 연도 범위</strong>와 <strong>많은 학회</strong>를 동시에 선택한 상태에선
-            서버·DBLP 모두에 부담이 커질 수 있으니 가급적 <strong>범위를 좁혀</strong> 사용하세요.<br>
-          </p> -->
-
             <p><strong>결과 페이지 표기 규칙</strong></p>
             <ul>
               <li>
@@ -527,11 +513,6 @@
                 판별한 확률(0-1.0)입니다.
               </li>
             </ul>
-
-            <p>
-              요약: 먼저 작은 범위로 검색하여 결과를 확인한 뒤 필요 시 범위를
-              넓히는 것을 권장합니다.
-            </p>
           </div>
         </details>
 
@@ -569,6 +550,9 @@
     <script src="/static/script.js?v=20260119-1"></script>
     <footer class="footer">
       <div class="footer-container">
+        <p style="margin-bottom: 15px; font-size: 12px; opacity: 0.8; word-break: keep-all; padding: 0 10px;">
+          본 서비스는 포스텍 구성원 대상으로 제공하며, 요청 처리 및 서버 관리 목적에 한해 개인정보를 수집·이용합니다.
+        </p>
         <p>제작자</p>
         <div class="user">
           <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a>

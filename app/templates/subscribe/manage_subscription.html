@@ -1,510 +1,581 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PCSS 구독 관리</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PCSS 구독 관리</title>
 
-  <style>
-    /* --- [공통 스타일: 요청 페이지 기반] --- */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f9f9f9;
-      color: #333;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    /* 제목 스타일 일치화 */
-    h2 {
-      text-align: center;
-      margin: 28px 0 18px;
-      color: rgba(200, 1, 80, 1);
-      font-size: 28px;
-    }
-
-    h3 {
-      margin: 0 0 12px 0;
-      color: #34495e;
-      font-size: 18px;
-    }
-
-    /* 카드 스타일 일치화 */
-    .card {
-      background: #ffffff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 18px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    /* 상단 바 (이메일 + 로그아웃) */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 0 0 14px 0;
-    }
-
-    .whoami {
-      color: #666;
-      font-size: 13px;
-    }
-
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      color: #34495e;
-    }
-
-    /* 버튼 스타일 (요청 페이지 스타일) */
-    .btn {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 13px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      background-color: #fff;
-      border: 1px solid #ddd; /* 일반 버튼은 테두리 있음 */
-      color: #333;
-    }
-    .btn:hover {
-      background-color: #f3f3f3;
-    }
-
-    /* 로그아웃/거절 버튼 스타일 */
-    .btn-deny {
-      background-color: #34495e;
-      color: #fff;
-      border: none;
-    }
-    .btn-deny:hover {
-      background-color: #2c3e50;
-    }
-
-    /* 알림창 스타일 */
-    .notice {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin: 0 0 12px 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-      line-height: 1.5;
-    }
-    
-    .notice-error {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-left: 4px solid rgba(200, 1, 80, 1);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin: 0 0 12px 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-      line-height: 1.5;
-    }
-
-    /* --- [구독 관리 페이지 전용 스타일] --- */
-    
-    /* 그리드 레이아웃 */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      align-items: start;
-    }
-
-    /* 폼 요소 */
-    .form-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-    .form-group label {
-      font-weight: 800;
-      color: #34495e;
-      min-width: 92px;
-    }
-    .form-group input,
-    .form-group select {
-      padding: 8px 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      background-color: #fff;
-      color: #333;
-      min-width: 140px;
-    }
-
-    .checkbox-group {
-      display: grid;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .checkbox-group label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-    }
-
-    .small {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.5;
-    }
-
-    /* 학회 선택 UI */
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      border: 1px solid #ddd;
-      background: #fafafa;
-      color: #444;
-      white-space: nowrap;
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      border: 1px solid #ddd;
-      border-radius: 999px;
-      background: #fff;
-      cursor: pointer;
-      user-select: none;
-      font-size: 13px;
-    }
-    .toggle input {
-      width: 16px;
-      height: 16px;
-    }
-
-    .conf-toolbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-
-    .conf-search {
-      flex: 1;
-      min-width: 200px;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background: #fff;
-      color: #333;
-    }
-
-    .conf-split {
-      display: grid;
-      grid-template-columns: 1.25fr 0.75fr;
-      gap: 14px;
-      min-width: 0;
-    }
-    @media (max-width: 920px) {
-      .conf-split { grid-template-columns: 1fr; }
-    }
-
-    .conf-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .conf-panel-title {
-      font-weight: 900;
-      color: #34495e;
-      font-size: 14px;
-    }
-
-    .conf-list {
-      max-height: 560px;
-      overflow: auto;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 10px;
-      background: #fff;
-      min-width: 0;
-    }
-
-    .conf-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      user-select: none;
-      min-width: 0;
-      width: 100%;
-      font-size: 14px;
-    }
-    .conf-item:hover {
-      background: #f3f3f3;
-    }
-    .conf-item input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      flex: 0 0 auto;
-    }
-    .conf-code {
-      font-weight: 900;
-      min-width: 60px;
-      flex: 0 0 auto;
-    }
-    .conf-kind {
-      color: #555;
-      flex: 1 1 auto;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .conf-item[data-selected="true"] {
-      background: rgba(200, 1, 80, 0.06);
-    }
-    .conf-item[data-selected="true"] .conf-code {
-      color: rgba(200, 1, 80, 1);
-    }
-    .selected-item {
-      border: 1px solid #ddd;
-      background: transparent;
-    }
-
-    /* 자동저장 상태 배지 */
-    .status {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .status .badge {
-      font-size: 12px;
-      font-weight: 800;
-      border-radius: 999px;
-      padding: 4px 10px;
-      border: 1px solid #ddd;
-      background: #fafafa;
-      color: #444;
-      white-space: nowrap;
-    }
-    .status.saving .badge {
-      border-color: rgba(200, 1, 80, 0.35);
-      background: rgba(200, 1, 80, 0.06);
-      color: rgba(200, 1, 80, 1);
-    }
-    .status.ok .badge {
-      border-color: rgba(0, 140, 60, 0.35);
-      background: rgba(0, 140, 60, 0.06);
-      color: rgba(0, 140, 60, 1);
-    }
-    .status.fail .badge {
-      border-color: rgba(179, 38, 38, 0.35);
-      background: rgba(179, 38, 38, 0.06);
-      color: rgba(179, 38, 38, 1);
-    }
-
-
-    /* --- [다크 모드: 요청 페이지 기반] --- */
-    @media (prefers-color-scheme: dark) {
+    <style>
+      /* --- [공통 스타일: 요청 페이지 기반] --- */
       body {
-        background-color: #181818;
-        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f9f9f9;
+        color: #333;
       }
 
-      h2 { color: #ff88a2; }
-      h3 { color: #ddd; }
-      .mono { color: #ddd; }
-      .whoami { color: #aaa; }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
 
+      /* 제목 스타일 일치화 */
+      h2 {
+        text-align: center;
+        margin: 28px 0 18px;
+        color: rgba(200, 1, 80, 1);
+        font-size: 28px;
+      }
+
+      h3 {
+        margin: 0 0 12px 0;
+        color: #34495e;
+        font-size: 18px;
+      }
+
+      /* 카드 스타일 일치화 */
       .card {
-        background-color: #242424;
-        border: 1px solid #444;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        background: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 18px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
       }
 
-      .notice, .notice-error {
-        background: #242424;
-        border: 1px solid #444;
-      }
-      .notice-error { border-left-color: #ff88a2; }
-
-      .form-group label, .conf-panel-title { color: #ddd; }
-      
-      .form-group input, .form-group select, .conf-search, .conf-list {
-        background-color: #3a3a3a;
-        border: 1px solid #555;
-        color: #eee;
+      /* 상단 바 (이메일 + 로그아웃) */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0 0 14px 0;
       }
 
+      .whoami {
+        color: #666;
+        font-size: 13px;
+      }
+
+      .mono {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        color: #34495e;
+      }
+
+      /* 버튼 스타일 (요청 페이지 스타일) */
       .btn {
-        background-color: #333;
-        border: 1px solid #555;
-        color: #ddd;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 13px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+        border: 1px solid #ddd; /* 일반 버튼은 테두리 있음 */
+        color: #333;
       }
-      .btn:hover { background-color: #444; }
+      .btn:hover {
+        background-color: #f3f3f3;
+      }
 
+      /* 로그아웃/거절 버튼 스타일 */
       .btn-deny {
-        background-color: #555;
+        background-color: #34495e;
+        color: #fff;
         border: none;
       }
-      .btn-deny:hover { background-color: #444; }
-
-      .pill, .toggle, .status .badge {
-        background: #333;
-        border: 1px solid #555;
-        color: #ddd;
+      .btn-deny:hover {
+        background-color: #2c3e50;
       }
 
-      .conf-item:hover { background-color: #2a2a2a; }
-      .conf-kind, .small { color: #aaa; }
-      
+      /* 알림창 스타일 */
+      .notice {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 0 0 12px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        line-height: 1.5;
+      }
+
+      .notice-error {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-left: 4px solid rgba(200, 1, 80, 1);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 0 0 12px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        line-height: 1.5;
+      }
+
+      /* --- [구독 관리 페이지 전용 스타일] --- */
+
+      /* 그리드 레이아웃 */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        align-items: start;
+      }
+
+      /* 폼 요소 */
+      .form-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .form-group label {
+        font-weight: 800;
+        color: #34495e;
+        min-width: 92px;
+      }
+      .form-group input,
+      .form-group select {
+        padding: 8px 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #fff;
+        color: #333;
+        min-width: 140px;
+      }
+
+      .checkbox-group {
+        display: grid;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+
+      .small {
+        font-size: 12px;
+        color: #666;
+        line-height: 1.5;
+      }
+
+      /* 학회/학술지 선택 UI */
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid #ddd;
+        background: #fafafa;
+        color: #444;
+        white-space: nowrap;
+      }
+
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 999px;
+        background: #fff;
+        cursor: pointer;
+        user-select: none;
+        font-size: 13px;
+      }
+      .toggle input {
+        width: 16px;
+        height: 16px;
+      }
+
+      .conf-toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+
+      .conf-search {
+        flex: 1;
+        min-width: 200px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #fff;
+        color: #333;
+      }
+
+      .conf-split {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 14px;
+        min-width: 0;
+      }
+      @media (max-width: 920px) {
+        .conf-split {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .conf-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .conf-panel-title {
+        font-weight: 900;
+        color: #34495e;
+        font-size: 14px;
+      }
+
+      .conf-list {
+        max-height: 560px;
+        overflow: auto;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fff;
+        min-width: 0;
+      }
+
+      .conf-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        user-select: none;
+        min-width: 0;
+        width: 100%;
+        font-size: 14px;
+      }
+      .conf-item:hover {
+        background: #f3f3f3;
+      }
+      .conf-item input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 auto;
+      }
+      .conf-code {
+        font-weight: 900;
+        min-width: 60px;
+        flex: 0 0 auto;
+      }
+      .conf-kind {
+        color: #555;
+        flex: 1 1 auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .conf-item[data-selected="true"] {
-        background: rgba(255, 136, 162, 0.08);
+        background: rgba(200, 1, 80, 0.06);
       }
       .conf-item[data-selected="true"] .conf-code {
-        color: #ff88a2;
+        color: rgba(200, 1, 80, 1);
       }
-      .selected-item { border-color: #444; }
-    }
-  </style>
-</head>
+      .selected-item {
+        border: 1px solid #ddd;
+        background: transparent;
+      }
 
-<body>
-  <div class="container">
-    <h2>PCSS 구독 관리</h2>
+      /* 자동저장 상태 배지 */
+      .status {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .status .badge {
+        font-size: 12px;
+        font-weight: 800;
+        border-radius: 999px;
+        padding: 4px 10px;
+        border: 1px solid #ddd;
+        background: #fafafa;
+        color: #444;
+        white-space: nowrap;
+      }
+      .status.saving .badge {
+        border-color: rgba(200, 1, 80, 0.35);
+        background: rgba(200, 1, 80, 0.06);
+        color: rgba(200, 1, 80, 1);
+      }
+      .status.ok .badge {
+        border-color: rgba(0, 140, 60, 0.35);
+        background: rgba(0, 140, 60, 0.06);
+        color: rgba(0, 140, 60, 1);
+      }
+      .status.fail .badge {
+        border-color: rgba(179, 38, 38, 0.35);
+        background: rgba(179, 38, 38, 0.06);
+        color: rgba(179, 38, 38, 1);
+      }
 
-    {% if error %}
-    <div class="notice-error">
-      <b>오류:</b> {{ error }}
-    </div>
-    {% endif %}
+      /* --- [다크 모드: 요청 페이지 기반] --- */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #181818;
+          color: #e0e0e0;
+        }
 
-    {% if success %}
-    <div class="notice">
-      <b>{{ success }}</b>
-    </div>
-    {% endif %}
+        h2 {
+          color: #ff88a2;
+        }
+        h3 {
+          color: #ddd;
+        }
+        .mono {
+          color: #ddd;
+        }
+        .whoami {
+          color: #aaa;
+        }
 
-    {% if subscription %}
-    <div class="topbar">
-      <div class="whoami">로그인: <span class="mono">{{ email }}</span></div>
-      <form method="post" action="/auth/logout" style="margin:0;">
-        <button
-          type="submit"
-          class="btn btn-deny"
-          onclick="return confirm('로그아웃하고 다시 로그인할까요?');"
-        >
-          로그아웃
-        </button>
-      </form>
-    </div>
+        .card {
+          background-color: #242424;
+          border: 1px solid #444;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
 
-    <div class="notice status" id="autosave-status">
-      <div id="autosave-text" style="min-width:0; font-size:14px;"></div>
-      <div class="badge" id="autosave-badge">저장</div>
-    </div>
+        .notice,
+        .notice-error {
+          background: #242424;
+          border: 1px solid #444;
+        }
+        .notice-error {
+          border-left-color: #ff88a2;
+        }
 
-    <form id="manage-form" method="post" action="/subscriptions/manage/update">
-      <div class="grid">
-        <div class="card">
-          <h3>기본 설정</h3>
+        .form-group label,
+        .conf-panel-title {
+          color: #ddd;
+        }
 
-          <div class="form-group">
-            <label for="threshold">한국인 임계값</label>
-            <input
-              id="threshold"
-              name="threshold"
-              type="number"
-              step="0.01"
-              min="0"
-              max="1"
-              value="{{ subscription.threshold }}"
-            />
-          </div>
+        .form-group input,
+        .form-group select,
+        .conf-search,
+        .conf-list {
+          background-color: #3a3a3a;
+          border: 1px solid #555;
+          color: #eee;
+        }
 
-          <div class="form-group">
-            <label for="is_enabled">구독 활성</label>
-            <select id="is_enabled" name="is_enabled">
-              <option value="true" {% if subscription.is_enabled %}selected{% endif %}>ON</option>
-              <option value="false" {% if not subscription.is_enabled %}selected{% endif %}>OFF</option>
-            </select>
-          </div>
+        .btn {
+          background-color: #333;
+          border: 1px solid #555;
+          color: #ddd;
+        }
+        .btn:hover {
+          background-color: #444;
+        }
 
-          <div style="height:14px;"></div>
+        .btn-deny {
+          background-color: #555;
+          border: none;
+        }
+        .btn-deny:hover {
+          background-color: #444;
+        }
 
-          <h3 style="margin-top:0;">옵션 선택 (1~4)</h3>
-          <div class="checkbox-group">
-            {% for opt in options %}
-            <label>
+        .pill,
+        .toggle,
+        .status .badge {
+          background: #333;
+          border: 1px solid #555;
+          color: #ddd;
+        }
+
+        .conf-item:hover {
+          background-color: #2a2a2a;
+        }
+        .conf-kind,
+        .small {
+          color: #aaa;
+        }
+
+        .conf-item[data-selected="true"] {
+          background: rgba(255, 136, 162, 0.08);
+        }
+        .conf-item[data-selected="true"] .conf-code {
+          color: #ff88a2;
+        }
+        .selected-item {
+          border-color: #444;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>PCSS 구독 관리</h2>
+
+      {% if error %}
+      <div class="notice-error"><b>오류:</b> {{ error }}</div>
+      {% endif %} {% if success %}
+      <div class="notice">
+        <b>{{ success }}</b>
+      </div>
+      {% endif %} {% if subscription %}
+      <div class="topbar">
+        <div class="whoami">로그인: <span class="mono">{{ email }}</span></div>
+        <form method="post" action="/auth/logout" style="margin: 0">
+          <button
+            type="submit"
+            class="btn btn-deny"
+            onclick="return confirm('로그아웃하고 다시 로그인할까요?');"
+          >
+            로그아웃
+          </button>
+        </form>
+      </div>
+
+      <div class="notice status" id="autosave-status">
+        <div id="autosave-text" style="min-width: 0; font-size: 14px"></div>
+        <div class="badge" id="autosave-badge">저장</div>
+      </div>
+
+      <form
+        id="manage-form"
+        method="post"
+        action="/subscriptions/manage/update"
+      >
+        <div class="grid">
+          <div class="card">
+            <h3>기본 설정</h3>
+
+            <div class="form-group">
+              <label for="threshold">저자명 한국인 판단 기준값(0.1~1.0)</label>
               <input
-                type="checkbox"
-                name="options"
-                value="{{ opt[0] }}"
-                {% if opt[0] in subscription.options %}checked{% endif %}
+                id="threshold"
+                name="threshold"
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+                value="{{ subscription.threshold }}"
               />
-              {{ opt[1] }}
-            </label>
-            {% endfor %}
+            </div>
+
+            <div class="form-group">
+              <label for="is_enabled">구독 활성</label>
+              <select id="is_enabled" name="is_enabled">
+                <option
+                  value="true"
+                  {%
+                  if
+                  subscription.is_enabled
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  ON
+                </option>
+                <option
+                  value="false"
+                  {%
+                  if
+                  not
+                  subscription.is_enabled
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  OFF
+                </option>
+              </select>
+            </div>
+
+            <div style="height: 14px"></div>
+
+            <h3 style="margin-top: 0">한국인 필터링 기준(OR)</h3>
+            <div class="checkbox-group">
+              {% for opt in options %}
+              <label>
+                <input
+                  type="checkbox"
+                  name="options"
+                  value="{{ opt[0] }}"
+                  {%
+                  if
+                  opt[0]
+                  in
+                  subscription.options
+                  %}checked{%
+                  endif
+                  %}
+                />
+                {{ opt[1] }}
+              </label>
+              {% endfor %}
+            </div>
+
+            <div class="small" style="margin-top: 16px">
+              변경사항은 자동 저장되며, 다음 발송부터 반영됩니다.
+            </div>
           </div>
 
-          <div class="small" style="margin-top:16px;">
-            변경사항은 자동 저장되며, 다음 발송부터 반영됩니다.
-          </div>
-        </div>
+          <div class="card">
+            <h3
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-top: 0;
+              "
+            >
+              <span>학회/학술지 선택</span>
+              <span class="pill" id="selected-count">선택됨 0개</span>
+            </h3>
 
-        <div class="card">
-          <h3 style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:0;">
-            <span>학회 선택</span>
-            <span class="pill" id="selected-count">선택됨 0개</span>
-          </h3>
+            <div class="conf-toolbar">
+              <input
+                id="conf-search"
+                class="conf-search"
+                type="text"
+                placeholder="학회 검색 (예: AAAI)"
+                autocomplete="off"
+              />
 
-          <div class="conf-toolbar">
-            <input
-              id="conf-search"
-              class="conf-search"
-              type="text"
-              placeholder="학회 검색 (예: AAAI)"
-              autocomplete="off"
-            />
+              <label class="toggle">
+                <input id="only-selected" type="checkbox" />
+                <span>선택만 보기</span>
+              </label>
 
-            <label class="toggle">
-              <input id="only-selected" type="checkbox" />
-              <span>선택만 보기</span>
-            </label>
+              <button type="button" class="btn" onclick="selectAllConfs(true)">
+                전체 선택
+              </button>
+              <button type="button" class="btn" onclick="selectAllConfs(false)">
+                전체 해제
+              </button>
+            </div>
 
-            <button type="button" class="btn" onclick="selectAllConfs(true)">전체 선택</button>
-            <button type="button" class="btn" onclick="selectAllConfs(false)">전체 해제</button>
-          </div>
+            <div class="conf-split">
+              <div class="conf-panel">
+                <div class="conf-panel-title">전체 학회</div>
 
-          <div class="conf-split">
-            <div class="conf-panel">
-              <div class="conf-panel-title">전체 학회</div>
-
-              <div class="conf-list" id="conf-all">
-                {% set selected = subscription.conferences or [] %}
-                {% for conf in conferences %}
-                  {% set code = conf.get('conference') if conf is mapping else conf %}
-                  {% set kind = conf.get('kind') if conf is mapping else '' %}
+                <div class="conf-list" id="conf-all">
+                  {% set selected = subscription.conferences or [] %} {% for
+                  conf in conferences %} {% set code = conf.get('conference') if
+                  conf is mapping else conf %} {% set kind = conf.get('kind') if
+                  conf is mapping else '' %}
 
                   <label
                     class="conf-item"
@@ -516,224 +587,258 @@
                       type="checkbox"
                       name="conferences"
                       value="{{ code }}"
-                      {% if code in selected %}checked{% endif %}
+                      {%
+                      if
+                      code
+                      in
+                      selected
+                      %}checked{%
+                      endif
+                      %}
                     />
                     <span class="conf-code">{{ code }}</span>
                     {% if kind %}
-                      <span style="opacity:0.5; margin:0 4px;">·</span>
-                      <span class="conf-kind">{{ kind }}</span>
+                    <span style="opacity: 0.5; margin: 0 4px">·</span>
+                    <span class="conf-kind">{{ kind }}</span>
                     {% endif %}
                   </label>
-                {% endfor %}
-              </div>
-            </div>
-
-            <div class="conf-panel">
-              <div class="conf-panel-title">내가 구독 중</div>
-              <div class="conf-list" id="conf-selected">
+                  {% endfor %}
                 </div>
+              </div>
+
+              <div class="conf-panel">
+                <div class="conf-panel-title">내가 구독 중</div>
+                <div class="conf-list" id="conf-selected"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </form>
+      </form>
 
-    {% else %}
-    <div class="card">
-      <div class="empty" style="text-align:center; padding:20px; color:#777;">
-        구독 정보를 찾을 수 없습니다. 다시 로그인 해주세요.
+      {% else %}
+      <div class="card">
+        <div
+          class="empty"
+          style="text-align: center; padding: 20px; color: #777"
+        >
+          구독 정보를 찾을 수 없습니다. 다시 로그인 해주세요.
+        </div>
       </div>
+      {% endif %}
     </div>
-    {% endif %}
-  </div>
 
-  <script>
-    let _saveTimer = null;
-    let _statusHideTimer = null;
-    let _isSaving = false;
+    <script>
+      let _saveTimer = null;
+      let _statusHideTimer = null;
+      let _isSaving = false;
 
-    function setStatus(mode, text, badgeText) {
-      const box = document.getElementById("autosave-status");
-      const msg = document.getElementById("autosave-text");
-      const badge = document.getElementById("autosave-badge");
-      if (!box || !msg || !badge) return;
+      function setStatus(mode, text, badgeText) {
+        const box = document.getElementById("autosave-status");
+        const msg = document.getElementById("autosave-text");
+        const badge = document.getElementById("autosave-badge");
+        if (!box || !msg || !badge) return;
 
-      box.classList.remove("saving", "ok", "fail");
-      if (mode) box.classList.add(mode);
+        box.classList.remove("saving", "ok", "fail");
+        if (mode) box.classList.add(mode);
 
-      msg.textContent = text || "";
-      badge.textContent = badgeText || "저장";
-      box.style.display = "flex";
+        msg.textContent = text || "";
+        badge.textContent = badgeText || "저장";
+        box.style.display = "flex";
 
-      clearTimeout(_statusHideTimer);
-    }
+        clearTimeout(_statusHideTimer);
+      }
 
-    function scheduleAutoSave() {
-      clearTimeout(_saveTimer);
-      _saveTimer = setTimeout(() => autoSaveNow(), 450);
-    }
+      function scheduleAutoSave() {
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => autoSaveNow(), 450);
+      }
 
-    function syncSelectedPanel() {
-      const allBox = document.getElementById("conf-all");
-      const selectedBox = document.getElementById("conf-selected");
-      const pill = document.getElementById("selected-count");
-      if (!allBox || !selectedBox) return;
+      function syncSelectedPanel() {
+        const allBox = document.getElementById("conf-all");
+        const selectedBox = document.getElementById("conf-selected");
+        const pill = document.getElementById("selected-count");
+        if (!allBox || !selectedBox) return;
 
-      const allLabels = Array.from(allBox.querySelectorAll("label.conf-item"));
-      const checkedLabels = allLabels.filter((label) => label.querySelector("input.conf-checkbox")?.checked);
+        const allLabels = Array.from(
+          allBox.querySelectorAll("label.conf-item"),
+        );
+        const checkedLabels = allLabels.filter(
+          (label) => label.querySelector("input.conf-checkbox")?.checked,
+        );
 
-      // 왼쪽 선택 스타일 표시
-      allLabels.forEach((label) => {
-        const on = !!label.querySelector("input.conf-checkbox")?.checked;
-        label.dataset.selected = on ? "true" : "false";
-      });
+        // 왼쪽 선택 스타일 표시
+        allLabels.forEach((label) => {
+          const on = !!label.querySelector("input.conf-checkbox")?.checked;
+          label.dataset.selected = on ? "true" : "false";
+        });
 
-      // 오른쪽 렌더
-      selectedBox.innerHTML = "";
-      checkedLabels.forEach((label) => {
-        const cbLeft = label.querySelector("input.conf-checkbox");
-        const codeText = label.querySelector(".conf-code")?.textContent?.trim() || cbLeft.value;
-        const kindText = label.querySelector(".conf-kind")?.textContent?.trim() || "";
+        // 오른쪽 렌더
+        selectedBox.innerHTML = "";
+        checkedLabels.forEach((label) => {
+          const cbLeft = label.querySelector("input.conf-checkbox");
+          const codeText =
+            label.querySelector(".conf-code")?.textContent?.trim() ||
+            cbLeft.value;
+          const kindText =
+            label.querySelector(".conf-kind")?.textContent?.trim() || "";
 
-        const row = document.createElement("label");
-        row.className = "conf-item selected-item";
-        row.dataset.code = (codeText || "").toLowerCase();
-        row.dataset.kind = (kindText || "").toLowerCase();
+          const row = document.createElement("label");
+          row.className = "conf-item selected-item";
+          row.dataset.code = (codeText || "").toLowerCase();
+          row.dataset.kind = (kindText || "").toLowerCase();
 
-        row.innerHTML = `
+          row.innerHTML = `
           <input class="conf-checkbox" type="checkbox" checked value="${codeText}">
           <span class="conf-code">${codeText}</span>
           ${kindText ? `<span style="opacity:0.5; margin:0 4px;">·</span><span class="conf-kind">${kindText}</span>` : ""}
         `;
 
-        const cbRight = row.querySelector("input.conf-checkbox");
-        cbRight.addEventListener("change", () => {
-          const left = document.querySelector(
-            `#conf-all input.conf-checkbox[value="${CSS.escape(codeText)}"]`
-          );
-          if (left) left.checked = cbRight.checked;
-          syncSelectedPanel();
-          applyFilters();
-          scheduleAutoSave();
-        });
-        selectedBox.appendChild(row);
-      });
-
-      if (pill) pill.textContent = `선택됨 ${checkedLabels.length}개`;
-    }
-
-    function applyFilters() {
-      const q = (document.getElementById("conf-search")?.value || "").trim().toLowerCase();
-      const onlySelected = !!document.getElementById("only-selected")?.checked;
-
-      // 왼쪽 목록
-      const allItems = Array.from(document.querySelectorAll("#conf-all .conf-item"));
-      allItems.forEach((el) => {
-        const code = el.dataset.code || "";
-        const kind = el.dataset.kind || "";
-        const selected = !!el.querySelector("input.conf-checkbox")?.checked;
-        const match = !q || code.includes(q) || kind.includes(q);
-        const ok = match && (!onlySelected || selected);
-        el.style.display = ok ? "flex" : "none";
-      });
-
-      // 오른쪽 목록
-      const selectedItems = Array.from(document.querySelectorAll("#conf-selected .conf-item"));
-      selectedItems.forEach((el) => {
-        const code = el.dataset.code || "";
-        const kind = el.dataset.kind || "";
-        const match = !q || code.includes(q) || kind.includes(q);
-        el.style.display = match ? "flex" : "none";
-      });
-    }
-
-    function selectAllConfs(flag) {
-      const box = document.getElementById("conf-all");
-      if (!box) return;
-      const inputs = box.querySelectorAll("input.conf-checkbox");
-      inputs.forEach((el) => (el.checked = flag));
-      syncSelectedPanel();
-      applyFilters();
-      scheduleAutoSave();
-    }
-
-    async function autoSaveNow() {
-      const form = document.getElementById("manage-form");
-      if (!form) return;
-      if (_isSaving) return;
-
-      _isSaving = true;
-      setStatus("saving", "변경사항 저장 중...", "저장 중");
-
-      const fd = new FormData(form);
-
-      try {
-        const res = await fetch(form.action, {
-          method: "POST",
-          body: fd,
-          credentials: "same-origin",
-        });
-        if (!res.ok) throw new Error("save failed");
-        
-        const now = new Date();
-        const t = now.toTimeString().split(' ')[0];
-        setStatus("ok", `저장 완료 (${t})`, "저장됨");
-      } catch (e) {
-        console.error(e);
-        setStatus("fail", "저장 실패 (네트워크/서버 확인 필요)", "실패");
-      } finally {
-        _isSaving = false;
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      // 옵션 최소 1개 유지
-      const optionInputs = Array.from(document.querySelectorAll('input[name="options"]'));
-      optionInputs.forEach((cb) => {
-        cb.addEventListener("change", () => {
-          const checked = optionInputs.filter((x) => x.checked);
-          if (checked.length === 0) {
-            cb.checked = true;
-            setStatus("fail", "옵션은 최소 1개 이상 선택해야 합니다.", "필수");
-          }
-        });
-      });
-
-      // 이벤트 리스너 연결
-      const allBox = document.getElementById("conf-all");
-      const search = document.getElementById("conf-search");
-      const onlySelected = document.getElementById("only-selected");
-      const form = document.getElementById("manage-form");
-
-      if (allBox) {
-        allBox.addEventListener("change", (e) => {
-          if (e.target && e.target.classList.contains("conf-checkbox")) {
+          const cbRight = row.querySelector("input.conf-checkbox");
+          cbRight.addEventListener("change", () => {
+            const left = document.querySelector(
+              `#conf-all input.conf-checkbox[value="${CSS.escape(codeText)}"]`,
+            );
+            if (left) left.checked = cbRight.checked;
             syncSelectedPanel();
             applyFilters();
             scheduleAutoSave();
-          }
+          });
+          selectedBox.appendChild(row);
+        });
+
+        if (pill) pill.textContent = `선택됨 ${checkedLabels.length}개`;
+      }
+
+      function applyFilters() {
+        const q = (document.getElementById("conf-search")?.value || "")
+          .trim()
+          .toLowerCase();
+        const onlySelected =
+          !!document.getElementById("only-selected")?.checked;
+
+        // 왼쪽 목록
+        const allItems = Array.from(
+          document.querySelectorAll("#conf-all .conf-item"),
+        );
+        allItems.forEach((el) => {
+          const code = el.dataset.code || "";
+          const kind = el.dataset.kind || "";
+          const selected = !!el.querySelector("input.conf-checkbox")?.checked;
+          const match = !q || code.includes(q) || kind.includes(q);
+          const ok = match && (!onlySelected || selected);
+          el.style.display = ok ? "flex" : "none";
+        });
+
+        // 오른쪽 목록
+        const selectedItems = Array.from(
+          document.querySelectorAll("#conf-selected .conf-item"),
+        );
+        selectedItems.forEach((el) => {
+          const code = el.dataset.code || "";
+          const kind = el.dataset.kind || "";
+          const match = !q || code.includes(q) || kind.includes(q);
+          el.style.display = match ? "flex" : "none";
         });
       }
 
-      if (search) search.addEventListener("input", () => applyFilters());
-      if (onlySelected) onlySelected.addEventListener("change", () => applyFilters());
-
-      if (form) {
-        form.addEventListener("change", (e) => {
-          const t = e.target;
-          if (!t) return;
-          if (t.id === "threshold" || t.id === "is_enabled" || t.name === "options") {
-            scheduleAutoSave();
-          }
-        });
-        form.addEventListener("input", (e) => {
-          if (e.target && e.target.id === "threshold") scheduleAutoSave();
-        });
+      function selectAllConfs(flag) {
+        const box = document.getElementById("conf-all");
+        if (!box) return;
+        const inputs = box.querySelectorAll("input.conf-checkbox");
+        inputs.forEach((el) => (el.checked = flag));
+        syncSelectedPanel();
+        applyFilters();
+        scheduleAutoSave();
       }
 
-      syncSelectedPanel();
-      applyFilters();
-    });
-  </script>
-</body>
+      async function autoSaveNow() {
+        const form = document.getElementById("manage-form");
+        if (!form) return;
+        if (_isSaving) return;
+
+        _isSaving = true;
+        setStatus("saving", "변경사항 저장 중...", "저장 중");
+
+        const fd = new FormData(form);
+
+        try {
+          const res = await fetch(form.action, {
+            method: "POST",
+            body: fd,
+            credentials: "same-origin",
+          });
+          if (!res.ok) throw new Error("save failed");
+
+          const now = new Date();
+          const t = now.toTimeString().split(" ")[0];
+          setStatus("ok", `저장 완료 (${t})`, "저장됨");
+        } catch (e) {
+          console.error(e);
+          setStatus("fail", "저장 실패 (네트워크/서버 확인 필요)", "실패");
+        } finally {
+          _isSaving = false;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // 옵션 최소 1개 유지
+        const optionInputs = Array.from(
+          document.querySelectorAll('input[name="options"]'),
+        );
+        optionInputs.forEach((cb) => {
+          cb.addEventListener("change", () => {
+            const checked = optionInputs.filter((x) => x.checked);
+            if (checked.length === 0) {
+              cb.checked = true;
+              setStatus(
+                "fail",
+                "옵션은 최소 1개 이상 선택해야 합니다.",
+                "필수",
+              );
+            }
+          });
+        });
+
+        // 이벤트 리스너 연결
+        const allBox = document.getElementById("conf-all");
+        const search = document.getElementById("conf-search");
+        const onlySelected = document.getElementById("only-selected");
+        const form = document.getElementById("manage-form");
+
+        if (allBox) {
+          allBox.addEventListener("change", (e) => {
+            if (e.target && e.target.classList.contains("conf-checkbox")) {
+              syncSelectedPanel();
+              applyFilters();
+              scheduleAutoSave();
+            }
+          });
+        }
+
+        if (search) search.addEventListener("input", () => applyFilters());
+        if (onlySelected)
+          onlySelected.addEventListener("change", () => applyFilters());
+
+        if (form) {
+          form.addEventListener("change", (e) => {
+            const t = e.target;
+            if (!t) return;
+            if (
+              t.id === "threshold" ||
+              t.id === "is_enabled" ||
+              t.name === "options"
+            ) {
+              scheduleAutoSave();
+            }
+          });
+          form.addEventListener("input", (e) => {
+            if (e.target && e.target.id === "threshold") scheduleAutoSave();
+          });
+        }
+
+        syncSelectedPanel();
+        applyFilters();
+      });
+    </script>
+  </body>
 </html>
