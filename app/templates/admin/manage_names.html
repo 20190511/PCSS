@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCSS 이름 관리</title>
+    <title>PCSS 한국인 확률값 관리</title>
     <style>
-      /* --- 공통 스타일 (이전 디자인 유지) --- */
+      /* --- 공통 스타일 --- */
       body {
         font-family: 'Segoe UI', Arial, sans-serif;
         margin: 0;
@@ -39,10 +39,7 @@
         border: 1px solid #ddd;
       }
 
-      .admin-info {
-        font-weight: bold;
-        color: #555;
-      }
+      .admin-info { font-weight: bold; color: #555; }
 
       .nav-btn {
         padding: 8px 15px;
@@ -55,9 +52,48 @@
         font-size: 0.9rem;
         transition: background-color 0.2s;
       }
+      .nav-btn:hover { background-color: #2c3e50; }
 
-      .nav-btn:hover {
-        background-color: #2c3e50;
+      /* 알림창(Status) 스타일 추가 */
+      .status {
+        display: none; /* 기본 숨김 */
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 0 0 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        line-height: 1.5;
+        font-size: 14px;
+      }
+      .status .badge {
+        font-size: 12px;
+        font-weight: 800;
+        border-radius: 999px;
+        padding: 4px 10px;
+        border: 1px solid #ddd;
+        background: #fafafa;
+        color: #444;
+        white-space: nowrap;
+      }
+      /* 상태별 색상 */
+      .status.saving .badge {
+        border-color: rgba(200, 1, 80, 0.35);
+        background: rgba(200, 1, 80, 0.06);
+        color: rgba(200, 1, 80, 1);
+      }
+      .status.ok .badge {
+        border-color: rgba(0, 140, 60, 0.35);
+        background: rgba(0, 140, 60, 0.06);
+        color: rgba(0, 140, 60, 1);
+      }
+      .status.fail .badge {
+        border-color: rgba(179, 38, 38, 0.35);
+        background: rgba(179, 38, 38, 0.06);
+        color: rgba(179, 38, 38, 1);
       }
 
       /* 검색 폼 섹션 */
@@ -93,19 +129,10 @@
         font-weight: bold;
         text-decoration: none;
       }
+      .action-btn:hover { background-color: rgb(194, 50, 108); }
+      .action-btn.secondary { background-color: #6c757d; }
+      .action-btn.secondary:hover { background-color: #5a6268; }
 
-      .action-btn:hover {
-        background-color: rgb(194, 50, 108);
-      }
-
-      .action-btn.secondary {
-        background-color: #6c757d;
-      }
-      .action-btn.secondary:hover {
-        background-color: #5a6268;
-      }
-
-      /* 알림 메시지 */
       .info-alert {
         text-align: center;
         margin-bottom: 20px;
@@ -113,42 +140,22 @@
         font-size: 0.95rem;
       }
 
-      /* 테이블 스타일 (카드 형태) */
+      /* 테이블 스타일 */
       .table-card {
         background: #fff;
         border: 1px solid #ddd;
         border-radius: 8px;
         padding: 0;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        overflow: hidden; /* 모서리 둥글게 */
+        overflow: hidden;
       }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-      }
+      table { width: 100%; border-collapse: collapse; text-align: left; }
+      th, td { padding: 15px; border-bottom: 1px solid #eee; }
+      th { background-color: #f1f1f1; color: #34495e; font-weight: bold; }
+      tr:last-child td { border-bottom: none; }
+      tr:hover { background-color: #fafafa; }
 
-      th, td {
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-      }
-
-      th {
-        background-color: #f1f1f1;
-        color: #34495e;
-        font-weight: bold;
-      }
-
-      tr:last-child td {
-        border-bottom: none;
-      }
-
-      tr:hover {
-        background-color: #fafafa;
-      }
-
-      /* 셀렉트 박스 스타일 */
       .status-select {
         padding: 6px 10px;
         border-radius: 4px;
@@ -166,11 +173,7 @@
         margin-top: 30px;
         gap: 5px;
       }
-
-      .pagination li {
-        display: inline;
-      }
-
+      .pagination li { display: inline; }
       .pagination a, .pagination span {
         padding: 8px 16px;
         border: 1px solid #ddd;
@@ -180,116 +183,65 @@
         background: #fff;
         transition: all 0.2s;
       }
-
-      .pagination a:hover {
-        background-color: #f1f1f1;
-      }
-
+      .pagination a:hover { background-color: #f1f1f1; }
       .pagination .active span {
         background-color: rgba(200, 1, 80, 1);
         color: white;
         border-color: rgba(200, 1, 80, 1);
       }
-
-      .pagination .disabled a {
-        color: #ccc;
-        pointer-events: none;
-      }
-
-      /* Footer */
-      .footer {
-        text-align: center;
-        font-size: 12px;
-        margin-top: 40px;
-        padding: 20px 0;
-        color: #666;
-      }
+      .pagination .disabled a { color: #ccc; pointer-events: none; }
+      .footer { text-align: center; font-size: 12px; margin-top: 40px; padding: 20px 0; color: #666; }
 
       /* 다크 모드 */
       @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #181818;
-          color: #e0e0e0;
-        }
-        .container {
-           /* 배경 없음 */
-        }
+        body { background-color: #181818; color: #e0e0e0; }
         .admin-bar, .form-section, .table-card {
           background-color: #242424;
           border-color: #444;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
-        .admin-info {
-            color: #ccc;
-        }
-        h1 {
-          color: #ff88a2;
-        }
-        .search-input {
-          background-color: #3a3a3a;
-          border-color: #555;
-          color: #fff;
-        }
-        table th {
-            background-color: #333;
-            color: #ff88a2;
-            border-bottom-color: #555;
-        }
-        table td {
-            border-bottom-color: #444;
-        }
-        tr:hover {
-            background-color: #2c2c2c;
-        }
-        .status-select {
-            background-color: #3a3a3a; /* 기본값 */
-            color: #eee;
-            border-color: #555;
-        }
-        .pagination a, .pagination span {
-            background-color: #333;
-            border-color: #555;
-            color: #eee;
-        }
-        .pagination a:hover {
-            background-color: #444;
-        }
-        .info-alert {
-            color: #aaa;
-        }
+        .admin-info { color: #ccc; }
+        h1 { color: #ff88a2; }
+        
+        /* 알림창 다크 모드 */
+        .status { background: #242424; border-color: #444; color: #e0e0e0; }
+        .status .badge { background: #333; border-color: #555; color: #ddd; }
+        .status.saving .badge { background: rgba(255, 136, 162, 0.1); border-color: #ff88a2; color: #ff88a2; }
+        .status.ok .badge { background: rgba(0, 140, 60, 0.2); border-color: #4caf50; color: #81c784; }
+        .status.fail .badge { background: rgba(179, 38, 38, 0.2); border-color: #e57373; color: #e57373; }
+
+        .search-input { background-color: #3a3a3a; border-color: #555; color: #fff; }
+        table th { background-color: #333; color: #ff88a2; border-bottom-color: #555; }
+        table td { border-bottom-color: #444; }
+        tr:hover { background-color: #2c2c2c; }
+        .status-select { background-color: #3a3a3a; color: #eee; border-color: #555; }
+        .pagination a, .pagination span { background-color: #333; border-color: #555; color: #eee; }
+        .pagination a:hover { background-color: #444; }
+        .info-alert { color: #aaa; }
       }
 
-      /* 모바일 반응형 */
       @media (max-width: 768px) {
-        .admin-bar {
-            flex-direction: column;
-            gap: 10px;
-            text-align: center;
-        }
-        .form-section {
-            flex-direction: column;
-        }
-        .search-input {
-            width: 100%;
-        }
-        .action-btn {
-            width: 100%;
-        }
-        th, td {
-            padding: 10px 5px;
-            font-size: 0.9rem;
-        }
+        .admin-bar { flex-direction: column; gap: 10px; text-align: center; }
+        .form-section { flex-direction: column; }
+        .search-input { width: 100%; }
+        .action-btn { width: 100%; }
+        th, td { padding: 10px 5px; font-size: 0.9rem; }
       }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>PCSS 이름 관리</h1>
+    <h1>PCSS 한국인 확률값 관리</h1>
 
     <div class="admin-bar">
         <span class="admin-info">Admin: {{ email }}</span>
         <a href="/author/manage" class="nav-btn">← Back to Requests</a>
+    </div>
+
+    <div class="status" id="autosave-status">
+        <div id="autosave-text" style="min-width: 0;"></div>
+        <div class="badge" id="autosave-badge">저장</div>
     </div>
 
     <form method="get" action="/author/manage/names" class="form-section">
@@ -340,11 +292,9 @@
         <li class="{% if page <= 1 %}disabled{% endif %}">
             <a href="/author/manage/names?page={{ page - 1 }}&q={{ q }}">Previous</a>
         </li>
-        
         <li class="active">
             <span>{{ page }}</span>
         </li>
-
         <li class="{% if page >= total_pages %}disabled{% endif %}">
             <a href="/author/manage/names?page={{ page + 1 }}&q={{ q }}">Next</a>
         </li>
@@ -356,12 +306,42 @@
 </div>
 
 <script>
+    // 알림창 제어 타이머 변수
+    let _statusHideTimer = null;
+
+    // 알림창 상태 설정 함수 (구독 관리 페이지와 동일 로직)
+    function setStatus(mode, text, badgeText) {
+        const box = document.getElementById("autosave-status");
+        const msg = document.getElementById("autosave-text");
+        const badge = document.getElementById("autosave-badge");
+        if (!box || !msg || !badge) return;
+
+        // 기존 클래스 제거 후 새 모드 추가
+        box.classList.remove("saving", "ok", "fail");
+        if (mode) box.classList.add(mode);
+
+        msg.textContent = text || "";
+        badge.textContent = badgeText || "저장";
+        box.style.display = "flex"; // 보이게 설정
+
+        // 기존 타이머 취소
+        clearTimeout(_statusHideTimer);
+
+        // 2.5초 뒤에 자동으로 사라지게 설정 (ok나 fail일 때만)
+        if (mode === 'ok' || mode === 'fail') {
+            _statusHideTimer = setTimeout(() => {
+                box.style.display = 'none';
+            }, 2500);
+        }
+    }
+
     async function updateStatus(selectElement, name) {
         const isKorean = selectElement.value === "1";
         const originalBg = selectElement.style.backgroundColor;
         const originalColor = selectElement.style.color;
         
-        // 로딩 표시 (노란빛 배경)
+        // 1. 저장 중 상태 표시
+        setStatus("saving", `'${name}' 상태 업데이트 중...`, "저장 중");
         selectElement.style.backgroundColor = "#fff3cd"; 
         selectElement.style.color = "#856404";
         selectElement.disabled = true;
@@ -369,7 +349,6 @@
         let url = "";
         let method = "";
 
-        // API 호출 경로 설정
         if (isKorean) {
             url = `/author/korean/${encodeURIComponent(name)}`;
             method = "POST";
@@ -381,13 +360,14 @@
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
             if (response.ok) {
-                // 성공 시 스타일 업데이트 (한국인: 연녹색 배경 / 그외: 흰색 배경)
+                // 2. 성공 시 알림 표시
+                setStatus("ok", `'${name}' 업데이트 완료`, "저장됨");
+
+                // 스타일 업데이트
                 if (isKorean) {
                     selectElement.style.backgroundColor = "#e8f5e9";
                     selectElement.style.color = "#1b5e20";
@@ -396,24 +376,26 @@
                     selectElement.style.color = "#333333";
                 }
 
-                // 점수 텍스트 업데이트 (DOM 탐색: select의 부모(td)의 이전 형제(td.score-cell))
                 const td = selectElement.parentElement;
                 const scoreCell = td.previousElementSibling; 
-                // HTML 구조상 Name -> Score -> Status 순서이므로 바로 앞 형제가 Score
                 if (scoreCell) {
                     scoreCell.textContent = isKorean ? "1" : "0";
                 }
             } else {
+                // 3. 실패 시 알림 표시
                 const errText = await response.text();
-                alert("Update failed: " + errText);
-                // 실패 시 복구
+                setStatus("fail", `업데이트 실패: ${errText}`, "오류");
+                
+                // 원복
                 selectElement.value = isKorean ? "0" : "1";
                 selectElement.style.backgroundColor = originalBg;
                 selectElement.style.color = originalColor;
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("Network error occurred.");
+            setStatus("fail", "네트워크 오류 발생", "실패");
+            
+            // 원복
             selectElement.value = isKorean ? "0" : "1";
             selectElement.style.backgroundColor = originalBg;
             selectElement.style.color = originalColor;
