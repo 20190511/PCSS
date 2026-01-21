@@ -26,9 +26,9 @@ from pymongo import UpdateOne, ASCENDING
     conf_col.params에 들어갈 수 있는 문자열을 룰로 변환.
       - "sp"                  : base=sp (prefix 제한 없이 venue_id=sp 전체 매칭)
       --> "conf/sp"             : prefix=conf + base=sp (key가 conf/... 인 것만 매칭)
-      - "pacmpl:PLDI"         : base=pacmpl + article의 number="PLDI"일 때만 매칭
+      --> "pacmpl:PLDI"         : base=pacmpl + article의 number="PLDI"일 때만 매칭
       - "journals/pacmpl:PLDI": prefix=journals + base=pacmpl (journals/... 인 것만)
-      - "pacmmod:3:1"         : base=pacmmod + article volume/number
+      - "pacmmod:3:1"         : base=pacmmod + volume/number
       --> "pacmmod:3:1:2025"    : base=pacmmod + volume/number/year
       - "crossref:...."       : elem.crossref가 정확히 일치할 때 매칭
 """
