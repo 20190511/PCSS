@@ -53,7 +53,7 @@ async def start_search(req: SearchRequest, request: Request):
 
     pcs = PCSSEARCHMongo(
         options=req.options,
-        threshold=req.uncertainty,
+        threshold=req.probability,
         startyear=req.startyear,
         endyear=req.endyear,
         countOption=req.countOption,

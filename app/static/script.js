@@ -123,7 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // 초기 라벨 세팅
       (() => {
         const cbs = checkboxGroup.querySelectorAll(".conference-checkbox");
-        const allChecked = cbs.length > 0 && Array.from(cbs).every((cb) => cb.checked);
+        const allChecked =
+          cbs.length > 0 && Array.from(cbs).every((cb) => cb.checked);
         kindToggleBtn.textContent = allChecked ? "전체 해제" : "전체 선택";
       })();
     }
@@ -152,7 +153,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // [수정 1] 단일 선택 -> 다중 선택으로 로직 변경
       // name="option"인 체크박스 중 checked 된 것들을 모두 가져옴
-      const selectedRoleEls = document.querySelectorAll('input[name="option"]:checked');
+      const selectedRoleEls = document.querySelectorAll(
+        'input[name="option"]:checked',
+      );
 
       if (selectedRoleEls.length === 0) {
         alert("검색 기준을 하나 이상 선택해주세요");
@@ -162,7 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // [수정 2] 선택된 값들을 숫자 배열로 변환 (예: [1, 3])
       const options = Array.from(selectedRoleEls).map((el) => Number(el.value));
 
-      const selectedConferences = Array.from(document.querySelectorAll(".conference-checkbox"))
+      const selectedConferences = Array.from(
+        document.querySelectorAll(".conference-checkbox"),
+      )
         .filter((cb) => cb.checked)
         .map((cb) => cb.value);
 
@@ -181,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const payload = {
         options: options, // 백엔드 스키마인 List[int]에 맞춰 배열로 전송
-        uncertainty: Number(filters.uncertainty),
+        probability: Number(filters.probability),
         startyear,
         endyear,
         selectedConferences,

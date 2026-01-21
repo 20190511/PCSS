@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class SearchRequest(BaseModel):
     options: List[int]
-    uncertainty: float
+    probability: float
     startyear: int
     endyear: int
     selectedConferences: List[str]

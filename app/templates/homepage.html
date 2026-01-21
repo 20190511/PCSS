@@ -477,14 +477,14 @@
 
             <!-- 라디오 버튼 -->
             <div class="form-group">
-              <label for="uncertainty"
-                >저자명 한국인 판단 기준값(0.1~1.0)*:</label
+              <label for="probability"
+                >저자명 한국인 판단 기준값(0.0~1.0)*:</label
               >
-              <select id="uncertainty" name="uncertainty">
+              <select id="probability" name="probability">
                 <!-- 옵션 자동 생성 -->
                 <script>
-                  const select = document.getElementById("uncertainty");
-                  for (let i = 0.1; i <= 1.0; i += 0.1) {
+                  const select = document.getElementById("probability");
+                  for (let i = 0.0; i <= 1.0; i += 0.1) {
                     let option = document.createElement("option");
                     option.value = i.toFixed(1);
                     option.textContent = i.toFixed(1);

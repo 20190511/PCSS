@@ -380,7 +380,7 @@
           </tr>
           <tr>
             <td class="option-label">한국인 판단 기준값(0.0-1.0)</td>
-            <td>{{ options.uncertainty }}</td>
+            <td>{{ options.probability }}</td>
           </tr>
           <tr>
             <td class="option-label">선택 학회/학술지</td>
@@ -639,14 +639,14 @@
           form.action = "/author/stats/page";
           form.target = "_blank";
 
-          const uncertainty = {{ options.uncertainty | tojson }};
+          const probability = {{ options.probability | tojson }};
 
           // [수정] target_pid 필드 추가
           const fields = {
             target_author: payload.name, // 이름은 화면 표시용
             target_pid: payload.pid,     // [중요] 검색은 PID로 수행
             url: payload.url,
-            uncertainty: String(uncertainty),
+            probability: String(probability),
           };
 
           Object.entries(fields).forEach(([k, v]) => {

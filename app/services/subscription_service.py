@@ -109,7 +109,7 @@ class SubscriptionNotifier:
             "user": None,                  
             "options": {
                 "options": options,       
-                "uncertainty": threshold, 
+                "probability": threshold, 
                 "startyear": datetime.now().year, 
                 "endyear": datetime.now().year,
                 "countOption": False,

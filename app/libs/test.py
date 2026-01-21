@@ -114,7 +114,7 @@ async def main():
     # 기본 payload (너 스키마에 맞춰 조절)
     payload = {
         "option": 1,
-        "uncertainty": 0.5,
+        "probability": 0.5,
         "startyear": 2024,
         "endyear": 2024,
         "countOption": False,
