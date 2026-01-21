@@ -1,7 +1,6 @@
 from lxml import etree
 from app.db import conf_col, papers_col, authors_col
 import os
-import urllib.parse
 import re
 import sys
 import requests
@@ -16,6 +15,7 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
     SpinnerColumn,
+    Panel,
 )
 from rich.console import Console
 from datetime import datetime, timezone
@@ -538,12 +538,12 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
 
     batch_ops = []
     count = 0
-    matched_count = 0
+    matched_count = 0     # XML에서 룰에 매칭된 논문 수
     context = None
 
-    total_upserted = 0
-    total_modified = 0
-    total_matched = 0
+    total_upserted = 0    # DB에 새로 추가된 수
+    total_modified = 0    # DB에서 내용이 변경된 수
+    total_db_matched = 0  # DB 쿼리 매칭 수 (변경 없음 포함)
 
     completed = False  # 파싱 정상 완료 여부
 
@@ -585,7 +585,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
 
                     title = elem.findtext("title")
                     booktitle_xml = elem.findtext("booktitle")
-                    venue_str = booktitle_xml if booktitle_xml else elem.findtext("journal")
+                    # venue_str 변수는 사용되지 않으므로 제거하거나 유지해도 무방
 
                     matched_count += 1
                     progress.update(task_id, saved=matched_count)
@@ -616,16 +616,14 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                         authors.append(name)
 
                         pid = name_to_pid.get(name)
-
+                        # PID 처리 로직
                         if isinstance(pid, list):
-                            enc = urllib.parse.quote_plus(name)
                             author_pids.append(None)
                             continue
 
                         if pid:
                             author_pids.append(pid)
                         else:
-                            enc = urllib.parse.quote_plus(name)
                             author_pids.append(None)
 
                     record = {
@@ -654,8 +652,6 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
 
                     # =========================
                     # upsert에 last_seen_at 찍기
-                    # - 기존 문서면 updated_at 갱신 + last_seen_at 갱신
-                    # - 새 문서면 created_at 추가
                     # =========================
                     now = datetime.now(timezone.utc)
 
@@ -666,7 +662,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                                 "$set": {
                                     **record,
                                     "updated_at": now,
-                                    "last_seen_at": run_ts,  # 추가
+                                    "last_seen_at": run_ts,
                                 },
                                 "$setOnInsert": {
                                     "created_at": now,
@@ -680,7 +676,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                         res = papers_col.bulk_write(batch_ops, ordered=False)
                         total_upserted += res.upserted_count
                         total_modified += res.modified_count
-                        total_matched += res.matched_count
+                        total_db_matched += res.matched_count
                         batch_ops.clear()
 
                     elem.clear()
@@ -695,7 +691,7 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
                 res = papers_col.bulk_write(batch_ops, ordered=False)
                 total_upserted += res.upserted_count
                 total_modified += res.modified_count
-                total_matched += res.matched_count
+                total_db_matched += res.matched_count
                 batch_ops.clear()
 
         completed = True  # 정상적으로 끝까지 돈 경우에만 True
@@ -710,27 +706,37 @@ def parse_dblp(xml_path, rules_index, name_to_pid, target_confs: list[str]):
         if context:
             del context
 
-    console.print(
-        f"[bold green]완료[/bold green]: 메인 트랙 논문 "
-        f"[bold]{matched_count}[/bold]개 DB 저장"
-    )
-
     # =========================
     #  동기화 삭제 단계
-    # - 이번 실행에서 못 본 문서는 삭제
-    # - 파싱이 정상 완료된 경우에만 수행 (completed=True)
     # =========================
+    deleted_count = 0
     if completed and target_confs:
         del_filter = {
             "conference": {"$in": target_confs},
             "last_seen_at": {"$ne": run_ts},
         }
         del_res = papers_col.delete_many(del_filter)
-        console.print(
-            f"[yellow]동기화 삭제[/yellow]: {del_res.deleted_count} docs deleted"
-        )
+        deleted_count = del_res.deleted_count
     else:
-        console.print("[dim]동기화 삭제 단계 스킵(파싱 비정상 종료 또는 target_confs 없음)[/dim]")
+        if not completed:
+            console.print("[dim]파싱 비정상 종료로 동기화 삭제 스킵[/dim]")
+    
+    # =========================
+    #  [수정됨] 최종 결과 출력 (추가/수정/삭제 상세)
+    # =========================
+    console.print(
+        Panel(
+            f"[bold]논문 동기화 결과 리포트[/bold]\n"
+            f"──────────────────────────────\n"
+            f"• [bold]XML 발견(Target Conf)[/bold]: {matched_count:,} 건\n"
+            f"• [bold blue]신규 추가(Inserted)[/bold blue]: {total_upserted:,} 건\n"
+            f"• [bold green]업데이트(Updated)[/bold green] : {total_modified:,} 건\n"
+            f"• [bold red]삭제됨(Deleted)[/bold red]   : {deleted_count:,} 건\n"
+            f"• [dim]변경 없음(Skipped)[/dim]  : {matched_count - total_upserted - total_modified:,} 건",
+            title="Sync Summary",
+            expand=False
+        )
+    )
 
 
 # 다운로드/압축해제
