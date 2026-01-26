@@ -29,13 +29,15 @@ def get_headers():
 
 LLM_URL = os.getenv("CUSTOM_API_URL")
 CUSTOM_TOKEN = os.getenv("CUSTOM_TOKEN")
+LLM_MODEL = os.getenv("LLM_MODEL", "")
 
 console = Console()
 
-# ======= LLM 함수 =======
-model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
-model_resp.raise_for_status()
-LLM_MODEL = model_resp.json()["data"][0]["id"]
+if not LLM_MODEL:
+    # ======= LLM 함수 =======
+    model_resp = requests.get(f"{LLM_URL}/models", headers=get_headers())
+    model_resp.raise_for_status()
+    LLM_MODEL = model_resp.json()["data"][0]["id"]
 
 def judge_name(name):    
     result = llm_api_answer(
