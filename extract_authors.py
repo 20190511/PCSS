@@ -22,6 +22,8 @@ from rich.console import Console
 from pymongo import UpdateOne
 from pymongo.errors import BulkWriteError
 from dotenv import load_dotenv
+import sys
+import threading
 
 # DB 연결 (사용자 환경의 app.db 구조 유지)
 try:
@@ -83,23 +85,39 @@ def llm_api_answer(query, model):
     except Exception as e:
         return f"ERROR: {str(e)}"
 
-def judge_name(name):    
+stop_event = threading.Event()
+
+def judge_name(name):
+    if stop_event.is_set():
+        return [False, "STOPPED"]
+
     result = llm_api_answer(
-        query = f"Express the likelihood of this {name} being Korean using only a number between 0~1. You need to say number only",
-        model = LLM_MODEL
+        query=f"Express the likelihood of this {name} being Korean using only a number between 0~1. You need to say number only",
+        model=LLM_MODEL
     )
-    # 숫자만 추출
+
+    # 1. API 자체 에러 확인 (ERROR: 문구가 포함된 경우)
+    if "ERROR:" in result:
+        console.print(f"\n[bold red]API CRITICAL ERROR:[/] {result}")
+        stop_event.set()
+        return [False, "Critical API Error"]
+
+    # 2. 숫자 추출 및 유효성 확인
     match = re.findall(r"\d+\.\d+|\d+", result)
     if not match:
-        return [False, result]
+        console.print(f"\n[bold red]INVALID RESPONSE FORMAT:[/] Server returned '{result}' for name '{name}'")
+        stop_event.set()
+        return [False, "Format Error"]
 
     try:
         value = float(match[0])
-        value = max(0.0, min(1.0, value))
+        if not (0.0 <= value <= 1.0):
+            raise ValueError("Out of range")
         return float("{:.1f}".format(value))
-    except:
+    except Exception as e:
+        console.print(f"\n[bold red]PARSING ERROR:[/] {str(e)} (Value: {result})")
+        stop_event.set()
         return [False, "Parsing Error"]
-
 # ======= 파일 다운로드 및 XML 추출 =======
 
 def download_dblp_xml_gz(
@@ -195,20 +213,32 @@ def main():
         task = progress.add_task("LLM Processing", total=len(new_authors), score="-")
         
         for i in range(0, len(new_authors), BULK_SIZE):
+            # 루프 시작 전 중단 플래그 확인
+            if stop_event.is_set():
+                console.print("[bold red]Critical error detected. Terminating program...[/]")
+                sys.exit(1)
+
             batch = new_authors[i : i + BULK_SIZE]
             ops = []
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 future_to_name = {executor.submit(judge_name, name): name for name in batch}
                 for future in as_completed(future_to_name):
+                    res = future.result()
+                    
+                    # 결과가 [False, 사유] 형태라면 즉시 종료 프로세스 진입
+                    if isinstance(res, list) and res[0] is False:
+                        stop_event.set()
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        console.print(f"\n[bold red]Terminating due to:[/][yellow] {res[1]}[/]")
+                        sys.exit(1)
+
                     name = future_to_name[future]
-                    score = 0.0
-                    try:
-                        res = future.result()
-                        if not isinstance(res, list):
-                            score = res
-                            ops.append(UpdateOne({"name": name}, {"$set": {"score": score}, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}, "$currentDate": {"updated_at": True}}, upsert=True))
-                    except Exception as e:
-                        console.print(f"[red]Error {name}:[/] {e}")
+                    score = res
+                    ops.append(UpdateOne(
+                        {"name": name}, 
+                        {"$set": {"score": score}, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}, "$currentDate": {"updated_at": True}}, 
+                        upsert=True
+                    ))
                     progress.update(task, advance=1, score=score)
 
             if ops:
