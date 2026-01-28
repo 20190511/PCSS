@@ -80,7 +80,7 @@ def llm_api_answer(query, model):
     }
     try:
         response = session.post(
-            f"{LLM_URL}/v1/chat/completions",
+            f"{LLM_URL}/chat/completions",
             json=payload,
             headers=get_headers(),
             timeout=120,
