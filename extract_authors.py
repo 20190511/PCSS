@@ -78,7 +78,7 @@ def llm_api_answer(query, model):
     try:
         # requests.post 대신 session.post 사용
         response = session.post(
-            f"{LLM_URL}/v1/chat/completions", # OpenAI 호환 경로 확인
+            f"{LLM_URL}/chat/completions", # OpenAI 호환 경로 확인
             json=payload,
             headers=get_headers(),
             timeout=120,
