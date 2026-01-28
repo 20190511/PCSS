@@ -204,30 +204,54 @@ def main():
     new_authors = [a for a in authors if a not in name_dict]
     console.print(f"Total: {len(authors)} | New: {len(new_authors)}")
 
-    # 병렬 처리 설정
+    if not new_authors:
+        console.print("[yellow]처리할 새로운 저자가 없습니다. 종료합니다.[/]")
+        return
+
     MAX_WORKERS = 16 
     BULK_SIZE = 100
 
-    with Progress(TextColumn("[bold blue]{task.description}"), BarColumn(), TextColumn("{task.completed}/{task.total}"), TextColumn("Score: [bold yellow]{task.fields[score]}"), TimeElapsedColumn(), TimeRemainingColumn(), console=console) as progress:
+    with Progress(
+        TextColumn("[bold blue]{task.description}"), 
+        BarColumn(), 
+        TextColumn("{task.completed}/{task.total}"), 
+        TextColumn("Score: [bold yellow]{task.fields[score]}"), 
+        TimeElapsedColumn(), 
+        TimeRemainingColumn(), 
+        console=console
+    ) as progress:
         task = progress.add_task("LLM Processing", total=len(new_authors), score="-")
         
-        # Executor를 한 번만 생성하여 재사용
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
             for i in range(0, len(new_authors), BULK_SIZE):
-                if stop_event.is_set(): break
+                if stop_event.is_set(): 
+                    console.print("[red]Stop event detected. Exiting loop...[/]")
+                    break
 
                 batch = new_authors[i : i + BULK_SIZE]
+                
+                # 디버깅: 현재 배치 사이즈 확인
+                # console.print(f"Processing batch {i} to {i+len(batch)}") 
+
                 futures = {executor.submit(judge_name, name): name for name in batch}
                 
                 ops = []
                 for future in as_completed(futures):
                     name = futures[future]
-                    res = future.result()
+                    try:
+                        res = future.result()
+                    except Exception as e:
+                        console.print(f"\n[red]Thread Error:[/] {e}")
+                        continue
                     
                     if isinstance(res, list) and res[0] is False:
-                        # API 일시적 오류(503)라면 스킵하고 진행, 치명적이면 종료
-                        if "503" in res[1]: 
+                        # 503 에러면 잠깐 쉬었다가 다시 하게 하거나 스킵
+                        if "503" in str(res[1]):
+                            console.print(f"\n[yellow]Server busy (503), skipping {name}[/]")
                             continue
+                        
+                        # 진짜 치명적인 에러면 중단
+                        console.print(f"\n[bold red]Critical Error:[/] {res[1]}")
                         stop_event.set()
                         break
 
@@ -239,7 +263,13 @@ def main():
                     progress.update(task, advance=1, score=res)
 
                 if ops:
-                    name_col.bulk_write(ops, ordered=False)
+                    try:
+                        name_col.bulk_write(ops, ordered=False)
+                    except BulkWriteError as bwe:
+                        # console.print(f"\n[red]Bulk Write Error:[/] {bwe.details}")
+                        pass
+
+    console.print("[bold green]모든 작업이 완료되었습니다.[/]")
 
 def rejudge_high_score_names(threshold: float = 0.7):
     targets = list(name_col.find({"score": {"$gte": threshold}}, {"_id": 0, "name": 1, "score": 1}))
