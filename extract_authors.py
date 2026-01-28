@@ -65,58 +65,60 @@ if not LLM_MODEL:
 
 # ======= LLM 핵심 함수 =======
 
+stop_event = threading.Event()
+
 def llm_api_answer(query, model):
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are an expert in determining the likelihood that a given name is Korean."},
+            # 시스템 프롬프트를 curl 예시와 동일하게 수정
+            {"role": "system", "content": "You are a helpful assistant that only responds with numbers."},
             {"role": "user", "content": query},
         ],
-        "temperature": 0.1,
+        "temperature": 0.0,  # curl 테스트와 동일하게 0.0으로 설정
         "max_tokens": 10,
     }
     try:
-        # requests.post 대신 session.post 사용
         response = session.post(
-            f"{LLM_URL}/chat/completions", # OpenAI 호환 경로 확인
+            f"{LLM_URL}/v1/chat/completions",
             json=payload,
             headers=get_headers(),
             timeout=120,
         )
-        response.raise_for_status() # 503 등 에러 발생 시 예외 발생
+        response.raise_for_status()
         result = response.json()
         return result["choices"][0]["message"]["content"]
     except Exception as e:
         return f"ERROR: {str(e)}"
 
-stop_event = threading.Event()
-
 def judge_name(name):
     if stop_event.is_set():
         return [False, "STOPPED"]
 
-    result = llm_api_answer(
-        query=f"Probability (0.0 to 1.0) of '{name}' being a Korean name. Respond with the number only.",
-        model=LLM_MODEL
+    # curl에서 성공한 쿼리 템플릿 그대로 적용
+    query = (
+        f"Task: Output only a single float number between 0.0 and 1.0 "
+        f"representing the probability that '{name}' is a Korean name. "
+        f"No JSON, no explanation.\nExample: 0.95\nValue:"
     )
 
+    result = llm_api_answer(query=query, model=LLM_MODEL)
+
     if "ERROR:" in result:
-        # 503(로딩 중) 에러가 로그에 포함되어 있다면 재시도 대상이 되도록 리턴
         return [False, f"API Error: {result}"]
 
-    # 숫자 추출 로직 보완: 소수점 포함 숫자만 정확히 매칭
+    # 숫자 추출 (문자열에서 숫자만 골라냄)
     match = re.search(r"([0-1]\.\d+|[01])", result)
     if not match:
-        # 가끔 모델이 이상한 소리를 하면 로그만 찍고 이 데이터는 넘어가도록 처리
         return 0.0 
 
     try:
         value = float(match.group(1))
-        # 범위를 벗어난 값 제어
         value = max(0.0, min(1.0, value))
         return round(value, 2)
     except:
         return 0.0
+
 # ======= 파일 다운로드 및 XML 추출 =======
 
 def download_dblp_xml_gz(

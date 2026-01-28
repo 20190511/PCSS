@@ -63,7 +63,7 @@ authors_col = mongo_db['authors']
 
 import json
 
-json_file_path = os.path.join(os.path.dirname(__file__), 'llm_name.json')
+json_file_path = os.path.join(os.path.dirname(__file__), 'llm_names.json')
 with open(json_file_path, 'r', encoding='utf-8') as f:
     json_data = json.load(f)
 
