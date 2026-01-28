@@ -97,9 +97,9 @@ def judge_name(name):
 
     # curl에서 성공한 쿼리 템플릿 그대로 적용
     query = (
-        f"Task: Output only a single float number between 0.0 and 1.0 "
+        f"Task: Output only a single float number from 0.0 to 1.0 (inclusive) "
         f"representing the probability that '{name}' is a Korean name. "
-        f"No JSON, no explanation.\nExample: 0.95\nValue:"
+        f"No JSON, no explanation.\nExample: 1.0\nValue:"
     )
 
     result = llm_api_answer(query=query, model=LLM_MODEL)
