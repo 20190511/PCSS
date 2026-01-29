@@ -271,6 +271,10 @@ def main():
                         # console.print(f"\n[red]Bulk Write Error:[/] {bwe.details}")
                         pass
 
+    if os.path.exists(authors_json):
+        cleanup_files(authors_json)
+        console.print(f"[yellow]임시 파일 삭제 완료: {authors_json}[/]")
+        
     console.print("[bold green]모든 작업이 완료되었습니다.[/]")
 
 def rejudge_high_score_names(threshold: float = 0.7):

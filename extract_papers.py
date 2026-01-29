@@ -15,8 +15,8 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
     SpinnerColumn,
-    Panel,
 )
+from rich.panel import Panel
 from rich.console import Console
 from datetime import datetime, timezone
 from pymongo import UpdateOne, ASCENDING
