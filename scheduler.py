@@ -10,6 +10,7 @@ from app.db import name_col, authors_col
 import extract_authors as extract_authors
 import extract_papers as extract_papers
 from app.services.subscription_service import SubscriptionNotifier
+from multiprocessing import Process
 
 
 if platform.system() == 'Windows':
@@ -51,53 +52,43 @@ def refresh_author_list():
         print(f"!!! author_list 갱신 중 에러 발생: {e}")
         traceback.print_exc()
 
+
+def run_step_in_process(target_func, *args):
+    """별도 프로세스에서 함수를 실행하여 종료 시 메모리를 완전히 회수함"""
+    p = Process(target=target_func, args=args)
+    p.start()
+    p.join()  # 작업 완료까지 대기
+    
+
 def run_job():
-    """
-    1. DBLP XML 파일 정리
-    2. 논문 추출 (DB 적재)
-    3. 저자 추출 (DB 적재)
-    4. [New] 전역 name_dict 캐시 갱신
-    5. 구독자 이메일 알림 발송
-    """
     xml_path = os.path.join(os.path.dirname(__file__), "dblp.xml")
     
-    # 1~3단계: 데이터 업데이트
-    steps = [
-        ("DBLP XML 정리", lambda: extract_papers.cleanup_files(xml_path) if os.path.exists(xml_path) else None),
-        ("논문 추출", extract_papers.main),
-        ("저자 추출", extract_authors.main),
-    ]
-
     print(f"\n[{datetime.now()}] === 월간 업데이트 작업 시작 ===")
     
-    data_update_success = True
+    try:
+        # 1. 파일 정리
+        if os.path.exists(xml_path):
+            extract_papers.cleanup_files(xml_path)
 
-    for name, func in steps:
-        print(f"[{datetime.now()}] {name} 시작...")
-        try:
-            func()
-            print(f"[{datetime.now()}] {name} 완료.")
-        except Exception as e:
-            print(f"!!! {name} 중 에러 발생: {e}")
-            traceback.print_exc()
-            data_update_success = False
-            # break 
-
-    if data_update_success:
+        # 2~3. 논문 및 저자 추출 (별도 프로세스로 실행하여 메모리 격리)
+        print(f"[{datetime.now()}] 논문 추출 시작 (프로세스 분리)...")
+        run_step_in_process(extract_papers.main)
+        
+        print(f"[{datetime.now()}] 저자 추출 시작 (프로세스 분리)...")
+        run_step_in_process(extract_authors.main)
+        
+        # 4. 캐시 갱신 및 알림 (이 부분은 메모리 부담이 적으므로 메인에서 실행)
         print(f"[{datetime.now()}] 최신 저자 정보 메모리 로드 시작...")
         refresh_name_dict()
         refresh_author_list()
-        # 5단계: 구독 알림 발송
+        
         print(f"[{datetime.now()}] 구독 알림 발송 서비스 시작...")
-        try:
-            notifier = SubscriptionNotifier()
-            asyncio.run(notifier.run())
-            print(f"[{datetime.now()}] 구독 알림 발송 완료.")
-        except Exception as e:
-            print(f"!!! 구독 알림 발송 중 에러 발생: {e}")
-            traceback.print_exc()
-    else:
-        print(f"[{datetime.now()}] 데이터 갱신 실패로 알림 발송을 건너뜁니다.")
+        notifier = SubscriptionNotifier()
+        asyncio.run(notifier.run())
+        
+    except Exception as e:
+        print(f"!!! 작업 중 에러 발생: {e}")
+        traceback.print_exc()
 
     print(f"[{datetime.now()}] === 모든 작업 종료 ===\n")
 
