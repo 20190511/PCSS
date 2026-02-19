@@ -1,9 +1,8 @@
 # app/db/mongo_async.py
 import os
-import socket
 import asyncio
 from typing import Optional
-
+import platform
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 
@@ -40,8 +39,8 @@ _tunnel_local_port: Optional[int] = None
 
 
 def _is_server() -> bool:
-    hostname = socket.gethostname().lower()
-    return ("knpu" in hostname) or ("server" in hostname)
+    is_server = platform.system() == "Linux" and os.path.exists("/etc/os-release") and "ubuntu" in open("/etc/os-release").read().lower()
+    return is_server
 
 
 def _build_mongo_uri(host: str, port: int) -> str:
