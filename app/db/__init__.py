@@ -2,6 +2,8 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv 
 import socket
+import platform
+
 load_dotenv()
 
 DB_NAME = "pcss"
@@ -20,7 +22,7 @@ MONGO_PASSWORD = os.getenv("MONGO_PASSWORD")
 MONGO_AUTH_DB = os.getenv("MONGO_AUTH_DB", "admin")
 
 hostname = socket.gethostname()
-is_server = ("knpu" in hostname or "server" in hostname)  # 서버 이름 기준으로 판단
+is_server = platform.system() == "Linux" and os.path.exists("/etc/os-release") and "ubuntu" in open("/etc/os-release").read().lower()
 
 if is_server:
     # 서버 내부에서 실행 → 로컬 MongoDB 바로 사용
