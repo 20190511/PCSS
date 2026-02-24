@@ -2,36 +2,49 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- 모바일 대응을 위한 meta 태그 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PCSS</title>
     <style>
       /* 기본 라이트 모드 스타일 */
       body {
-        font-family: Arial, sans-serif;
+        font-family: 'Noto Sans KR', Arial, sans-serif; /* 폰트 개선 */
         margin: 0;
         padding: 0;
         background-color: #f9f9f9;
         color: #333;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
       }
 
       .container {
         display: flex;
-        flex-direction: row; /* 메인 콘텐츠와 선택된 컨퍼런스 리스트를 가로로 배치 */
+        flex-direction: row;
         max-width: 1400px;
         margin: auto;
         padding: 20px;
+        flex: 1; /* Footer를 하단으로 밀기 위함 */
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .main-content {
-        flex: 3; /* 메인 콘텐츠가 더 많은 공간 차지 */
+        flex: 3;
         padding-right: 20px;
+        width: 100%;
       }
 
-      h1 {
+      /* Header 로고 스타일 변경 */
+      .header-logo-container {
         text-align: center;
         margin-bottom: 40px;
-        color: rgba(200, 1, 80, 1);
+        margin-top: 20px;
+      }
+      
+      .header-logo-container img {
+        max-width: 100%;
+        height: auto;
+        max-height: 80px; /* 로고 크기 조절 */
       }
 
       .form-section {
@@ -39,13 +52,12 @@
         align-items: center;
         justify-content: center;
         gap: 20px;
-        padding: 10px;
+        padding: 15px;
         background-color: #ffffff;
         border: 1px solid #ddd;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         margin-bottom: 30px;
-        /* 모바일에서 줄바꿈을 위해 추가 */
         flex-wrap: wrap;
       }
 
@@ -58,11 +70,12 @@
       .form-group label {
         font-weight: bold;
         color: #34495e;
+        font-size: 0.9rem;
       }
 
       .form-group input,
       .form-group select {
-        padding: 5px 10px;
+        padding: 6px 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
         background-color: #fff;
@@ -70,7 +83,7 @@
       }
 
       #submit-btn {
-        padding: 10px 20px;
+        padding: 8px 24px;
         background-color: rgba(200, 1, 80, 1);
         color: white;
         border: none;
@@ -78,20 +91,21 @@
         cursor: pointer;
         font-weight: bold;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.2s;
       }
 
       #submit-btn:hover {
-        background-color: rgb(194, 50, 108);
+        background-color: rgb(170, 0, 60);
       }
 
       .select-all-container {
         display: flex;
         justify-content: flex-start;
         align-items: center;
-        gap: 10px;           /* 버튼 사이 간격 */
-        margin-bottom: 20px;z
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
       }
-      
 
       .select-btn {
         padding: 8px 15px;
@@ -100,13 +114,12 @@
         border: none;
         border-radius: 4px;
         cursor: pointer;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         transition: background-color 0.3s ease;
-        text-decoration: none;      /* 추가: a 밑줄 제거 */
-        display: inline-flex;       /* 추가: a도 버튼처럼 */
+        text-decoration: none;
+        display: inline-flex;
         align-items: center;
       }
-      
 
       .select-btn:hover {
         background-color: #2c3e50;
@@ -114,154 +127,185 @@
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 20px;
+        margin-bottom: 40px;
       }
 
       .card {
         background: #fff;
-        border: 1px solid #ddd;
+        border: 1px solid #eee;
         border-radius: 8px;
         padding: 20px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       }
 
       .card h2 {
         margin-top: 0;
         color: #34495e;
+        font-size: 1.2rem;
+        border-bottom: 2px solid rgba(200, 1, 80, 0.1);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
       }
 
       .checkbox-group {
-        margin-top: 10px;
+        flex: 1;
+        margin-top: 5px;
       }
 
       .checkbox-group label {
-        display: block;
-        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+      }
+      
+      .checkbox-group input[type="checkbox"] {
+        margin-right: 8px;
       }
 
-      /* Footer 스타일 */
-      .footer {
-        text-align: center;
-        font-size: 12px;
-        margin-top: 20px;
+      .kind-toggle-btn {
+        width: 100%;
+        margin-top: 15px;
         padding: 10px 0;
-        /* 별도의 배경색이나 테두리 없이 깔끔하게 */
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background-color: #f1f3f5;
+        color: #495057;
+        transition: background-color 0.2s;
       }
-
-      /* footer 내부 컨테이너를 세로 정렬 */
-      .footer-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-      }
-
-      .footer-container p {
-        margin: 0;
-        font-weight: bold;
-      }
-
-      /* 각 사용자 정보를 한 줄에 깔끔하게 정렬 */
-      .user {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 13px;
-      }
-
-      /* 링크 기본 스타일 */
-      .user a {
-        text-decoration: none;
-        transition: color 0.3s;
-      }
-
-      /* 호버 시 언더라인 */
-      .user a:hover {
-        text-decoration: underline;
-      }
-
-      /* (선택사항) Contact: 텍스트를 span으로 감싸면 고정폭을 줄 수도 있음 */
-      .contact-label {
-        display: inline-block;
-        width: 60px; /* 필요에 따라 조정 */
-        text-align: right;
-      }
-
-      /* 라이트 모드 색상 */
-      .footer {
-        color: #666;
-      }
-
-      .user a {
-        color: #007bff;
+      
+      .kind-toggle-btn:hover {
+        background-color: #e9ecef;
       }
 
       .author-role-group {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         flex-wrap: wrap;
       }
 
       .author-role-group label {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         font-weight: normal;
         white-space: nowrap;
+        font-size: 0.9rem;
+      }
+      
+      /* --- New Footer Style (POSTECH Official Look) --- */
+      .footer-wrapper {
+        background-color: #2b2b2b; /* 짙은 회색 배경 */
+        color: #aaa;
+        width: 100%;
+        padding: 40px 0;
+        margin-top: auto;
+        border-top: 1px solid #444;
       }
 
-      .form-group.author-role {
+      .footer-inner {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
         display: flex;
-        align-items: center;
-        gap: 16px;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 30px;
       }
 
-      .card {
+      .footer-left {
+        flex: 1;
+        min-width: 300px;
+      }
+      
+      .footer-title {
+        color: #fff;
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+      }
+
+      .footer-info {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #999;
+      }
+      
+      .footer-info p {
+        margin: 4px 0;
+      }
+
+      .footer-info a {
+        color: #bbb;
+        text-decoration: none;
+        transition: color 0.3s;
+      }
+      
+      .footer-info a:hover {
+        color: #fff;
+        text-decoration: underline;
+      }
+
+      .copyright {
+        margin-top: 20px;
+        font-size: 11px;
+        color: #666;
+      }
+
+      .footer-right {
         display: flex;
         flex-direction: column;
-      }
-      
-      /* 체크박스 영역이 남은 공간을 차지하도록 */
-      .checkbox-group {
-        flex: 1;
-      }
-      
-      /* 카드 하단 전체폭 버튼 */
-      .kind-toggle-btn {
-        width: 100%;
-        margin-top: 12px;        /* 체크박스와 간격 */
-        padding: 10px 0;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 700;
-        background-color: #34495e;
-        color: white;
-      }
-      
-      .kind-toggle-btn:hover {
-        background-color: #2c3e50;
+        align-items: flex-end;
+        gap: 15px;
       }
 
-      /* 다크 모드 스타일 */
+      .footer-logos {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      
+      .footer-logo-img {
+        height: 24px; /* 로고 높이 조정 */
+        width: auto;
+        opacity: 0.9;
+      }
+      
+      .footer-logo-text {
+        height: 14px;
+        width: auto;
+        opacity: 0.8;
+      }
+
+      /* 다크 모드 대응 */
       @media (prefers-color-scheme: dark) {
         body {
           background-color: #181818;
           color: #e0e0e0;
         }
         .container {
-          background-color: #242424;
-        }
-        h1 {
-          color: #ff88a2;
+          background-color: transparent;
         }
         .form-section {
           background-color: #2c2c2c;
           border: 1px solid #444;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
         .form-group label {
           color: #ccc;
@@ -272,107 +316,70 @@
           border: 1px solid #555;
           color: #eee;
         }
-        #submit-btn {
-          background-color: #b3305c;
-        }
-        #submit-btn:hover {
-          background-color: #a02c52;
-        }
-        .select-btn {
-          background-color: #555;
-        }
-        .select-btn:hover {
-          background-color: #444;
-        }
-        .grid .card {
-          background-color: #333;
-          border: 1px solid #555;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-          color: #ddd;
+        .card {
+          background-color: #2c2c2c;
+          border: 1px solid #444;
         }
         .card h2 {
           color: #ddd;
         }
-        .footer {
-          color: #aaa;
-        }
-        .footer-link {
-          color: #4da6ff;
-        }
-        /* 테이블 다크 모드 */
-        table {
-          background-color: #2c2c2c;
-          color: #e0e0e0;
-        }
-        table th,
-        table td {
-          border: 1px solid #444;
-        }
-        table th {
-          background-color: #3a3a3a;
-          color: #ff88a2;
-        }
-        table td {
-          background-color: #242424;
-        }
-        .footer {
-          color: #aaa;
-        }
-        .user a {
-          color: #4da6ff;
-        }
-        .author-role-group label {
+        .kind-toggle-btn {
+          background-color: #444;
           color: #ddd;
         }
-        .kind-toggle-btn {
+        .kind-toggle-btn:hover {
           background-color: #555;
         }
-        .kind-toggle-btn:hover {
-          background-color: #444;
-        }
+        /* Footer는 이미 Dark 테마이므로 큰 변경 불필요 */
       }
 
       /* 반응형 디자인 */
       @media (max-width: 768px) {
-        body {
-          font-size: 14px;
-        }
         .container {
-          flex-direction: column; /* 세로 배치 */
-          max-width: 100%;
+          flex-direction: column;
           padding: 10px;
         }
         .main-content {
-          padding-right: 0; /* 우측 여백 제거 */
+          padding-right: 0;
         }
         .form-section {
           flex-direction: column;
-          align-items: flex-start; /* 왼쪽 정렬 */
-          gap: 10px;
+          align-items: flex-start;
         }
         .form-group {
           width: 100%;
           justify-content: space-between;
         }
-        .select-all-container {
-          justify-content: center;
+        .author-role-group {
+            flex-wrap: wrap;
         }
-        h1 {
-          font-size: 24px;
+        
+        .footer-inner {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .footer-left {
+            align-items: center;
+        }
+        .footer-right {
+            align-items: center;
         }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <!-- 메인 콘텐츠 -->
       <div class="main-content">
-        <h1>PCSS: POSTECH Computer Scientist Search</h1>
+        
+        <div class="header-logo-container">
+            <img src="static/title.png" alt="PCSS: POSTECH Computer Scientist Search">
+        </div>
 
         {% if email %}
         <div style="
             text-align: center; 
-            margin-top: -30px; 
+            margin-top: -20px; 
             margin-bottom: 30px; 
             font-size: 13px; 
             opacity: 0.7; 
@@ -381,140 +388,96 @@
         </div>
         {% endif %}
 
-        <!-- 드롭다운 메뉴와 입력 옵션 -->
         <div class="form-section">
-          <form
-            id="filter-form"
-            style="
-              display: flex;
-              gap: 20px;
-              align-items: center;
-              flex-wrap: wrap;
-            "
-          >
-            <!-- 드롭다운 메뉴 -->
+          <form id="filter-form" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; width: 100%;">
             <div class="form-group author-role">
               <label>한국인 필터링 기준(OR)</label>
               <div class="author-role-group">
-                <label>
-                  <input type="checkbox" name="option" value="1" checked />
-                  1저자
-                </label>
-                <label>
-                  <input type="checkbox" name="option" value="2" />
-                  2저자
-                </label>
-                <label>
-                  <input type="checkbox" name="option" value="3" />
-                  마지막 저자
-                </label>
-                <label>
-                  <input type="checkbox" name="option" value="4" />
-                  기타 공저자
-                </label>
+                <label><input type="checkbox" name="option" value="1" checked /> 1저자</label>
+                <label><input type="checkbox" name="option" value="2" /> 2저자</label>
+                <label><input type="checkbox" name="option" value="3" /> 마지막 저자</label>
+                <label><input type="checkbox" name="option" value="4" /> 기타 공저자</label>
               </div>
             </div>
-            <!-- 시작 연도 선택 -->
-            <div class="form-group">
-              <label for="startyear">시작 연도:</label>
-              <select id="startyear" name="startyear">
-                <script>
-                  const startSelect = document.getElementById("startyear");
-                  for (let i = 2010; i <= 2026; i++) {
-                    let option = document.createElement("option");
-                    option.value = i;
-                    option.textContent = i;
-                    if (i === 2025) {
-                      option.selected = true; // 기본값 설정
-                    }
-                    startSelect.appendChild(option);
-                  }
-                </script>
-              </select>
+            
+            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                <div class="form-group">
+                  <label for="startyear">시작 연도:</label>
+                  <select id="startyear" name="startyear">
+                    <script>
+                      const startSelect = document.getElementById("startyear");
+                      for (let i = 2010; i <= 2026; i++) {
+                        let option = document.createElement("option");
+                        option.value = i;
+                        option.textContent = i;
+                        if (i === 2025) option.selected = true;
+                        startSelect.appendChild(option);
+                      }
+                    </script>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="endyear">끝 연도:</label>
+                  <select id="endyear" name="endyear">
+                    <script>
+                      const endSelect = document.getElementById("endyear");
+                      function updateEndYearOptions(startValue) {
+                        const prev = endSelect.value ? parseInt(endSelect.value, 10) : null;
+                        endSelect.innerHTML = "";
+                        for (let i = startValue; i <= 2026; i++) {
+                          const opt = document.createElement("option");
+                          opt.value = i;
+                          opt.textContent = i;
+                          endSelect.appendChild(opt);
+                        }
+                        if (prev !== null && prev >= startValue && prev <= 2026) {
+                          endSelect.value = String(prev);
+                        } else {
+                          endSelect.value = String(startValue);
+                        }
+                      }
+                      updateEndYearOptions(2025);
+                      document.getElementById("startyear").addEventListener("change", function () {
+                        updateEndYearOptions(parseInt(this.value, 10));
+                      });
+                    </script>
+                  </select>
+                </div>
             </div>
 
-            <!-- 끝 연도 선택 -->
             <div class="form-group">
-              <label for="endyear">끝 연도:</label>
-              <select id="endyear" name="endyear">
-                <script>
-                  const endSelect = document.getElementById("endyear");
-
-                  function updateEndYearOptions(startValue) {
-                    // 1) 현재 선택된 끝 연도 값 저장
-                    const prev = endSelect.value
-                      ? parseInt(endSelect.value, 10)
-                      : null;
-
-                    // 2) 옵션 재생성
-                    endSelect.innerHTML = "";
-                    for (let i = startValue; i <= 2026; i++) {
-                      const opt = document.createElement("option");
-                      opt.value = i;
-                      opt.textContent = i;
-                      endSelect.appendChild(opt);
-                    }
-
-                    // 3) 이전 선택이 여전히 유효하면 유지, 아니면 시작 연도로 설정
-                    if (prev !== null && prev >= startValue && prev <= 2026) {
-                      endSelect.value = String(prev);
-                    } else {
-                      endSelect.value = String(startValue);
-                    }
-                  }
-
-                  // 기본값: 시작 연도(초기 기본 2024)에 맞춰 렌더링
-                  updateEndYearOptions(2025);
-
-                  // 시작 연도 변경 시: 끝 연도 옵션 갱신하되, 기존 선택 유지 가능하면 유지
-                  startSelect.addEventListener("change", function () {
-                    const s = parseInt(this.value, 10);
-                    updateEndYearOptions(s);
-                  });
-                </script>
-              </select>
-            </div>
-
-            <!-- 라디오 버튼 -->
-            <div class="form-group">
-              <label for="probability"
-                >저자명 한국인 판단 기준값(0.0~1.0)*:</label
-              >
+              <label for="probability">저자명 한국인 판단 기준값(0.0~1.0)*:</label>
               <select id="probability" name="probability">
-                <!-- 옵션 자동 생성 -->
                 <script>
-                  const select = document.getElementById("probability");
+                  const probSelect = document.getElementById("probability");
                   for (let i = 0.0; i <= 1.0; i += 0.1) {
                     let option = document.createElement("option");
                     option.value = i.toFixed(1);
                     option.textContent = i.toFixed(1);
-                    if (i === 0.5) {
-                      option.selected = true; // 기본값 0.5 선택
-                    }
-                    select.appendChild(option);
+                    if (i === 0.5) option.selected = true;
+                    probSelect.appendChild(option);
                   }
                 </script>
               </select>
             </div>
 
-            <!-- 제출 버튼 -->
             <button type="button" id="submit-btn">검색</button>
           </form>
-          <div style="text-align: right; font-size: 11px; color: #888; width: 94%;">
+          <div style="text-align: right; font-size: 11px; color: #888; width: 100%; margin-top: 8px;">
             *Llama3.3 모델을 사용하여 각 저자가 한국인일 확률을 얻고 기준값보다 크거나 같은 것만 한국인으로 판단합니다.
           </div>
         </div>
-        <details class="pcss-notice" style="margin: 16px 0" open>
-          <div class="notice-body">
-            <p><strong>결과 페이지 표기 규칙</strong></p>
-            <ul>
-              <li>
-                저자명 옆의 숫자는 Llama
-                (<code>Llama3.3:70b-instruct-q8_0</code>)가 한국인일 것으로
-                판별한 확률(0-1.0)입니다.
-              </li>
-            </ul>
-          </div>
+
+        <details class="pcss-notice" style="margin: 16px 0; color: #555; font-size: 0.9rem;" open>
+            <summary style="cursor: pointer; font-weight: bold; margin-bottom: 5px;">결과 페이지 표기 규칙 (Click to fold)</summary>
+            <div class="notice-body" style="padding: 10px; background: #fff; border: 1px solid #eee; border-radius: 4px;">
+                <ul style="margin: 0; padding-left: 20px;">
+                <li>
+                    저자명 옆의 숫자는 Llama (<code>Llama3.3:70b-instruct-q8_0</code>)가 한국인일 것으로 판별한 확률(0-1.0)입니다.
+                </li>
+                </ul>
+            </div>
         </details>
 
         <div class="select-all-container">
@@ -522,55 +485,54 @@
 
           {% if email %}
             <form action="/auth/logout" method="post" style="display: inline-block;" onsubmit="return confirm('로그아웃 하시겠습니까?');">
-              <button type="submit" class="select-btn" style="font-family: inherit; font-size: 0.9rem; cursor: pointer;">
-                  로그아웃
-              </button>
+              <button type="submit" class="select-btn">로그아웃</button>
             </form>
           {% else %}
             <a class="select-btn" href="/auth/login">로그인</a>
           {% endif %}
         
-          <a class="select-btn" id="subscription-manage-btn" href="/subscriptions/manage">
-            구독 관리
-          </a>
-
-          <a class="select-btn" id="board-btn" href="/board">
-            게시판
-          </a>
-
-          <a class="select-btn" id="board-btn" href="/author/search">
-            저자 검색
-          </a>
+          <a class="select-btn" id="subscription-manage-btn" href="/subscriptions/manage">구독 관리</a>
+          <a class="select-btn" id="board-btn" href="/board">게시판</a>
+          <a class="select-btn" id="author-search-btn" href="/author/search">저자 검색</a>
         </div>        
 
-        <!-- 학회 체크박스를 동적으로 생성할 영역 -->
         <div class="grid" id="conference-grid"></div>
       </div>
     </div>
 
     <script src="/static/script.js?v=20260121-1"></script>
-    <footer class="footer">
-      <div class="footer-container">
-        <p style="margin-bottom: 15px; font-size: 12px; opacity: 0.8; word-break: keep-all; padding: 0 10px;">
-          본 서비스는 POSTECH 구성원 대상으로 제공하며, 요청 처리 및 서버 관리 목적에 한해 개인정보를 수집·이용합니다.
-       </p>
-        <p>제작자</p>
-        <div class="user">
-          <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a>
-          <a href="mailto:yojun313@postech.ac.kr">(yojun313@postech.ac.kr)</a> |
-          <a href="https://www.psal.postech.ac.kr/gkim" target="_blank"
-            >Gwangsun Kim</a
-          >
-          <a href="mailto:g.kim@postech.ac.kr">(g.kim@postech.ac.kr)</a>
+
+    <footer class="footer-wrapper">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <div class="footer-title">Address & Contact</div>
+          <div class="footer-info">
+            <p><strong>Department of Computer Science and Engineering, POSTECH</strong></p>
+            <p>77 Cheongam-ro, Nam-gu, Pohang, Gyeongsangbuk-do, Korea (37673)</p>
+            <p style="margin-top: 10px;">
+                <strong>Creators:</strong> 
+                <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a> <a href="mailto:yojun313@postech.ac.kr">(yojun313@postech.ac.kr)</a> | 
+                <a href="https://www.psal.postech.ac.kr/gkim" target="_blank">Prof. Gwangsun Kim</a> <a href="mailto:g.kim@postech.ac.kr">(g.kim@postech.ac.kr)</a>
+            </p>
+            <p style="opacity: 0.7; margin-top: 5px;">
+                본 서비스는 POSTECH 구성원 대상으로 제공하며, 요청 처리 및 서버 관리 목적에 한해 개인정보를 수집·이용합니다.
+            </p>
+            {% if is_admin %}
+            <p style="margin-top: 5px;">
+              <a href="/admin/dashboard" style="color: #ff88a2;">[관리자 대시보드]</a>
+            </p>
+            {% endif %}
+          </div>
+          <div class="copyright">
+            Copyright © 2026. POSTECH CSE. All rights reserved.
+          </div>
         </div>
 
-        {% if is_admin %}
-        <p style="margin-bottom: 10px;">
-          <a href="/admin/dashboard" style="color: inherit; text-decoration: none; font-size: 11px; opacity: 0.7;">
-              [관리자 대시보드]
-          </a>
-        </p>
-        {% endif %}
+        <div class="footer-right">
+            <img src="static/postech-logo.png" alt="POSTECH" class="footer-logo-img">
+            
+            <img src="static/cse-logo.png" alt="CSE" class="footer-logo-text" style="height: auto; width: 220px;">
+        </div>
       </div>
     </footer>
   </body>

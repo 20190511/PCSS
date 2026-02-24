@@ -1,6 +1,5 @@
 from app.db import name_col, conf_col, authors_col
 import os
-import pandas as pd
 import json
 
 
