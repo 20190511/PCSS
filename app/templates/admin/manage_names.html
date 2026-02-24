@@ -192,34 +192,6 @@
       .pagination .disabled a { color: #ccc; pointer-events: none; }
       .footer { text-align: center; font-size: 12px; margin-top: 40px; padding: 20px 0; color: #666; }
 
-      /* 다크 모드 */
-      @media (prefers-color-scheme: dark) {
-        body { background-color: #181818; color: #e0e0e0; }
-        .admin-bar, .form-section, .table-card {
-          background-color: #242424;
-          border-color: #444;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        .admin-info { color: #ccc; }
-        h1 { color: #ff88a2; }
-        
-        /* 알림창 다크 모드 */
-        .status { background: #242424; border-color: #444; color: #e0e0e0; }
-        .status .badge { background: #333; border-color: #555; color: #ddd; }
-        .status.saving .badge { background: rgba(255, 136, 162, 0.1); border-color: #ff88a2; color: #ff88a2; }
-        .status.ok .badge { background: rgba(0, 140, 60, 0.2); border-color: #4caf50; color: #81c784; }
-        .status.fail .badge { background: rgba(179, 38, 38, 0.2); border-color: #e57373; color: #e57373; }
-
-        .search-input { background-color: #3a3a3a; border-color: #555; color: #fff; }
-        table th { background-color: #333; color: #ff88a2; border-bottom-color: #555; }
-        table td { border-bottom-color: #444; }
-        tr:hover { background-color: #2c2c2c; }
-        .status-select { background-color: #3a3a3a; color: #eee; border-color: #555; }
-        .pagination a, .pagination span { background-color: #333; border-color: #555; color: #eee; }
-        .pagination a:hover { background-color: #444; }
-        .info-alert { color: #aaa; }
-      }
-
       @media (max-width: 768px) {
         .admin-bar { flex-direction: column; gap: 10px; text-align: center; }
         .form-section { flex-direction: column; }

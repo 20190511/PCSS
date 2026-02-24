@@ -62,54 +62,6 @@
         text-decoration: none;
         margin-right: 15px;
       }
-      /* 다크 모드 지원 (admin_page.html, bug_write.html 공용) */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #181818;
-          color: #e0e0e0;
-        }
-        .container {
-          background-color: #242424;
-          box-shadow: none;
-          border: 1px solid #333;
-        }
-        h1 {
-          /* notice_write는 원래 핑크, bug_write는 원래 다크블루지만 다크모드에선 통일 */
-          color: #ff88a2;
-        }
-        label {
-          color: #ccc;
-        }
-        input[type="text"],
-        textarea {
-          background-color: #333;
-          border: 1px solid #555;
-          color: #eee;
-        }
-        input::placeholder,
-        textarea::placeholder {
-          color: #888;
-        }
-        /* 버튼 스타일 */
-        button {
-          /* 원래 색상 대비 약간 밝거나 채도를 낮춤 */
-          background-color: #b3305c; /* notice_write 원래색(c80150) 대응 */
-        }
-        /* bug_write.html의 버튼은 원래 파란색 계열이므로 다르게 처리 필요 시 아래 주석 해제 */
-        /* body.bug-write-page button { background-color: #555; }
-            body.bug-write-page button:hover { background-color: #666; }
-            */
-
-        button:hover {
-          background-color: #d43f6f;
-        }
-        a.cancel {
-          color: #aaa;
-        }
-        a.cancel:hover {
-          color: #fff;
-        }
-      }
     </style>
   </head>
   <body>

@@ -15,19 +15,6 @@
         --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       }
 
-      /* 다크 모드 변수 */
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --primary-color: #ff88a2;
-          --bg-color: #121212;
-          --card-bg: #1e1e1e;
-          --text-main: #e0e0e0;
-          --text-sub: #aaaaaa;
-          --border-color: #333333;
-          --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-      }
-
       * {
         box-sizing: border-box;
       }
@@ -103,12 +90,6 @@
         padding: 15px;
         text-align: left;
         border-bottom: 2px solid var(--primary-color);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .options-table th {
-          background-color: rgba(255, 136, 162, 0.1);
-        }
       }
 
       .options-table td {
@@ -195,14 +176,6 @@
         height: 24px;
         animation: spin 0.8s linear infinite;
       }
-
-      @media (prefers-color-scheme: dark) {
-        .spinner {
-          border: 3px solid rgba(255, 255, 255, 0.1);
-          border-top: 3px solid var(--primary-color);
-        }
-      }
-
       @keyframes spin {
         0% {
           transform: rotate(0deg);
@@ -244,12 +217,6 @@
         background-color: #ccc;
         border-radius: 4px;
       }
-      @media (prefers-color-scheme: dark) {
-        pre#output::-webkit-scrollbar-thumb {
-          background-color: #444;
-        }
-      }
-
       /* Footer */
       .footer {
         text-align: center;

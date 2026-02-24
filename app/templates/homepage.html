@@ -17,30 +17,60 @@
         min-height: 100vh;
       }
 
+      /* 1. 메인 컨테이너: 좌우 패딩을 20px로 고정 */
       .container {
         display: flex;
         flex-direction: row;
         max-width: 1400px;
         margin: auto;
-        padding: 20px;
-        flex: 1; /* Footer를 하단으로 밀기 위함 */
+        padding: 20px;      /* 상하좌우 20px */
+        box-sizing: border-box; /* 패딩이 너비에 포함되도록 설정 (중요) */
         width: 100%;
-        box-sizing: border-box;
       }
 
+      /* 2. 메인 콘텐츠 영역: 오른쪽 여백 제거 */
       .main-content {
         flex: 3;
-        padding-right: 20px;
+        padding-right: 0; /* 기존 20px 였던 것을 0으로 변경하여 오른쪽 끝을 맞춤 */
         width: 100%;
       }
 
-      /* Header 로고 스타일 변경 */
+      /* 3. Footer 내부: 메인 컨테이너와 동일한 규격 적용 */
+      .footer-inner {
+        max-width: 1400px;
+        margin: 0 auto;     /* 중앙 정렬 */
+        padding: 0 20px;    /* .container의 좌우 패딩(20px)과 정확히 일치시킴 */
+        box-sizing: border-box; /* 패딩 계산 방식 통일 */
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 30px;
+      }
+
+      /* Header 로고 컨테이너 스타일 변경 */
       .header-logo-container {
-        text-align: center;
+        display: flex;           /* Flexbox 레이아웃 사용 */
+        align-items: center;     /* 세로 중앙 정렬 */
+        justify-content: flex-start; /* 왼쪽 정렬 */
         margin-bottom: 40px;
         margin-top: 20px;
       }
-      
+
+      /* 왼쪽 로고 (가치창출대학 POSTECH) 스타일 */
+      .header-logo-left {
+        height: auto;
+        max-height: 100px;        /* 높이를 적절히 조절 (예: 60px) */
+        margin-right: 20px;      /* 오른쪽 로고와의 간격 설정 */
+      }
+
+      /* 오른쪽 로고 (PCSS 타이틀) 스타일 */
+      .header-logo-right {
+        height: auto;
+        max-height: 80px;        /* 기존 로고 높이 유지 또는 조절 */
+        margin-top: 15px;
+      }
+            
       .header-logo-container img {
         max-width: 100%;
         height: auto;
@@ -218,17 +248,6 @@
         border-top: 1px solid #444;
       }
 
-      .footer-inner {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 30px;
-      }
-
       .footer-left {
         flex: 1;
         min-width: 300px;
@@ -283,55 +302,17 @@
       }
       
       .footer-logo-img {
-        height: 24px; /* 로고 높이 조정 */
+        height: 20px;       /* 원하는 높이로 수정 */
         width: auto;
         opacity: 0.9;
       }
       
       .footer-logo-text {
-        height: 14px;
-        width: auto;
+        width: 150px;       /* 원하는 너비로 수정 */
+        height: auto;
         opacity: 0.8;
       }
 
-      /* 다크 모드 대응 */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #181818;
-          color: #e0e0e0;
-        }
-        .container {
-          background-color: transparent;
-        }
-        .form-section {
-          background-color: #2c2c2c;
-          border: 1px solid #444;
-        }
-        .form-group label {
-          color: #ccc;
-        }
-        .form-group input,
-        .form-group select {
-          background-color: #3a3a3a;
-          border: 1px solid #555;
-          color: #eee;
-        }
-        .card {
-          background-color: #2c2c2c;
-          border: 1px solid #444;
-        }
-        .card h2 {
-          color: #ddd;
-        }
-        .kind-toggle-btn {
-          background-color: #444;
-          color: #ddd;
-        }
-        .kind-toggle-btn:hover {
-          background-color: #555;
-        }
-        /* Footer는 이미 Dark 테마이므로 큰 변경 불필요 */
-      }
 
       /* 반응형 디자인 */
       @media (max-width: 768px) {
@@ -373,8 +354,10 @@
       <div class="main-content">
         
         <div class="header-logo-container">
-            <img src="static/title.png" alt="PCSS: POSTECH Computer Scientist Search">
-        </div>
+          <img src="/static/images/value_postech_logo.png" alt="POSTECH Value Creation University" class="header-logo-left">
+          
+          <img src="/static/images/title.png" alt="PCSS: POSTECH Computer Scientist Search" class="header-logo-right">
+      </div>
 
         {% if email %}
         <div style="
@@ -505,12 +488,12 @@
     <footer class="footer-wrapper">
       <div class="footer-inner">
         <div class="footer-left">
-          <div class="footer-title">Address & Contact</div>
+          <div class="footer-title">Address</div>
           <div class="footer-info">
             <p><strong>Department of Computer Science and Engineering, POSTECH</strong></p>
             <p>77 Cheongam-ro, Nam-gu, Pohang, Gyeongsangbuk-do, Korea (37673)</p>
             <p style="margin-top: 10px;">
-                <strong>Creators:</strong> 
+                <strong>제작자:</strong> 
                 <a href="https://github.com/yojun313" target="_blank">Yojun Moon</a> <a href="mailto:yojun313@postech.ac.kr">(yojun313@postech.ac.kr)</a> | 
                 <a href="https://www.psal.postech.ac.kr/gkim" target="_blank">Prof. Gwangsun Kim</a> <a href="mailto:g.kim@postech.ac.kr">(g.kim@postech.ac.kr)</a>
             </p>
@@ -529,10 +512,14 @@
         </div>
 
         <div class="footer-right">
-            <img src="static/postech-logo.png" alt="POSTECH" class="footer-logo-img">
-            
-            <img src="static/cse-logo.png" alt="CSE" class="footer-logo-text" style="height: auto; width: 220px;">
-        </div>
+          <img src="/static/images/postech-logo.png" alt="POSTECH" class="footer-logo-img">
+          <img src="/static/images/cse-logo.png" alt="CSE" class="footer-logo-text">
+          <a href="https://www.postech.ac.kr/kor/usage-guide/privacy_policy.do" 
+             target="_blank" 
+             style="margin-top: 15px; font-size: 12px; color: #ddd; text-decoration: none; font-weight: bold; opacity: 0.9;">
+             개인정보취급처리방침
+          </a>
+      </div>
       </div>
     </footer>
   </body>
