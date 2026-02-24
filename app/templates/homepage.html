@@ -50,40 +50,25 @@
 
       /* Header 로고 컨테이너 스타일 변경 */
       .header-logo-container {
-        display: flex;
-        justify-content: space-between; /* 로고는 왼쪽, 이메일은 오른쪽 끝으로 밀어냄 */
-        align-items: flex-end;          /* 바닥 라인 기준으로 정렬 (텍스트가 보기 좋음) */
-        width: 100%;                    /* 가로폭을 꽉 채워야 오른쪽 끝으로 감 */
+        display: flex;           /* Flexbox 레이아웃 사용 */
+        align-items: center;     /* 세로 중앙 정렬 */
+        justify-content: flex-start; /* 왼쪽 정렬 */
         margin-bottom: 40px;
         margin-top: 20px;
       }
 
-      /* 왼쪽 로고 그룹 (이미지 2개를 묶는 역할) */
-      .logo-group {
-        display: flex;
-        align-items: flex-end; /* 로고 이미지끼리 바닥 정렬 */
-        gap: 15px;             /* 로고 사이 간격 */
-      }
-
-      /* 왼쪽 로고 (가치창출대학) */
+      /* 왼쪽 로고 (가치창출대학 POSTECH) 스타일 */
       .header-logo-left {
         height: auto;
-        max-height: 90px;
+        max-height: 100px;        /* 높이를 적절히 조절 (예: 60px) */
+        margin-right: 20px;      /* 오른쪽 로고와의 간격 설정 */
       }
 
-      /* 오른쪽 로고 (PCSS 타이틀) */
+      /* 오른쪽 로고 (PCSS 타이틀) 스타일 */
       .header-logo-right {
         height: auto;
-        max-height: 80px;
-        margin-bottom: 5px; /* 시각적 균형을 위해 살짝 띄움 */
-      }
-
-      /* 로그인된 이메일 텍스트 */
-      .user-email {
-        font-size: 14px;
-        font-weight: bold;
-        color: #555;
-        margin-bottom: 10px; /* 로고 바닥보다 살짝 위로 띄움 */
+        max-height: 80px;        /* 기존 로고 높이 유지 또는 조절 */
+        margin-top: 15px;
       }
             
       .header-logo-container img {
@@ -361,14 +346,6 @@
         .footer-right {
             align-items: center;
         }
-        .header-logo-container {
-          flex-direction: column; /* 세로로 쌓임 */
-          align-items: flex-start;
-        }
-        .user-email {
-          align-self: flex-end;   /* 모바일에서도 이메일은 우측에 유지 */
-          margin-top: 10px;
-        }
       }
     </style>
   </head>
@@ -377,31 +354,10 @@
       <div class="main-content">
         
         <div class="header-logo-container">
-            
-          <div class="logo-group">
-              <img src="/static/images/value_postech_logo.png" alt="POSTECH Value Creation University" class="header-logo-left">
-              <img src="/static/images/title.png" alt="PCSS: POSTECH Computer Scientist Search" class="header-logo-right">
-          </div>
-
-          {% if email %}
-          <div class="user-email">
-              {{ email }}
-          </div>
-          {% endif %}
+          <img src="/static/images/value_postech_logo.png" alt="POSTECH Value Creation University" class="header-logo-left">
           
+          <img src="/static/images/title.png" alt="PCSS: POSTECH Computer Scientist Search" class="header-logo-right">
       </div>
-        {% if email %}
-        <div style="
-            margin-left: auto;      
-            font-size: 13px; 
-            opacity: 0.7; 
-            font-weight: bold;
-            white-space: nowrap;    
-            align-self: center;     
-            ">
-            {{ email }}
-        </div>
-        {% endif %}
 
         <div class="form-section">
           <form id="filter-form" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; width: 100%;">
