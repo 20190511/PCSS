@@ -70,6 +70,7 @@
         {% if mode == 'edit' %}글 수정{% else %}버그 제보 / 건의{% endif %}
       </h1>
       <form method="post">
+        <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
         <label>제목</label>
         <input
           type="text"

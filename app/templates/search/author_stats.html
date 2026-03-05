@@ -284,36 +284,46 @@
         }
 
         async function handleKoreanAction() {
-          // 1) 요청 전 상태 -> add/delete 요청 보내고, UI는 즉시 '요청 취소'로 변경
+          function getCsrfToken() {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; csrftoken=`);
+            if (parts.length === 2) {
+              return decodeURIComponent(parts.pop().split(';').shift());
+            }
+            return "";
+          }
+        
+          const csrfToken = getCsrfToken();
+        
           if (!uiPending) {
             uiPending = true;
             setLinkText();
-
-            alert("요청을 전송했습니다."); // 성공 여부 무관, 항상 뜸
-
+        
+            alert("요청을 전송했습니다.");
+        
             const endpoint = initialIsKorean
               ? `/author/delete/korean/${encodeURIComponent(authorName)}`
               : `/author/add/korean/${encodeURIComponent(authorName)}`;
-
+        
             try {
-              await fetch(endpoint, { method: "POST" });
-            } catch (e) {
-              // 네트워크 오류여도 UI는 유지
-            }
+              await fetch(endpoint, {
+                method: "POST",
+                headers: { "x-csrftoken": csrfToken }
+              });
+            } catch (e) {}
             return;
           }
-
-          // 2) '요청 취소' 상태 -> cancel 라우트로 전송
-          alert("요청 취소를 전송했습니다."); // 항상 뜸
-
+        
+          alert("요청 취소를 전송했습니다.");
+        
           const cancelEndpoint = `/author/cancel/korean/${encodeURIComponent(authorName)}`;
           try {
-            await fetch(cancelEndpoint, { method: "POST" });
-          } catch (e) {
-            // 실패해도 알림은 이미 뜸
-          }
-
-          // 취소 후 UI는 다시 요청 상태로 복귀
+            await fetch(cancelEndpoint, {
+              method: "POST",
+              headers: { "x-csrftoken": csrfToken }
+            });
+          } catch (e) {}
+        
           uiPending = false;
           setLinkText();
         }

@@ -160,6 +160,7 @@
           <h2>이메일 입력</h2>
 
           <form method="post" action="/auth/login/send">
+            <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
             <input type="hidden" name="next" value="{{ next }}" />
           
             <div class="form-group">

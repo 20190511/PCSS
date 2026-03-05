@@ -37,6 +37,7 @@
                 <a href="/board/bug/edit/{{ bug['_id'] }}" class="btn btn-edit">수정</a>
                 
                 <form action="/board/bug/delete/{{ bug['_id'] }}" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                    <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                     <button type="submit" class="btn btn-delete">삭제</button>
                 </form>
             {% endif %}

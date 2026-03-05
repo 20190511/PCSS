@@ -343,6 +343,7 @@
       <div class="topbar">
         <div class="whoami">로그인: <span class="mono">{{ email }}</span></div>
         <form method="post" action="/auth/logout" style="margin: 0">
+          <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
           <button
             type="submit"
             class="btn btn-deny"
@@ -363,6 +364,7 @@
         method="post"
         action="/subscriptions/manage/update"
       >
+        <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
         <div class="grid">
           <div class="card">
             <h3>기본 설정</h3>
@@ -662,20 +664,33 @@
         const form = document.getElementById("manage-form");
         if (!form) return;
         if (_isSaving) return;
-
+      
+        function getCsrfToken() {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; csrftoken=`);
+          if (parts.length === 2) {
+            return decodeURIComponent(parts.pop().split(';').shift());
+          }
+          return "";
+        }
+      
         _isSaving = true;
         setStatus("saving", "변경사항 저장 중...", "저장 중");
-
+      
         const fd = new FormData(form);
-
+        const csrfToken = getCsrfToken();
+      
         try {
           const res = await fetch(form.action, {
             method: "POST",
+            headers: {
+              "x-csrftoken": csrfToken
+            },
             body: fd,
             credentials: "same-origin",
           });
           if (!res.ok) throw new Error("save failed");
-
+      
           const now = new Date();
           const t = now.toTimeString().split(" ")[0];
           setStatus("ok", `저장 완료 (${t})`, "저장됨");
@@ -686,7 +701,6 @@
           _isSaving = false;
         }
       }
-
       document.addEventListener("DOMContentLoaded", () => {
         // 옵션 최소 1개 유지
         const optionInputs = Array.from(

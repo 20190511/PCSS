@@ -170,6 +170,7 @@
 
             <div class="search-wrapper">
                 <form id="author-search-form" action="/author/stats/page" method="POST" autocomplete="off">
+                    <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                 
                     <div class="form-group">
                         <label for="author-input" class="form-label">저자 이름</label>

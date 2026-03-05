@@ -117,6 +117,7 @@
         <a href="/" class="btn btn-primary">메인으로 돌아가기</a>
 
         <form action="/logout" method="post" style="width: 100%;">
+            <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
             <input type="hidden" name="next" value="/admin/dashboard">
             <button type="submit" class="btn btn-secondary">로그아웃</button>
         </form>

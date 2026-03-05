@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes.author_routes import router as author_router
 from app.routes.home_routes import router as home_router
@@ -21,6 +22,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse
 from app.core.templates import templates 
 import traceback
+from asgi_csrf import asgi_csrf
+import os
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,33 +47,34 @@ app.add_middleware(
 @app.on_event("startup")
 async def _startup():
     await get_mongo_client()
-    
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    for error in errors:
+        if "input" in error:
+            del error["input"]
+            
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": errors},
+    )
+        
 class AccessControlMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # 1. 예외 경로 설정 (무한 루프 방지 및 필수 리소스 허용)
-        # /static: 스타일/JS 로딩을 위해 필수
-        # /auth: 로그인 페이지 및 인증 로직은 누구나 접근 가능해야 함
-        # /docs, /openapi.json: API 문서 (필요 시 제거 가능)
         if request.url.path.startswith(("/static", "/auth", "/favicon.ico", "/docs", "/openapi.json")):
             return await call_next(request)
-
-        # 2. IP 검사
+        
         ip = get_client_ip(request)
-        # 로컬호스트 또는 POSTECH IP(141.223.*) 인지 확인
         is_internal = ip.startswith("141.223.") or ip in ["127.0.0.1", "::1"]
 
         if is_internal:
-            # 내부망이면 통과
             return await call_next(request)
 
-        # 3. 외부망일 경우 로그인 세션 검사
         email = get_session_email(request)
         if email:
-            # 로그인이 되어 있다면 통과
             return await call_next(request)
 
-        # 4. 조건 불충족 시 로그인 페이지로 강제 리다이렉트
-        # next 파라미터에 현재 가려던 주소를 담아서 보냄
         return RedirectResponse(url=f"/auth/login?next={request.url.path}", status_code=302)
 
 # 미들웨어 등록
@@ -127,3 +131,12 @@ async def custom_500_handler(request: Request, exc: Exception):
         },
         status_code=500
     )
+
+app = asgi_csrf(
+    app, 
+    signing_secret=os.getenv("SUB_AUTH_SECRET", "fallback-secret-key-for-dev"),
+    cookie_name="csrftoken",
+    cookie_samesite="Lax",
+    always_set_cookie=True,
+    cookie_secure=True
+)

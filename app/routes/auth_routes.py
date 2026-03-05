@@ -130,7 +130,7 @@ async def login_verify(
         value=session_id,
         httponly=True,
         samesite="lax",
-        secure=False,  # 배포 https면 True
+        secure=True,
         max_age=14 * 24 * 3600,
     )
     return resp

@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ request.scope['csrftoken']() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PCSS 한국인 확률값 관리</title>
     <style>
@@ -303,6 +304,15 @@
         }
     }
 
+    function getCsrfToken() {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; csrftoken=`);
+        if (parts.length === 2) {
+            return decodeURIComponent(parts.pop().split(';').shift());
+        }
+        return "";
+    }
+
     async function updateStatus(selectElement, name) {
         const isKorean = selectElement.value === "1";
         const originalBg = selectElement.style.backgroundColor;
@@ -324,11 +334,14 @@
             url = `/author/korean/${encodeURIComponent(name)}`;
             method = "DELETE";
         }
-
+        const csrfToken = getCsrfToken();
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-csrftoken': csrfToken
+                }
             });
 
             if (response.ok) {

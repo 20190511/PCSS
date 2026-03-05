@@ -144,6 +144,7 @@
         <h2>메일로 받은 6자리 코드를 입력하세요</h2>
 
         <form method="post" action="/auth/login/verify">
+          <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
           <input type="hidden" name="email" value="{{ email }}" />
           <input type="hidden" name="next" value="{{ next }}" />
         

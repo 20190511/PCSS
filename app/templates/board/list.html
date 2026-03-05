@@ -75,6 +75,7 @@
                             <div style="display: flex;">
                                 <a href="/board/notice/edit/{{ n['_id'] }}" class="btn btn-mini btn-edit">수정</a>
                                 <form action="/board/notice/delete/{{ n['_id'] }}" method="post" onsubmit="return confirm('삭제하시겠습니까?');" style="margin:0;">
+                                    <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                                     <button type="submit" class="btn btn-mini btn-delete">삭제</button>
                                 </form>
                             </div>
@@ -113,6 +114,7 @@
                         <td>
                             {% if is_admin %}
                                 <form action="/board/bug/status/{{ b['_id'] }}" method="post" class="status-form">
+                                    <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                                     <select name="status" class="status-select">
                                         <option value="접수됨" {% if b.status == '접수됨' %}selected{% endif %}>접수됨</option>
                                         <option value="처리 중" {% if b.status == '처리 중' %}selected{% endif %}>처리 중</option>

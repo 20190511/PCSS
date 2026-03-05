@@ -413,73 +413,41 @@
           <h2>새 학회 생성</h2>
 
           <form method="post" action="/conferences/manage/create">
+            <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
             <div class="form-group">
-              <label for="kindSelect">분야</label>
-
-              <div
-                style="
-                  flex: 1;
-                  min-width: 220px;
-                  display: flex;
-                  gap: 10px;
-                  flex-wrap: wrap;
-                "
-              >
-                <!-- 기존 분야 선택 -->
-                <select
-                  id="kindSelect"
-                  class="search kind-field"
-                  style="min-width: 180px"
-                >
-                  <option value="">직접 입력</option>
-                  {% for k in kinds %}
-                  <option value="{{ k }}">{{ k }}</option>
-                  {% endfor %}
-                </select>
-
-                <input
-                  id="kindInput"
-                  type="text"
-                  class="search kind-field"
-                  placeholder="예: ML, CV, NLP"
-                  style="flex: 1; min-width: 220px"
-                />
-
-                <!-- 서버로 실제로 보내는 값 -->
-                <input id="kind" name="kind" type="hidden" />
-              </div>
+                <label for="kindSelect">분야</label>
+                <div style="flex: 1; min-width: 220px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <select id="kindSelect" class="search kind-field" style="min-width: 180px">
+                        <option value="">직접 입력</option>
+                        {% for k in kinds %}
+                        <option value="{{ k }}">{{ k }}</option>
+                        {% endfor %}
+                    </select>
+                    <input id="kindInput" type="text" class="search kind-field" placeholder="예: ML, CV, NLP" style="flex: 1; min-width: 220px" />
+                    <input id="kind" name="kind" type="hidden" />
+                </div>
             </div>
-
+        
             <div class="form-group">
-              <label for="name">이름</label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="예: NeurIPS"
-              />
+                <label for="name">이름</label>
+                <input id="name" name="name" type="text" placeholder="예: NeurIPS" />
             </div>
-
+        
             <div class="form-group" style="align-items: flex-start">
-              <label for="params_text" style="margin-top: 6px">Params</label>
-              <textarea
-                id="params_text"
-                name="params_text"
-                placeholder="줄바꿈/콤마로 여러 개 입력 (필수)"
-                required
-              ></textarea>
+                <label for="params_text" style="margin-top: 6px">Params</label>
+                <textarea id="params_text" name="params_text" placeholder="줄바꿈/콤마로 여러 개 입력 (필수)" required></textarea>
             </div>
-
+        
             <div class="row">
-              <button class="btn" type="submit">생성</button>
-              <button class="btn btn-secondary" type="reset">초기화</button>
+                <button class="btn" type="submit">생성</button>
+                <button class="btn btn-secondary" type="reset">초기화</button>
             </div>
-
+        
             <div class="small">
-              - Params는 전체 문서에서 유일해야 합니다.<br />
-              - base param은 첫 번째 param으로 처리됩니다.
+                - Params는 전체 문서에서 유일해야 합니다.<br />
+                - base param은 첫 번째 param으로 처리됩니다.
             </div>
-          </form>
+        </form>
         </div>
 
         <!-- 우측: 목록 -->
@@ -531,16 +499,9 @@
                   </div>
                 </div>
 
-                <form
-                  method="post"
-                  action="/conferences/manage/{{ base }}/delete"
-                  style="margin: 0"
-                >
-                  <button
-                    class="btn btn-danger"
-                    type="submit"
-                    onclick="return confirm('정말 삭제할까요?');"
-                  >
+                <form method="post" action="/conferences/manage/{{ base }}/delete" style="margin: 0">
+                  <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
+                  <button class="btn btn-danger" type="submit" onclick="return confirm('정말 삭제할까요?');">
                     삭제
                   </button>
                 </form>
@@ -551,11 +512,8 @@
                 <span class="pill">
                   <span class="mono">{{ p }}</span>
                   {% if (c.params | length) > 1 %}
-                  <form
-                    method="post"
-                    action="/conferences/manage/{{ base }}/params/delete"
-                    style="display: inline"
-                  >
+                  <form method="post" action="/conferences/manage/{{ base }}/params/delete" style="display: inline">
+                    <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                     <input type="hidden" name="param" value="{{ p }}" />
                     <button class="x" type="submit" title="삭제">×</button>
                   </form>
@@ -571,12 +529,8 @@
               {% endif %}
 
               <div style="margin-top: 12px">
-                <form
-                  method="post"
-                  action="/conferences/manage/{{ base }}/params/add"
-                  class="row"
-                  style="margin: 0"
-                >
+                <form method="post" action="/conferences/manage/{{ base }}/params/add" class="row" style="margin: 0">
+                  <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                   <input
                     name="params_text"
                     type="text"

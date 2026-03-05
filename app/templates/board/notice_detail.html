@@ -38,6 +38,7 @@
                 <a href="/board/notice/edit/{{ notice['_id'] }}" class="btn btn-edit">수정</a>
                 
                 <form action="/board/notice/delete/{{ notice['_id'] }}" method="post" onsubmit="return confirm('이 공지사항을 정말 삭제하시겠습니까?');">
+                    <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                     <button type="submit" class="btn btn-delete">삭제</button>
                 </form>
             {% endif %}

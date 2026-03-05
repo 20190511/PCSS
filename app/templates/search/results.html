@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ request.scope['csrftoken']() }}">
     <title>PCSS 검색 결과</title>
     <style>
       /* 기본 라이트 모드 스타일 */
@@ -542,24 +543,31 @@
             .replace(/>/g, "&gt;");
         }
 
-        function openAuthorStatsInNewTab(payload) {
-          // payload: { name, pid, url }
+        function getCsrfToken() {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; csrftoken=`);
+            if (parts.length === 2) {
+                return decodeURIComponent(parts.pop().split(';').shift());
+            }
+            return "";
+        }
 
+        function openAuthorStatsInNewTab(payload) {
           const form = document.createElement("form");
           form.method = "POST";
           form.action = "/author/stats/page";
           form.target = "_blank";
-
+        
           const probability = {{ options.probability | tojson }};
-
-          // [수정] target_pid 필드 추가
+        
           const fields = {
-            target_author: payload.name, // 이름은 화면 표시용
-            target_pid: payload.pid,     // [중요] 검색은 PID로 수행
+            csrftoken: getCsrfToken(),
+            target_author: payload.name,
+            target_pid: payload.pid,
             url: payload.url,
             probability: String(probability),
           };
-
+        
           Object.entries(fields).forEach(([k, v]) => {
             const input = document.createElement("input");
             input.type = "hidden";
@@ -567,7 +575,7 @@
             input.value = v;
             form.appendChild(input);
           });
-
+        
           document.body.appendChild(form);
           form.submit();
           form.remove();

@@ -239,11 +239,13 @@
             <td>{{ r.updated_at }}</td>
             <td class="actions">
               <form method="post" action="/author/requests/approve" style="display:inline;">
+                <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                 <input type="hidden" name="name" value="{{ r.name }}">
                 <button class="btn btn-approve" type="submit">수락</button>
               </form>
               
               <form method="post" action="/author/requests/deny" style="display:inline; margin-left:8px;">
+                <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
                 <input type="hidden" name="name" value="{{ r.name }}">
                 <button class="btn btn-deny" type="submit">거절/삭제</button>
               </form>                 

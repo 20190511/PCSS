@@ -22,6 +22,7 @@
         <h1>{% if mode == 'edit' %}공지사항 수정{% else %}공지사항 작성{% endif %}</h1>
         
         <form method="post" action="{{ ('/board/notice/edit/' + notice['_id']|string) if mode == 'edit' else '/board/notice/write' }}">
+            <input type="hidden" name="csrftoken" value="{{ request.scope['csrftoken']() }}">
             <label>제목</label>
             <input type="text" name="title" required placeholder="제목 입력" value="{{ notice.title if notice else '' }}">
             
