@@ -16,3 +16,4 @@ python-multipart
 gunicorn
 sshtunnel
 motor
+starlette-csrf
