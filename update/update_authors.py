@@ -167,12 +167,15 @@ class DeepSeekNameProcessor:
 
 def extract_new_names() -> List[str]:
     with console.status("[bold yellow]Optimizing DB query..."):
-        # name 필드에 인덱스가 없다면 생성 (distinct 성능 향상)
         name_col.create_index([("name", ASCENDING)])
         papers_col.create_index([("author_names", ASCENDING)])
 
     with console.status("[bold yellow]Fetching unique names from papers..."):
-        raw_author_names = papers_col.distinct("author_names")
+        pipeline = [
+            {"$unwind": "$author_names"},
+            {"$group": {"_id": "$author_names"}}
+        ]
+        raw_author_names = [doc["_id"] for doc in papers_col.aggregate(pipeline)]
 
     with console.status("[bold yellow]Cleaning and deduplicating..."):
         cleaned_names = {
@@ -183,7 +186,8 @@ def extract_new_names() -> List[str]:
         cleaned_names.discard("")
 
     with console.status("[bold yellow]Comparing with existing records..."):
-        processed_names = set(name_col.distinct("name"))
+        processed_pipeline = [{"$group": {"_id": "$name"}}]
+        processed_names = {doc["_id"] for doc in name_col.aggregate(processed_pipeline)}
 
     update_targets = list(cleaned_names - processed_names)
     console.print(f"[green]Found {len(update_targets)} new names to process.[/]")
@@ -199,12 +203,12 @@ async def rejudge_high_score_names(threshold: float = 0.7):
         return
 
     console.print(f"[cyan]Starting rejudge for {len(targets)} names...[/]")
-    processor = DeepSeekNameProcessor(max_concurrency=150, batch_update_size=500)
+    processor = DeepSeekNameProcessor(max_concurrency=50, batch_update_size=50)
     await processor.run_processing(targets)
 
 async def main(automatic=False): # automatic 인자 추가
-    processor = DeepSeekNameProcessor(max_concurrency=150, batch_update_size=500)
-    
+    processor = DeepSeekNameProcessor(max_concurrency=50, batch_update_size=50)
+
     if automatic:
         # 스케줄러에 의해 실행될 때는 자동으로 1번 로직 수행
         targets = extract_new_names()
