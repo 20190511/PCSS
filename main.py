@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from app.core.paths import STATIC_DIR, TEMPLATES_DIR
 from app.routes.author_routes import router as author_router
 from app.routes.home_routes import router as home_router

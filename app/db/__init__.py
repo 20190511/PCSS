@@ -7,7 +7,6 @@ import platform
 load_dotenv()
 
 DB_NAME = "pcss"
-COLLECTION_NAME = "llm_names"
 
 SSH_HOST = os.getenv("SSH_HOST")
 SSH_PORT = int(os.getenv("SSH_PORT", 22))
@@ -49,7 +48,8 @@ else:
     )
     
 mongo_db = client[DB_NAME]
-name_col = mongo_db[COLLECTION_NAME]
+name_col = mongo_db["llm_names"]
+new_name_col = mongo_db["new_llm_names"]
 errors_col = mongo_db['errors']
 conf_col = mongo_db["conferences"]
 papers_col = mongo_db["papers"]

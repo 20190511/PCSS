@@ -7,11 +7,11 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from app.data import name_dict, author_list
 from app.db import name_col, authors_col
-import extract_authors as extract_authors
-import extract_papers as extract_papers
+from update import update_authors
+from update import update_papers 
 from app.services.subscription_service import SubscriptionNotifier
 from multiprocessing import Process
-
+import asyncio
 
 if platform.system() == 'Windows':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -60,6 +60,10 @@ def run_step_in_process(target_func, *args):
     p.join()  # 작업 완료까지 대기
     
 
+def run_async_main(func, *args, **kwargs):
+    """비동기 main 함수를 동기 프로세스 환경에서 실행하기 위한 래퍼"""
+    asyncio.run(func(*args, **kwargs))
+
 def run_job():
     xml_path = os.path.join(os.path.dirname(__file__), "dblp.xml")
     
@@ -68,16 +72,18 @@ def run_job():
     try:
         # 1. 파일 정리
         if os.path.exists(xml_path):
-            extract_papers.cleanup_files(xml_path)
+            update_papers.cleanup_files(xml_path)
 
-        # 2~3. 논문 및 저자 추출 (별도 프로세스로 실행하여 메모리 격리)
+        # 2. 논문 추출 (기존 방식 유지)
         print(f"[{datetime.now()}] 논문 추출 시작 (프로세스 분리)...")
-        run_step_in_process(extract_papers.main)
+        run_step_in_process(update_papers.main)
         
-        print(f"[{datetime.now()}] 저자 추출 시작 (프로세스 분리)...")
-        run_step_in_process(extract_authors.main)
+        # 3. 저자 추출 및 판정 (수정된 부분)
+        # DeepSeek 판정 로직은 async이므로 run_async_main을 거쳐 실행합니다.
+        print(f"[{datetime.now()}] 저자 추출 및 DeepSeek 판정 시작...")
+        run_step_in_process(run_async_main, update_authors.main, True) # True는 automatic 인자
         
-        # 4. 캐시 갱신 및 알림 (이 부분은 메모리 부담이 적으므로 메인에서 실행)
+        # 4. 캐시 갱신 및 알림
         print(f"[{datetime.now()}] 최신 저자 정보 메모리 로드 시작...")
         refresh_name_dict()
         refresh_author_list()
@@ -114,9 +120,8 @@ def format_timedelta(seconds: int) -> str:
 def main():
     print("=== DBLP Scheduler & Notifier Started ===")
     print("매달 1일 00:00에 데이터 갱신 및 구독 메일을 발송합니다.\n")
-
-    # [옵션] 테스트를 위해 실행 직후 한 번 바로 돌리려면 아래 주석 해제
-    # run_job()
+    
+    run_job()
 
     while True:
         now = datetime.now()

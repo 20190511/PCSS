@@ -1,5 +1,5 @@
 from lxml import etree
-from app.db import conf_col, papers_col, authors_col
+from app.db import conf_col, papers_col, authors_col, name_col
 import os
 import re
 import sys
